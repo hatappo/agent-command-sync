@@ -1,0 +1,10 @@
+description = "Command with multiline content"
+prompt = """
+This is a multiline prompt.
+
+It has multiple paragraphs.
+
+And uses {{args}} in different places.
+
+Final line with {{args}} again.
+"""

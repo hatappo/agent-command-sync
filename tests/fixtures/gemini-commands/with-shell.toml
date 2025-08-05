@@ -1,0 +1,7 @@
+description = "Command with shell execution"
+prompt = """
+Check git status and add files:
+
+!{git status}
+!{git add {{args}}}
+"""

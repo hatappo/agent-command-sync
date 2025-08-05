@@ -1,0 +1,5 @@
+description = "Command with preserved Claude fields"
+allowed-tools = "Bash(git status:*)"
+argument-hint = "[message]"
+model = "sonnet"
+prompt = "Test command content"

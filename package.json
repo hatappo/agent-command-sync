@@ -1,0 +1,52 @@
+{
+  "name": "agent-slash-sync",
+  "version": "1.0.0",
+  "description": "Convert Custom Slash Commands between Claude Code and Gemini CLI",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "agent-slash-sync": "./bin/agent-slash-sync"
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "keywords": [
+    "claude-code",
+    "gemini-cli",
+    "slash-commands",
+    "converter",
+    "cli"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@iarna/toml": "2.2.5",
+    "commander": "14.0.0",
+    "gray-matter": "4.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.2.0",
+    "@vitest/coverage-v8": "3.2.4",
+    "typescript": "5.9.2",
+    "vite": "7.0.6",
+    "vitest": "3.2.4"
+  }
+}

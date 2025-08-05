@@ -1,0 +1,2 @@
+description = "Basic test command"
+prompt = "This is a basic test command with {{args}} placeholder."
