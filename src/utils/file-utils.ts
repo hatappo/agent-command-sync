@@ -1,7 +1,7 @@
-import { promises as fs } from "fs";
-import { dirname, extname, join, resolve, relative } from "path";
-import { homedir } from "os";
-import type { FileSearchOptions, CommandDirectories } from "../types/index.js";
+import { promises as fs } from "node:fs";
+import { homedir } from "node:os";
+import { dirname, extname, join, relative, resolve } from "node:path";
+import type { CommandDirectories, FileSearchOptions } from "../types/index.js";
 
 /**
  * ファイルが存在するかチェック
@@ -52,10 +52,7 @@ export async function readFile(filePath: string): Promise<string> {
 /**
  * ファイルを書き込み
  */
-export async function writeFile(
-  filePath: string,
-  content: string
-): Promise<void> {
+export async function writeFile(filePath: string, content: string): Promise<void> {
   try {
     await ensureDirectory(dirname(filePath));
     await fs.writeFile(filePath, content, "utf-8");
@@ -78,10 +75,7 @@ export async function deleteFile(filePath: string): Promise<void> {
 /**
  * 拡張子を自動補完または正規化
  */
-export function autoCompleteExtension(
-  filename: string,
-  possibleExtensions: string[]
-): string {
+export function autoCompleteExtension(filename: string, possibleExtensions: string[]): string {
   const currentExt = extname(filename);
 
   // 拡張子がない場合は最初の拡張子を追加
@@ -131,10 +125,7 @@ export function getCommandDirectories(claudeDir?: string, geminiDir?: string): C
 /**
  * ディレクトリ内のファイルを再帰的に検索
  */
-export async function findFiles(
-  directory: string,
-  options: FileSearchOptions
-): Promise<string[]> {
+export async function findFiles(directory: string, options: FileSearchOptions): Promise<string[]> {
   const files: string[] = [];
 
   if (!(await directoryExists(directory))) {
@@ -156,8 +147,7 @@ export async function findFiles(
             // 除外パターンをチェック
             if (options.excludePatterns) {
               const shouldExclude = options.excludePatterns.some(
-                (pattern) =>
-                  entry.name.includes(pattern) || fullPath.includes(pattern)
+                (pattern) => entry.name.includes(pattern) || fullPath.includes(pattern),
               );
               if (shouldExclude) continue;
             }
@@ -179,10 +169,7 @@ export async function findFiles(
 /**
  * Claude Codeのコマンドファイルを検索
  */
-export async function findClaudeCommands(
-  specificFile?: string,
-  claudeDir?: string
-): Promise<string[]> {
+export async function findClaudeCommands(specificFile?: string, claudeDir?: string): Promise<string[]> {
   const directories = getCommandDirectories(claudeDir);
   const searchOptions: FileSearchOptions = {
     extensions: [".md"],
@@ -200,7 +187,7 @@ export async function findClaudeCommands(
 
     const possiblePaths: string[] = [];
     const dir = directories.claude.user;
-    
+
     // 指定されたファイル名をそのまま試行
     possiblePaths.push(join(dir, fileWithExt));
 
@@ -232,10 +219,7 @@ export async function findClaudeCommands(
 /**
  * Gemini CLIのコマンドファイルを検索
  */
-export async function findGeminiCommands(
-  specificFile?: string,
-  geminiDir?: string
-): Promise<string[]> {
+export async function findGeminiCommands(specificFile?: string, geminiDir?: string): Promise<string[]> {
   const directories = getCommandDirectories(undefined, geminiDir);
   const searchOptions: FileSearchOptions = {
     extensions: [".toml"],
@@ -253,7 +237,7 @@ export async function findGeminiCommands(
 
     const possiblePaths: string[] = [];
     const dir = directories.gemini.user;
-    
+
     // 指定されたファイル名をそのまま試行
     possiblePaths.push(join(dir, fileWithExt));
 
@@ -295,10 +279,7 @@ export function resolvePath(path: string): string {
 /**
  * ファイルパスからコマンド名を生成
  */
-export function getCommandName(
-  filePath: string,
-  baseDirectory: string
-): string {
+export function getCommandName(filePath: string, baseDirectory: string): string {
   const relativePath = relative(baseDirectory, filePath);
   const pathWithoutExt = relativePath.replace(/\.[^/.]+$/, "");
 
@@ -309,11 +290,7 @@ export function getCommandName(
 /**
  * コマンド名からファイルパスを生成
  */
-export function getFilePathFromCommandName(
-  commandName: string,
-  baseDirectory: string,
-  extension: string
-): string {
+export function getFilePathFromCommandName(commandName: string, baseDirectory: string, extension: string): string {
   // コロンをディレクトリセパレータに変換
   const relativePath = commandName.replace(/:/g, "/");
   return join(baseDirectory, `${relativePath}${extension}`);

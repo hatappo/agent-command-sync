@@ -1,84 +1,84 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from "vitest";
+import type { ClaudeCommand, GeminiCommand } from "../../src/types/index.js";
 import {
+  formatValidationErrors,
   validateClaudeCommand,
-  validateGeminiCommand,
   validateFilePath,
-  formatValidationErrors
-} from '../../src/utils/validation.js';
-import type { ClaudeCommand, GeminiCommand } from '../../src/types/index.js';
+  validateGeminiCommand,
+} from "../../src/utils/validation.js";
 
-describe('Validation', () => {
-  describe('validateClaudeCommand', () => {
-    it('should pass validation for valid command', () => {
+describe("Validation", () => {
+  describe("validateClaudeCommand", () => {
+    it("should pass validation for valid command", () => {
       const command: ClaudeCommand = {
         frontmatter: {
-          description: 'Test command',
-          model: 'sonnet'
+          description: "Test command",
+          model: "sonnet",
         },
-        content: 'Test content',
-        filePath: '/test/command.md'
+        content: "Test content",
+        filePath: "/test/command.md",
       };
 
       const errors = validateClaudeCommand(command);
       expect(errors).toHaveLength(0);
     });
 
-    it('should fail validation for missing filePath', () => {
+    it("should fail validation for missing filePath", () => {
       const command = {
         frontmatter: {},
-        content: 'Test content'
+        content: "Test content",
       } as ClaudeCommand;
 
       const errors = validateClaudeCommand(command);
       expect(errors).toHaveLength(1);
-      expect(errors[0].field).toBe('filePath');
+      expect(errors[0].field).toBe("filePath");
     });
 
-    it('should fail validation for invalid frontmatter', () => {
+    it("should fail validation for invalid frontmatter", () => {
       const command = {
         frontmatter: null,
-        content: 'Test content',
-        filePath: '/test/command.md'
+        content: "Test content",
+        filePath: "/test/command.md",
       } as unknown as ClaudeCommand;
 
       const errors = validateClaudeCommand(command);
       expect(errors).toHaveLength(1);
-      expect(errors[0].field).toBe('frontmatter');
+      expect(errors[0].field).toBe("frontmatter");
     });
 
-    it('should fail validation for non-string content', () => {
+    it("should fail validation for non-string content", () => {
       const command = {
         frontmatter: {},
         content: 123,
-        filePath: '/test/command.md'
+        filePath: "/test/command.md",
       } as unknown as ClaudeCommand;
 
       const errors = validateClaudeCommand(command);
       expect(errors).toHaveLength(1);
-      expect(errors[0].field).toBe('content');
+      expect(errors[0].field).toBe("content");
     });
 
-    it('should validate allowed-tools field', () => {
+    it("should validate allowed-tools field", () => {
       const command: ClaudeCommand = {
         frontmatter: {
-          'allowed-tools': 123 as unknown as string
+          "allowed-tools": 123 as unknown as string,
         },
-        content: 'Test content',
-        filePath: '/test/command.md'
+        content: "Test content",
+        filePath: "/test/command.md",
       };
 
       const errors = validateClaudeCommand(command);
       expect(errors).toHaveLength(1);
-      expect(errors[0].field).toBe('frontmatter.allowed-tools');
+      expect(errors[0].field).toBe("frontmatter.allowed-tools");
     });
 
-    it('should validate model field', () => {
+    it("should validate model field", () => {
       const command: ClaudeCommand = {
         frontmatter: {
-          model: 'invalid-model'
+          model: "invalid-model",
         },
-        content: 'Test content',
-        filePath: '/test/command.md'
+        content: "Test content",
+        filePath: "/test/command.md",
       };
 
       const errors = validateClaudeCommand(command);
@@ -86,14 +86,14 @@ describe('Validation', () => {
       expect(errors).toHaveLength(0);
     });
 
-    it('should accept valid model values', () => {
-      const validModels = ['opus', 'sonnet', 'haiku', 'claude-3-opus-20240229'];
-      
+    it("should accept valid model values", () => {
+      const validModels = ["opus", "sonnet", "haiku", "claude-3-opus-20240229"];
+
       for (const model of validModels) {
         const command: ClaudeCommand = {
           frontmatter: { model },
-          content: 'Test content',
-          filePath: '/test/command.md'
+          content: "Test content",
+          filePath: "/test/command.md",
         };
 
         const errors = validateClaudeCommand(command);
@@ -101,151 +101,145 @@ describe('Validation', () => {
       }
     });
 
-    it('should validate empty description', () => {
+    it("should validate empty description", () => {
       const command: ClaudeCommand = {
         frontmatter: {
-          description: ''
+          description: "",
         },
-        content: 'Test content',
-        filePath: '/test/command.md'
+        content: "Test content",
+        filePath: "/test/command.md",
       };
 
       const errors = validateClaudeCommand(command);
       expect(errors).toHaveLength(1);
-      expect(errors[0].field).toBe('frontmatter.description');
+      expect(errors[0].field).toBe("frontmatter.description");
     });
   });
 
-  describe('validateGeminiCommand', () => {
-    it('should pass validation for valid command', () => {
+  describe("validateGeminiCommand", () => {
+    it("should pass validation for valid command", () => {
       const command: GeminiCommand = {
-        description: 'Test command',
-        prompt: 'Test prompt',
-        filePath: '/test/command.toml'
+        description: "Test command",
+        prompt: "Test prompt",
+        filePath: "/test/command.toml",
       };
 
       const errors = validateGeminiCommand(command);
       expect(errors).toHaveLength(0);
     });
 
-    it('should pass validation without description', () => {
+    it("should pass validation without description", () => {
       const command: GeminiCommand = {
-        prompt: 'Test prompt',
-        filePath: '/test/command.toml'
+        prompt: "Test prompt",
+        filePath: "/test/command.toml",
       };
 
       const errors = validateGeminiCommand(command);
       expect(errors).toHaveLength(0);
     });
 
-    it('should fail validation for missing prompt', () => {
+    it("should fail validation for missing prompt", () => {
       const command = {
-        description: 'Test',
-        filePath: '/test/command.toml'
+        description: "Test",
+        filePath: "/test/command.toml",
       } as GeminiCommand;
 
       const errors = validateGeminiCommand(command);
       expect(errors).toHaveLength(1);
-      expect(errors[0].field).toBe('prompt');
+      expect(errors[0].field).toBe("prompt");
     });
 
-    it('should fail validation for empty prompt', () => {
+    it("should fail validation for empty prompt", () => {
       const command: GeminiCommand = {
-        prompt: '',
-        filePath: '/test/command.toml'
+        prompt: "",
+        filePath: "/test/command.toml",
       };
 
       const errors = validateGeminiCommand(command);
       expect(errors).toHaveLength(1);
-      expect(errors[0].field).toBe('prompt');
+      expect(errors[0].field).toBe("prompt");
     });
 
-    it('should fail validation for non-string prompt', () => {
+    it("should fail validation for non-string prompt", () => {
       const command = {
         prompt: 123,
-        filePath: '/test/command.toml'
+        filePath: "/test/command.toml",
       } as unknown as GeminiCommand;
 
       const errors = validateGeminiCommand(command);
       expect(errors).toHaveLength(1);
-      expect(errors[0].field).toBe('prompt');
+      expect(errors[0].field).toBe("prompt");
     });
 
-    it('should fail validation for empty description', () => {
+    it("should fail validation for empty description", () => {
       const command: GeminiCommand = {
-        description: '',
-        prompt: 'Test prompt',
-        filePath: '/test/command.toml'
+        description: "",
+        prompt: "Test prompt",
+        filePath: "/test/command.toml",
       };
 
       const errors = validateGeminiCommand(command);
       expect(errors).toHaveLength(1);
-      expect(errors[0].field).toBe('description');
+      expect(errors[0].field).toBe("description");
     });
   });
 
-  describe('validateFilePath', () => {
-    it('should pass validation for valid file path', () => {
-      const errors = validateFilePath('valid/path/file.txt');
+  describe("validateFilePath", () => {
+    it("should pass validation for valid file path", () => {
+      const errors = validateFilePath("valid/path/file.txt");
       expect(errors).toHaveLength(0);
     });
 
-    it('should fail validation for empty path', () => {
-      const errors = validateFilePath('');
+    it("should fail validation for empty path", () => {
+      const errors = validateFilePath("");
       expect(errors).toHaveLength(1);
-      expect(errors[0].field).toBe('filePath');
+      expect(errors[0].field).toBe("filePath");
     });
 
-    it('should fail validation for dangerous characters', () => {
-      const dangerousPaths = [
-        '../../../etc/passwd',
-        'file<script>',
-        'file|command',
-        'file?query',
-        'file*wildcard'
-      ];
+    it("should fail validation for dangerous characters", () => {
+      const dangerousPaths = ["../../../etc/passwd", "file<script>", "file|command", "file?query", "file*wildcard"];
 
       for (const path of dangerousPaths) {
         const errors = validateFilePath(path);
         expect(errors.length).toBeGreaterThan(0);
-        expect(errors[0].field).toBe('filePath');
+        expect(errors[0].field).toBe("filePath");
       }
     });
 
-    it('should fail validation for absolute paths outside allowed directories', () => {
-      const errors = validateFilePath('/etc/passwd');
+    it("should fail validation for absolute paths outside allowed directories", () => {
+      const errors = validateFilePath("/etc/passwd");
       expect(errors).toHaveLength(1);
-      expect(errors[0].field).toBe('filePath');
+      expect(errors[0].field).toBe("filePath");
     });
   });
 
-  describe('formatValidationErrors', () => {
-    it('should format single error', () => {
+  describe("formatValidationErrors", () => {
+    it("should format single error", () => {
       const errors = validateGeminiCommand({
-        prompt: '',
-        filePath: '/test/command.toml'
+        prompt: "",
+        filePath: "/test/command.toml",
       });
 
       const formatted = formatValidationErrors(errors);
-      expect(formatted).toContain('Validation failed with 1 error(s)');
-      expect(formatted).toContain('1. prompt: prompt is required');
+      expect(formatted).toContain("Validation failed with 1 error(s)");
+      expect(formatted).toContain("1. prompt: prompt is required");
     });
 
-    it('should format multiple errors', () => {
+    it("should format multiple errors", () => {
       const command = {
-        filePath: '/test/command.toml'
+        filePath: "/test/command.toml",
       } as GeminiCommand;
 
       const errors = validateGeminiCommand(command);
       const formatted = formatValidationErrors(errors);
-      
-      expect(formatted).toContain('Validation failed with 1 error(s)');
-      expect(formatted).toContain('prompt: prompt is required');
+
+      expect(formatted).toContain("Validation failed with 1 error(s)");
+      expect(formatted).toContain("prompt: prompt is required");
     });
 
-    it('should handle no errors', () => {
+    it("should handle no errors", () => {
       const formatted = formatValidationErrors([]);
-      expect(formatted).toBe('No validation errors');
+      expect(formatted).toBe("No validation errors");
     });
   });
 });

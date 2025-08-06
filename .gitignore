@@ -16,7 +16,8 @@ build/
 .env.production.local
 
 # IDE
-.vscode/
+# .vscode/ is intentionally included in the repository for Biome settings
+!.vscode/
 .idea/
 *.swp
 *.swo

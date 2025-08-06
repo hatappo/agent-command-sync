@@ -12,26 +12,20 @@
     "dev": "vite build --watch",
     "test": "vitest",
     "test:coverage": "vitest --coverage",
-    "lint": "tsc --noEmit",
+    "lint": "biome lint .",
+    "lint:fix": "biome check --apply .",
+    "lint:tsc": "tsc --noEmit",
+    "format": "biome format --write .",
     "prepublishOnly": "npm run build"
   },
-  "files": [
-    "dist",
-    "bin"
-  ],
+  "files": ["dist", "bin"],
   "exports": {
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     }
   },
-  "keywords": [
-    "claude-code",
-    "gemini-cli",
-    "slash-commands",
-    "converter",
-    "cli"
-  ],
+  "keywords": ["claude-code", "gemini-cli", "slash-commands", "converter", "cli"],
   "author": "",
   "license": "MIT",
   "engines": {
@@ -43,10 +37,15 @@
     "gray-matter": "4.0.3"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
     "@types/node": "24.2.0",
     "@vitest/coverage-v8": "3.2.4",
     "typescript": "5.9.2",
     "vite": "7.0.6",
     "vitest": "3.2.4"
+  },
+  "volta": {
+    "node": "24.5.0",
+    "npm": "11.5.2"
   }
 }

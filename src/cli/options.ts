@@ -1,4 +1,4 @@
-import type { ConversionOptions } from '../types/index.js';
+import type { ConversionOptions } from "../types/index.js";
 
 /**
  * CLIオプションの型定義
@@ -24,7 +24,7 @@ export const defaultCLIOptions: Partial<CLIOptions> = {
   noOverwrite: false,
   syncDelete: false,
   dryRun: false,
-  verbose: false
+  verbose: false,
 };
 
 /**
@@ -35,19 +35,19 @@ export function validateCLIOptions(options: Partial<CLIOptions>): string[] {
 
   // direction の検証
   if (!options.direction) {
-    errors.push('--convert option is required');
-  } else if (!['c2g', 'g2c'].includes(options.direction)) {
+    errors.push("--convert option is required");
+  } else if (!["c2g", "g2c"].includes(options.direction)) {
     errors.push('--convert must be either "c2g" or "g2c"');
   }
 
   // file オプションの検証
   if (options.file) {
-    if (typeof options.file !== 'string' || options.file.trim().length === 0) {
-      errors.push('--file must be a non-empty string');
+    if (typeof options.file !== "string" || options.file.trim().length === 0) {
+      errors.push("--file must be a non-empty string");
     }
-    
+
     // 危険な文字をチェック
-    const dangerousChars = ['..', '/', '\\', '<', '>', '|', '?', '*'];
+    const dangerousChars = ["..", "/", "\\", "<", ">", "|", "?", "*"];
     for (const char of dangerousChars) {
       if (options.file.includes(char)) {
         errors.push(`--file contains dangerous character: ${char}`);
@@ -71,6 +71,6 @@ export function cliOptionsToConversionOptions(cliOptions: CLIOptions): Conversio
     dryRun: cliOptions.dryRun,
     verbose: cliOptions.verbose,
     claudeDir: cliOptions.claudeDir,
-    geminiDir: cliOptions.geminiDir
+    geminiDir: cliOptions.geminiDir,
   };
 }

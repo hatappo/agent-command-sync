@@ -9,8 +9,8 @@ export interface Command {
 // Claude Code形式
 export interface ClaudeCommand {
   frontmatter: {
-    'allowed-tools'?: string;
-    'argument-hint'?: string;
+    "allowed-tools"?: string;
+    "argument-hint"?: string;
     description?: string;
     model?: string;
     [key: string]: unknown;
@@ -30,7 +30,7 @@ export interface GeminiCommand {
 
 // 変換オプション
 export interface ConversionOptions {
-  direction: 'c2g' | 'g2c';
+  direction: "c2g" | "g2c";
   removeUnsupported: boolean;
   noOverwrite: boolean;
   syncDelete: boolean;
@@ -43,7 +43,7 @@ export interface ConversionOptions {
 
 // ファイル操作結果
 export interface FileOperation {
-  type: 'A' | 'M' | 'D' | '-';
+  type: "A" | "M" | "D" | "-";
   filePath: string;
   description: string;
 }
@@ -53,10 +53,10 @@ export class ParseError extends Error {
   constructor(
     message: string,
     public filePath: string,
-    public cause?: Error
+    public cause?: Error,
   ) {
     super(message);
-    this.name = 'ParseError';
+    this.name = "ParseError";
   }
 }
 
@@ -65,10 +65,10 @@ export class ConversionError extends Error {
     message: string,
     public sourceFile: string,
     public targetFile?: string,
-    public cause?: Error
+    public cause?: Error,
   ) {
     super(message);
-    this.name = 'ConversionError';
+    this.name = "ConversionError";
   }
 }
 
@@ -76,10 +76,10 @@ export class ValidationError extends Error {
   constructor(
     message: string,
     public field: string,
-    public value?: unknown
+    public value?: unknown,
   ) {
     super(message);
-    this.name = 'ValidationError';
+    this.name = "ValidationError";
   }
 }
 

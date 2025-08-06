@@ -1,5 +1,5 @@
-import type { ClaudeCommand, GeminiCommand, Converter, ConversionOptions } from '../types/index.js';
-import { ConversionError } from '../types/index.js';
+import type { ClaudeCommand, ConversionOptions, Converter, GeminiCommand } from "../types/index.js";
+import { ConversionError } from "../types/index.js";
 
 export class C2GConverter implements Converter<ClaudeCommand, GeminiCommand> {
   /**
@@ -28,7 +28,7 @@ export class C2GConverter implements Converter<ClaudeCommand, GeminiCommand> {
         `Failed to convert Claude command to Gemini format: ${error instanceof Error ? error.message : String(error)}`,
         source.filePath,
         undefined,
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
       );
     }
   }
@@ -52,7 +52,7 @@ export class C2GConverter implements Converter<ClaudeCommand, GeminiCommand> {
    * 引数プレースホルダーを変換
    */
   private convertArgumentPlaceholder(content: string): string {
-    return content.replace(/\$ARGUMENTS/g, '{{args}}');
+    return content.replace(/\$ARGUMENTS/g, "{{args}}");
   }
 
   /**
@@ -62,10 +62,10 @@ export class C2GConverter implements Converter<ClaudeCommand, GeminiCommand> {
     let convertedContent = content;
 
     // !`command` → !{command} の変換（バッククォート形式）
-    convertedContent = convertedContent.replace(/!`([^`]+)`/g, '!{$1}');
+    convertedContent = convertedContent.replace(/!`([^`]+)`/g, "!{$1}");
 
     // 行頭の !command → !{command} の変換
-    convertedContent = convertedContent.replace(/^!\s*([^\s{][^\n]*)/gm, '!{$1}');
+    convertedContent = convertedContent.replace(/^!\s*([^\s{][^\n]*)/gm, "!{$1}");
 
     return convertedContent;
   }
@@ -74,17 +74,17 @@ export class C2GConverter implements Converter<ClaudeCommand, GeminiCommand> {
    * ファイルパスを変換（.md → .toml）
    */
   private convertFilePath(claudePath: string): string {
-    return claudePath.replace(/\.md$/, '.toml');
+    return claudePath.replace(/\.md$/, ".toml");
   }
 
   /**
    * Claude固有フィールドを処理
    */
   private handleClaudeSpecificFields(
-    frontmatter: ClaudeCommand['frontmatter'],
-    options: ConversionOptions
+    frontmatter: ClaudeCommand["frontmatter"],
+    options: ConversionOptions,
   ): Record<string, unknown> {
-    const claudeSpecificFields = ['allowed-tools', 'argument-hint', 'model'];
+    const claudeSpecificFields = ["allowed-tools", "argument-hint", "model"];
     const result: Record<string, unknown> = {};
 
     for (const field of claudeSpecificFields) {
@@ -93,10 +93,9 @@ export class C2GConverter implements Converter<ClaudeCommand, GeminiCommand> {
         if (options.removeUnsupported) {
           // フィールドを削除（何もしない）
           continue;
-        } else {
-          // そのまま保持
-          result[field] = value;
         }
+        // そのまま保持
+        result[field] = value;
       }
     }
 

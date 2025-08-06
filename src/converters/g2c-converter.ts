@@ -1,5 +1,5 @@
-import type { GeminiCommand, ClaudeCommand, Converter, ConversionOptions } from '../types/index.js';
-import { ConversionError } from '../types/index.js';
+import type { ClaudeCommand, ConversionOptions, Converter, GeminiCommand } from "../types/index.js";
+import { ConversionError } from "../types/index.js";
 
 export class G2CConverter implements Converter<GeminiCommand, ClaudeCommand> {
   /**
@@ -8,7 +8,7 @@ export class G2CConverter implements Converter<GeminiCommand, ClaudeCommand> {
   convert(source: GeminiCommand, options: ConversionOptions): ClaudeCommand {
     try {
       // フロントマターの構築
-      const frontmatter: ClaudeCommand['frontmatter'] = {};
+      const frontmatter: ClaudeCommand["frontmatter"] = {};
 
       // descriptionフィールドのマッピング
       if (source.description) {
@@ -31,7 +31,7 @@ export class G2CConverter implements Converter<GeminiCommand, ClaudeCommand> {
         `Failed to convert Gemini command to Claude format: ${error instanceof Error ? error.message : String(error)}`,
         source.filePath,
         undefined,
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
       );
     }
   }
@@ -55,7 +55,7 @@ export class G2CConverter implements Converter<GeminiCommand, ClaudeCommand> {
    * 引数プレースホルダーを変換
    */
   private convertArgumentPlaceholder(content: string): string {
-    return content.replace(/\{\{args\}\}/g, '$ARGUMENTS');
+    return content.replace(/\{\{args\}\}/g, "$ARGUMENTS");
   }
 
   /**
@@ -63,14 +63,14 @@ export class G2CConverter implements Converter<GeminiCommand, ClaudeCommand> {
    */
   private convertShellCommands(content: string): string {
     // !{command} → !`command` の変換
-    return content.replace(/!\{([^}]+)\}/g, '!`$1`');
+    return content.replace(/!\{([^}]+)\}/g, "!`$1`");
   }
 
   /**
    * ファイルパスを変換（.toml → .md）
    */
   private convertFilePath(geminiPath: string): string {
-    return geminiPath.replace(/\.toml$/, '.md');
+    return geminiPath.replace(/\.toml$/, ".md");
   }
 
   /**
@@ -78,11 +78,11 @@ export class G2CConverter implements Converter<GeminiCommand, ClaudeCommand> {
    */
   private restoreClaudeSpecificFields(
     source: GeminiCommand,
-    frontmatter: ClaudeCommand['frontmatter'],
-    options: ConversionOptions
+    frontmatter: ClaudeCommand["frontmatter"],
+    options: ConversionOptions,
   ): void {
-    const claudeSpecificFields = ['allowed-tools', 'argument-hint', 'model'];
-    
+    const claudeSpecificFields = ["allowed-tools", "argument-hint", "model"];
+
     // Claude固有フィールドをそのまま復元
     for (const field of claudeSpecificFields) {
       const value = source[field];

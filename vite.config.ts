@@ -1,46 +1,37 @@
-import { defineConfig } from 'vite';
-import { resolve } from 'path';
+import { resolve } from "node:path";
+import { defineConfig } from "vite";
 
 export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        index: resolve(__dirname, 'src/index.ts'),
-        'cli/index': resolve(__dirname, 'src/cli/index.ts')
+        index: resolve(__dirname, "src/index.ts"),
+        "cli/index": resolve(__dirname, "src/cli/index.ts"),
       },
       output: {
-        format: 'es',
-        entryFileNames: '[name].js'
+        format: "es",
+        entryFileNames: "[name].js",
       },
-      external: [
-        'commander',
-        'gray-matter',
-        '@iarna/toml',
-        'fs',
-        'fs/promises',
-        'path',
-        'os',
-        'process'
-      ]
+      external: ["commander", "gray-matter", "@iarna/toml", "fs", "fs/promises", "path", "os", "process"],
     },
-    outDir: 'dist',
+    outDir: "dist",
     emptyOutDir: true,
-    target: 'node18'
+    target: "node18",
   },
   test: {
     globals: true,
-    environment: 'node',
+    environment: "node",
     coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html']
-    }
+      provider: "v8",
+      reporter: ["text", "json", "html"],
+    },
   },
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src')
-    }
+      "@": resolve(__dirname, "src"),
+    },
   },
   define: {
-    global: 'globalThis'
-  }
+    global: "globalThis",
+  },
 });

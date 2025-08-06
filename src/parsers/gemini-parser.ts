@@ -1,8 +1,8 @@
-import * as TOML from '@iarna/toml';
-import type { GeminiCommand, Parser } from '../types/index.js';
-import { ParseError } from '../types/index.js';
-import { readFile } from '../utils/file-utils.js';
-import { validateGeminiCommand, formatValidationErrors } from '../utils/validation.js';
+import * as TOML from "@iarna/toml";
+import type { GeminiCommand, Parser } from "../types/index.js";
+import { ParseError } from "../types/index.js";
+import { readFile } from "../utils/file-utils.js";
+import { formatValidationErrors, validateGeminiCommand } from "../utils/validation.js";
 
 export class GeminiParser implements Parser<GeminiCommand> {
   /**
@@ -12,18 +12,18 @@ export class GeminiParser implements Parser<GeminiCommand> {
     try {
       const content = await readFile(filePath);
       const parsed = TOML.parse(content) as Record<string, unknown>;
-      
+
       return {
-        description: typeof parsed.description === 'string' ? parsed.description : undefined,
-        prompt: typeof parsed.prompt === 'string' ? parsed.prompt : '',
+        description: typeof parsed.description === "string" ? parsed.description : undefined,
+        prompt: typeof parsed.prompt === "string" ? parsed.prompt : "",
         filePath,
-        ...parsed // その他のフィールドも保持
+        ...parsed, // その他のフィールドも保持
       };
     } catch (error) {
       throw new ParseError(
         `Failed to parse Gemini command file: ${error instanceof Error ? error.message : String(error)}`,
         filePath,
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
       );
     }
   }
@@ -39,11 +39,14 @@ export class GeminiParser implements Parser<GeminiCommand> {
   /**
    * GeminiCommandオブジェクトの詳細バリデーション（エラー詳細付き）
    */
-  validateWithErrors(data: GeminiCommand): { isValid: boolean; errors: string } {
+  validateWithErrors(data: GeminiCommand): {
+    isValid: boolean;
+    errors: string;
+  } {
     const errors = validateGeminiCommand(data);
     return {
       isValid: errors.length === 0,
-      errors: formatValidationErrors(errors)
+      errors: formatValidationErrors(errors),
     };
   }
 
@@ -59,10 +62,10 @@ export class GeminiParser implements Parser<GeminiCommand> {
     }
 
     // その他のフィールド（Claude固有フィールドなど）を追加
-    const excludeFields = new Set(['prompt', 'description', 'filePath']);
+    const excludeFields = new Set(["prompt", "description", "filePath"]);
     for (const [key, value] of Object.entries(command)) {
       if (!excludeFields.has(key) && value !== undefined && value !== null) {
-        tomlData[key] = value;
+        tomlData[key] = value as TOML.AnyJson;
       }
     }
 
@@ -75,7 +78,7 @@ export class GeminiParser implements Parser<GeminiCommand> {
       throw new ParseError(
         `Failed to stringify Gemini command: ${error instanceof Error ? error.message : String(error)}`,
         command.filePath,
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
       );
     }
   }
