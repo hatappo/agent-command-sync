@@ -5,10 +5,10 @@
     "quickfix.biome": "explicit",
     "source.organizeImports.biome": "explicit"
   },
-  
+
   // デフォルトフォーマッターをBiomeに設定
   "editor.defaultFormatter": "biomejs.biome",
-  
+
   // 言語別のフォーマッター設定
   "[javascript]": {
     "editor.defaultFormatter": "biomejs.biome"
@@ -28,17 +28,17 @@
   "[jsonc]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
-  
+
   // ファイルの関連付け
   "files.associations": {
     "*.md": "markdown",
     "*.toml": "toml"
   },
-  
+
   // TypeScript設定
   "typescript.preferences.importModuleSpecifier": "relative",
   "typescript.updateImportsOnFileMove.enabled": "always",
-  
+
   // 他のフォーマッターを無効化
   "prettier.enable": false,
   "eslint.enable": false

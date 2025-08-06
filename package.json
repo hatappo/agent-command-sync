@@ -1,6 +1,6 @@
 {
   "name": "agent-slash-sync",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Convert Custom Slash Commands between Claude Code and Gemini CLI",
   "type": "module",
   "main": "dist/index.js",
