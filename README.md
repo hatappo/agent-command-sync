@@ -1,6 +1,9 @@
 # agent-slash-sync
 
-Convert Custom Slash Commands between Claude Code and Gemini CLI.
+[![npm version](https://badge.fury.io/js/agent-slash-sync.svg)](https://www.npmjs.com/package/agent-slash-sync)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Convert Custom Slash Commands between Claude Code and Gemini CLI with colorful output.
 
 ## Installation
 
@@ -27,6 +30,23 @@ agent-slash-sync -d -c c2g
 assync -d -c c2g
 ```
 
+## Screenshots
+
+### Usage Example
+![agent-slash-sync usage](docs/assync-usage.png)
+
+### Conversion Example
+![agent-slash-sync example](docs/assync-example.png)
+
+## Features
+
+- **Colorful Output** - Clear visual feedback with color-coded status indicators
+- **Fast Conversion** - Efficiently sync commands between Claude Code and Gemini CLI
+- **Bidirectional** - Convert in both directions (Claude ↔ Gemini)
+- **Safe by Default** - Preview changes with dry-run mode before applying
+- **Short Command** - Use `assync` instead of `agent-slash-sync`
+- **Selective Sync** - Convert specific files or all commands at once
+
 ## Options
 
 | Option                      | Description                                                     |
@@ -45,16 +65,19 @@ assync -d -c c2g
 
 ```bash
 # Convert all commands with preview
-agent-slash-sync -d -c c2g
+assync -d -c c2g
 
 # Convert specific file
-agent-slash-sync -c g2c -f analyze-code
+assync -c g2c -f analyze-code
 
 # Full sync with cleanup
-agent-slash-sync -c c2g --sync-delete --remove-unsupported
+assync -c c2g --sync-delete --remove-unsupported
 
 # Use custom directories
-agent-slash-sync -c c2g --claude-dir ~/my-claude --gemini-dir ~/my-gemini
+assync -c c2g --claude-dir ~/my-claude --gemini-dir ~/my-gemini
+
+# Show verbose output for debugging
+assync -c c2g -v
 ```
 
 ## File Locations
@@ -74,7 +97,15 @@ agent-slash-sync -c c2g --claude-dir ~/my-claude --gemini-dir ~/my-gemini
 
 ## Status Indicators
 
-- `[A]` Created • `[M]` Modified • `[D]` Deleted • `[-]` Skipped
+- `[A]` Created (Green) - New files created in target directory
+- `[M]` Modified (Yellow) - Existing files updated
+- `[D]` Deleted (Red) - Files removed with `--sync-delete`
+- `[-]` Skipped (Gray) - Files skipped with `--no-overwrite`
+
+## Requirements
+
+- Node.js >= 18.0.0
+- npm or compatible package manager
 
 ## Development
 
@@ -90,6 +121,32 @@ npm test
 
 # Run tests with coverage
 npm run test:coverage
+
+# Lint and format code
+npm run lint
+npm run format
+
+# Type check
+npm run lint:tsc
+
+# Development mode (watch)
+npm run dev
+```
+
+### Publishing
+
+```bash
+# Check package contents
+npm run release:dry
+
+# Publish patch version (1.0.0 → 1.0.1)
+npm run release:patch
+
+# Publish minor version (1.0.0 → 1.1.0)
+npm run release:minor
+
+# Publish major version (1.0.0 → 2.0.0)
+npm run release:major
 ```
 
 ## License

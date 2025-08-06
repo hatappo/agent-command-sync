@@ -1,3 +1,4 @@
+import picocolors from "picocolors";
 import { C2GConverter } from "../converters/c2g-converter.js";
 import { G2CConverter } from "../converters/g2c-converter.js";
 import { ClaudeParser } from "../parsers/claude-parser.js";
@@ -8,7 +9,6 @@ import {
   fileExists,
   findClaudeCommands,
   findGeminiCommands,
-  getBaseName,
   getCommandDirectories,
   getCommandName,
   getFilePathFromCommandName,
@@ -31,18 +31,20 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
   let skipped = 0;
 
   try {
-    console.log(`Starting ${options.direction === "c2g" ? "Claude → Gemini" : "Gemini → Claude"} conversion...`);
+    console.log(
+      picocolors.cyan(`Starting ${options.direction === "c2g" ? "Claude → Gemini" : "Gemini → Claude"} conversion...`),
+    );
 
     if (options.dryRun) {
-      console.log("DRY RUN MODE - No files will be modified");
+      console.log(picocolors.yellow("DRY RUN MODE - No files will be modified"));
     }
 
     // ソースファイルを検索
     const sourceFiles = await getSourceFiles(options);
-    console.log(`Found ${sourceFiles.length} source file(s)`);
+    console.log(picocolors.dim(`Found ${sourceFiles.length} source file(s)`));
 
     if (sourceFiles.length === 0) {
-      console.log("No files to convert.");
+      console.log(picocolors.gray("No files to convert."));
       return {
         success: true,
         operations,
@@ -280,17 +282,41 @@ async function handleSyncDelete(
  * 結果を表示
  */
 function displayResults(operations: FileOperation[], errors: Error[], isDryRun: boolean): void {
-  console.log("\nResults:");
+  console.log(picocolors.bold("\nResults:"));
 
   if (operations.length === 0) {
-    console.log("No operations performed.");
+    console.log(picocolors.gray("No operations performed."));
     return;
   }
 
   // 操作を表示
   for (const op of operations) {
-    const prefix = `[${op.type}]`;
-    console.log(`${prefix} ${op.filePath} - ${op.description}`);
+    let prefix: string;
+    let color: (str: string) => string;
+
+    switch (op.type) {
+      case "A":
+        prefix = picocolors.green("[A]");
+        color = picocolors.green;
+        break;
+      case "M":
+        prefix = picocolors.yellow("[M]");
+        color = picocolors.yellow;
+        break;
+      case "D":
+        prefix = picocolors.red("[D]");
+        color = picocolors.red;
+        break;
+      case "-":
+        prefix = picocolors.gray("[-]");
+        color = picocolors.gray;
+        break;
+      default:
+        prefix = `[${op.type}]`;
+        color = (s: string) => s;
+    }
+
+    console.log(`${prefix} ${op.filePath} - ${color(op.description)}`);
   }
 
   // 統計を表示
@@ -301,23 +327,23 @@ function displayResults(operations: FileOperation[], errors: Error[], isDryRun: 
     "-": operations.filter((op) => op.type === "-").length,
   };
 
-  console.log("\nSummary:");
-  if (stats.A > 0) console.log(`  Created: ${stats.A}`);
-  if (stats.M > 0) console.log(`  Modified: ${stats.M}`);
-  if (stats.D > 0) console.log(`  Deleted: ${stats.D}`);
-  if (stats["-"] > 0) console.log(`  Skipped: ${stats["-"]}`);
+  console.log(picocolors.bold("\nSummary:"));
+  if (stats.A > 0) console.log(`  ${picocolors.green("Created:")} ${stats.A}`);
+  if (stats.M > 0) console.log(`  ${picocolors.yellow("Modified:")} ${stats.M}`);
+  if (stats.D > 0) console.log(`  ${picocolors.red("Deleted:")} ${stats.D}`);
+  if (stats["-"] > 0) console.log(`  ${picocolors.gray("Skipped:")} ${stats["-"]}`);
 
   // エラーを表示
   if (errors.length > 0) {
-    console.log("\nErrors:");
+    console.log(picocolors.red(picocolors.bold("\nErrors:")));
     errors.forEach((error, index) => {
-      console.log(`  ${index + 1}. ${error.message}`);
+      console.log(picocolors.red(`  ${index + 1}. ${error.message}`));
     });
   }
 
   if (isDryRun) {
-    console.log("\nThis was a dry run. Use without --dry-run to apply changes.");
+    console.log(picocolors.cyan("\nThis was a dry run. Use without --dry-run to apply changes."));
   } else if (errors.length === 0) {
-    console.log("\nConversion completed successfully!");
+    console.log(picocolors.green("\n✓ Conversion completed successfully!"));
   }
 }

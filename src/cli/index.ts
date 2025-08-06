@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
+import picocolors from "picocolors";
 import { version } from "../../package.json" assert { type: "json" };
 import { validateCLIOptions } from "./options.js";
 import { syncCommands } from "./sync.js";
@@ -46,25 +47,25 @@ program
       // オプションの検証
       const validationErrors = validateCLIOptions(syncOptions);
       if (validationErrors.length > 0) {
-        console.error("Validation errors:");
+        console.error(picocolors.red(picocolors.bold("Validation errors:")));
         for (const error of validationErrors) {
-          console.error(`  - ${error}`);
+          console.error(picocolors.red(`  ✗ ${error}`));
         }
-        console.error("\nUse --help for usage information.");
+        console.error(picocolors.dim("\nUse --help for usage information."));
         process.exit(1);
       }
 
       await syncCommands(syncOptions);
     } catch (error) {
       if (error instanceof Error) {
-        console.error("Error:", error.message);
+        console.error(picocolors.red(picocolors.bold("Error:")), picocolors.red(error.message));
 
         // デバッグ情報を表示（開発時）
         if (process.env.NODE_ENV === "development") {
-          console.error("Stack trace:", error.stack);
+          console.error(picocolors.gray("Stack trace:"), error.stack);
         }
       } else {
-        console.error("Unknown error:", String(error));
+        console.error(picocolors.red(picocolors.bold("Unknown error:")), picocolors.red(String(error)));
       }
       process.exit(1);
     }
