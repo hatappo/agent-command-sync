@@ -5,7 +5,8 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "agent-slash-sync": "./bin/agent-slash-sync"
+    "agent-slash-sync": "./bin/agent-slash-sync",
+    "assync": "./bin/agent-slash-sync"
   },
   "scripts": {
     "build": "vite build",

@@ -13,12 +13,18 @@ npm install -g agent-slash-sync
 ```bash
 # Convert Claude Code → Gemini CLI
 agent-slash-sync -c c2g
+# or use short form
+assync -c c2g
 
 # Convert Gemini CLI → Claude Code
 agent-slash-sync -c g2c
+# or use short form
+assync -c g2c
 
 # Preview changes without applying
 agent-slash-sync -d -c c2g
+# or use short form
+assync -d -c c2g
 ```
 
 ## Options
