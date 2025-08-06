@@ -16,7 +16,17 @@
     "lint:fix": "biome check --apply .",
     "lint:tsc": "tsc --noEmit",
     "format": "biome format --write .",
-    "prepublishOnly": "npm run build"
+    "check": "npm run lint && npm run lint:tsc && npm run test",
+    "prepublishOnly": "npm run check && npm run build",
+    "preversion": "npm run check",
+    "version": "npm run format && git add -A",
+    "postversion": "git push && git push --tags",
+    "release:patch": "npm version patch && npm publish",
+    "release:minor": "npm version minor && npm publish",
+    "release:major": "npm version major && npm publish",
+    "release:dry": "npm pack --dry-run",
+    "npm:login": "npm login",
+    "npm:whoami": "npm whoami"
   },
   "files": ["dist", "bin"],
   "exports": {
@@ -26,8 +36,16 @@
     }
   },
   "keywords": ["claude-code", "gemini-cli", "slash-commands", "converter", "cli"],
-  "author": "",
+  "author": "hatappo",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hatappo/agent-slash-sync.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hatappo/agent-slash-sync/issues"
+  },
+  "homepage": "https://github.com/hatappo/agent-slash-sync#readme",
   "engines": {
     "node": ">=18.0.0"
   },

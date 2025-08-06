@@ -42,3 +42,6 @@ pids
 # Temporary folders
 tmp/
 temp/
+
+# npm packages
+*.tgz

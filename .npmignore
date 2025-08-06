@@ -1,0 +1,42 @@
+# Source files (TypeScript)
+src/
+tests/
+
+# Development files
+.vscode/
+.github/
+.gitignore
+.npmignore
+
+# Test configuration
+vitest.config.ts
+vite.config.ts
+coverage/
+
+# TypeScript config (only needed for development)
+tsconfig.json
+
+# Biome config (only needed for development)
+biome.json
+
+# Documentation files for development
+CLAUDE.md
+CLAUDE.local.md
+.claude/settings.local.json
+GEMINI.md
+.kiro/
+docs/
+.notes/
+
+# Temporary files
+tmp/
+*.log
+.DS_Store
+
+# Node modules (automatically excluded)
+node_modules/
+
+# Lock files (package-lock.json is needed for reproducible installs)
+# package-lock.json
+
+tmp.*
