@@ -3,7 +3,7 @@
 [![npm version](https://badge.fury.io/js/agent-slash-sync.svg)](https://www.npmjs.com/package/agent-slash-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Convert Custom Slash Commands between Claude Code and Gemini CLI with colorful output.
+Convert and sync Custom Slash Commands between Claude Code and Gemini CLI with intuitive visual feedback.
 
 ## Installation
 
