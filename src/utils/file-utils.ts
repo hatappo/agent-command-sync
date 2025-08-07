@@ -105,6 +105,7 @@ export function getBaseName(filePath: string): string {
 
 /**
  * コマンドディレクトリの設定を取得
+ * claudeDir/geminiDirにはベースディレクトリを指定し、/commandsは自動的に追加される
  */
 export function getCommandDirectories(claudeDir?: string, geminiDir?: string): CommandDirectories {
   const homeDir = homedir();
@@ -113,11 +114,11 @@ export function getCommandDirectories(claudeDir?: string, geminiDir?: string): C
   return {
     claude: {
       project: join(currentDir, ".claude", "commands"),
-      user: claudeDir ? resolvePath(claudeDir) : join(homeDir, ".claude", "commands"),
+      user: claudeDir ? join(resolvePath(claudeDir), "commands") : join(homeDir, ".claude", "commands"),
     },
     gemini: {
       project: join(currentDir, ".gemini", "commands"),
-      user: geminiDir ? resolvePath(geminiDir) : join(homeDir, ".gemini", "commands"),
+      user: geminiDir ? join(resolvePath(geminiDir), "commands") : join(homeDir, ".gemini", "commands"),
     },
   };
 }

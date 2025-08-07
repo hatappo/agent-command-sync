@@ -21,8 +21,8 @@ program
   .option("-f, --file <filename>", "Convert only the specified command file (without extension)")
   .option("-d, --dry-run", "Display a list of changes without applying them", false)
   .option("-v, --verbose", "Show detailed debug information", false)
-  .option("--claude-dir <path>", "Claude commands directory (default: ~/.claude/commands)")
-  .option("--gemini-dir <path>", "Gemini commands directory (default: ~/.gemini/commands)")
+  .option("--claude-dir <path>", "Claude base directory (default: ~/.claude)")
+  .option("--gemini-dir <path>", "Gemini base directory (default: ~/.gemini)")
   .action(async (options) => {
     try {
       // オプションを整理
@@ -82,8 +82,8 @@ program.on("--help", () => {
   console.log("  $ agent-slash-sync --convert g2c --no-overwrite     # Skip existing files");
   console.log("  $ agent-slash-sync --convert c2g --sync-delete      # Delete orphaned files");
   console.log("  $ agent-slash-sync --convert c2g --verbose          # Show detailed debug information");
-  console.log("  $ agent-slash-sync --convert c2g --claude-dir ~/my-claude # Use custom Claude directory");
-  console.log("  $ agent-slash-sync --convert g2c --gemini-dir ~/my-gemini # Use custom Gemini directory");
+  console.log("  $ agent-slash-sync --convert c2g --claude-dir ~/my-claude # Use custom Claude base directory");
+  console.log("  $ agent-slash-sync --convert g2c --gemini-dir ~/my-gemini # Use custom Gemini base directory");
 });
 
 program.parse();

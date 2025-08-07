@@ -55,6 +55,20 @@ export function validateCLIOptions(options: Partial<CLIOptions>): string[] {
     }
   }
 
+  // claudeDir オプションの検証
+  if (options.claudeDir?.endsWith("/commands")) {
+    errors.push(
+      "--claude-dir should point to the base Claude directory (e.g., ~/.claude), not the commands subdirectory. The '/commands' suffix will be added automatically. (Changed in v1.2.0)",
+    );
+  }
+
+  // geminiDir オプションの検証
+  if (options.geminiDir?.endsWith("/commands")) {
+    errors.push(
+      "--gemini-dir should point to the base Gemini directory (e.g., ~/.gemini), not the commands subdirectory. The '/commands' suffix will be added automatically. (Changed in v1.2.0)",
+    );
+  }
+
   return errors;
 }
 

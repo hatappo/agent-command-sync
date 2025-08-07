@@ -55,8 +55,8 @@ assync -d -c c2g
 | `-f, --file <filename>`     | Convert specific file only (supports `.md`, `.toml` extensions) |
 | `-d, --dry-run`             | Preview changes without applying them                           |
 | `-v, --verbose`             | Show detailed debug information                                 |
-| `--claude-dir <path>`       | Claude commands directory (default: ~/.claude/commands)         |
-| `--gemini-dir <path>`       | Gemini commands directory (default: ~/.gemini/commands)         |
+| `--claude-dir <path>`       | Claude base directory (default: ~/.claude)                      |
+| `--gemini-dir <path>`       | Gemini base directory (default: ~/.gemini)                      |
 | `--no-overwrite`            | Skip existing files in target directory                         |
 | `--sync-delete`             | Delete orphaned files in target directory                       |
 | `--remove-unsupported`      | Remove fields not supported by target format                    |
@@ -73,7 +73,7 @@ assync -c g2c -f analyze-code
 # Full sync with cleanup
 assync -c c2g --sync-delete --remove-unsupported
 
-# Use custom directories
+# Use custom directories (base directories, /commands will be added automatically)
 assync -c c2g --claude-dir ~/my-claude --gemini-dir ~/my-gemini
 
 # Show verbose output for debugging

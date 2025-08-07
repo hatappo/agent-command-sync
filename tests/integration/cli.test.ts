@@ -10,14 +10,22 @@ describe("CLI Integration Tests", () => {
   let testDir: string;
   let claudeDir: string;
   let geminiDir: string;
+  let claudeBaseDir: string;
+  let geminiBaseDir: string;
 
   let originalCwd: string;
 
   beforeEach(async () => {
     originalCwd = process.cwd();
     testDir = join(tmpdir(), `agent-slash-sync-test-${Date.now()}`);
-    claudeDir = join(testDir, ".claude", "commands");
-    geminiDir = join(testDir, ".gemini", "commands");
+
+    // 新しい仕様: ベースディレクトリを指定（/commandsは自動追加される）
+    claudeBaseDir = join(testDir, ".claude");
+    geminiBaseDir = join(testDir, ".gemini");
+
+    // 実際のコマンドディレクトリ（ファイル作成用）
+    claudeDir = join(claudeBaseDir, "commands");
+    geminiDir = join(geminiBaseDir, "commands");
 
     await ensureDirectory(claudeDir);
     await ensureDirectory(geminiDir);
@@ -57,8 +65,8 @@ This is a test command with $ARGUMENTS.`;
         syncDelete: false,
         dryRun: false,
         verbose: false,
-        claudeDir,
-        geminiDir,
+        claudeDir: claudeBaseDir,
+        geminiDir: geminiBaseDir,
       };
 
       const result = await syncCommands(options);
@@ -92,8 +100,8 @@ This is a test command with $ARGUMENTS.`;
         syncDelete: false,
         dryRun: true,
         verbose: false,
-        claudeDir,
-        geminiDir,
+        claudeDir: claudeBaseDir,
+        geminiDir: geminiBaseDir,
       };
 
       const result = await syncCommands(options);
@@ -130,8 +138,8 @@ This is a test command with $ARGUMENTS.`;
         syncDelete: false,
         dryRun: false,
         verbose: false,
-        claudeDir,
-        geminiDir,
+        claudeDir: claudeBaseDir,
+        geminiDir: geminiBaseDir,
       };
 
       const result = await syncCommands(options);
@@ -167,8 +175,8 @@ Test content`;
         syncDelete: false,
         dryRun: false,
         verbose: false,
-        claudeDir,
-        geminiDir,
+        claudeDir: claudeBaseDir,
+        geminiDir: geminiBaseDir,
       };
 
       const result = await syncCommands(options);
@@ -200,8 +208,8 @@ prompt = "This is a test command with {{args}}."`;
         syncDelete: false,
         dryRun: false,
         verbose: false,
-        claudeDir,
-        geminiDir,
+        claudeDir: claudeBaseDir,
+        geminiDir: geminiBaseDir,
       };
 
       const result = await syncCommands(options);
@@ -239,8 +247,8 @@ _claude_model = "sonnet"`;
         syncDelete: false,
         dryRun: false,
         verbose: false,
-        claudeDir,
-        geminiDir,
+        claudeDir: claudeBaseDir,
+        geminiDir: geminiBaseDir,
       };
 
       const result = await syncCommands(options);
@@ -275,8 +283,8 @@ _claude_model = "sonnet"`;
         syncDelete: false,
         dryRun: false,
         verbose: false,
-        claudeDir,
-        geminiDir,
+        claudeDir: claudeBaseDir,
+        geminiDir: geminiBaseDir,
       };
 
       const result = await syncCommands(options);
@@ -309,8 +317,8 @@ Content`;
         syncDelete: false,
         dryRun: false,
         verbose: false,
-        claudeDir,
-        geminiDir,
+        claudeDir: claudeBaseDir,
+        geminiDir: geminiBaseDir,
       };
 
       const result = await syncCommands(options);

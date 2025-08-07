@@ -224,13 +224,13 @@ describe("Agent Slash Sync Tests", () => {
     it("should use custom directories when specified", async () => {
       const { getCommandDirectories } = await import("../../src/utils/file-utils.js");
 
-      const customClaudeDir = "/custom/claude/path";
-      const customGeminiDir = "/custom/gemini/path";
+      const customClaudeDir = "/custom/claude";
+      const customGeminiDir = "/custom/gemini";
 
       const directories = getCommandDirectories(customClaudeDir, customGeminiDir);
 
-      expect(directories.claude.user).toBe(customClaudeDir);
-      expect(directories.gemini.user).toBe(customGeminiDir);
+      expect(directories.claude.user).toBe("/custom/claude/commands");
+      expect(directories.gemini.user).toBe("/custom/gemini/commands");
     });
 
     it("should use default directories when custom directories not specified", async () => {
@@ -249,8 +249,8 @@ describe("Agent Slash Sync Tests", () => {
 
       const directories = getCommandDirectories("~/custom-claude", "~/custom-gemini");
 
-      expect(directories.claude.user).toBe(join(homedir(), "custom-claude"));
-      expect(directories.gemini.user).toBe(join(homedir(), "custom-gemini"));
+      expect(directories.claude.user).toBe(join(homedir(), "custom-claude", "commands"));
+      expect(directories.gemini.user).toBe(join(homedir(), "custom-gemini", "commands"));
     });
 
     it("should pass custom directories to file search functions", async () => {
