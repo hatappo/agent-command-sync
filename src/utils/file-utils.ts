@@ -168,34 +168,44 @@ export async function findFiles(directory: string, options: FileSearchOptions): 
 }
 
 /**
- * Claude Codeのコマンドファイルを検索
+ * コマンドファイルを検索する共通関数
  */
-export async function findClaudeCommands(specificFile?: string, claudeDir?: string): Promise<string[]> {
-  const directories = getCommandDirectories(claudeDir);
+async function findCommandFiles(
+  format: "claude" | "gemini",
+  specificFile?: string,
+  baseDir?: string,
+): Promise<string[]> {
+  const directories = getCommandDirectories(
+    format === "claude" ? baseDir : undefined,
+    format === "gemini" ? baseDir : undefined,
+  );
+
+  const extension = format === "claude" ? ".md" : ".toml";
+  const directory = format === "claude" ? directories.claude.user : directories.gemini.user;
+
   const searchOptions: FileSearchOptions = {
-    extensions: [".md"],
-    directories: [directories.claude.user],
+    extensions: [extension],
+    directories: [directory],
     recursive: true,
   };
 
   if (specificFile) {
     // 特定ファイルが指定された場合
-    const fileWithExt = autoCompleteExtension(specificFile, [".md"]);
+    const fileWithExt = autoCompleteExtension(specificFile, [extension]);
 
     // 複数の拡張子パターンを試行
     const possibleExtensions = [".md", ".toml"];
     const baseName = specificFile.replace(/\.(md|toml)$/, "");
 
     const possiblePaths: string[] = [];
-    const dir = directories.claude.user;
 
     // 指定されたファイル名をそのまま試行
-    possiblePaths.push(join(dir, fileWithExt));
+    possiblePaths.push(join(directory, fileWithExt));
 
     // 他の拡張子パターンも試行
     for (const ext of possibleExtensions) {
       if (!fileWithExt.endsWith(ext)) {
-        possiblePaths.push(join(dir, `${baseName}${ext}`));
+        possiblePaths.push(join(directory, `${baseName}${ext}`));
       }
     }
 
@@ -218,53 +228,17 @@ export async function findClaudeCommands(specificFile?: string, claudeDir?: stri
 }
 
 /**
+ * Claude Codeのコマンドファイルを検索
+ */
+export async function findClaudeCommands(specificFile?: string, claudeDir?: string): Promise<string[]> {
+  return findCommandFiles("claude", specificFile, claudeDir);
+}
+
+/**
  * Gemini CLIのコマンドファイルを検索
  */
 export async function findGeminiCommands(specificFile?: string, geminiDir?: string): Promise<string[]> {
-  const directories = getCommandDirectories(undefined, geminiDir);
-  const searchOptions: FileSearchOptions = {
-    extensions: [".toml"],
-    directories: [directories.gemini.user],
-    recursive: true,
-  };
-
-  if (specificFile) {
-    // 特定ファイルが指定された場合
-    const fileWithExt = autoCompleteExtension(specificFile, [".toml"]);
-
-    // 複数の拡張子パターンを試行
-    const possibleExtensions = [".toml", ".md"];
-    const baseName = specificFile.replace(/\.(toml|md)$/, "");
-
-    const possiblePaths: string[] = [];
-    const dir = directories.gemini.user;
-
-    // 指定されたファイル名をそのまま試行
-    possiblePaths.push(join(dir, fileWithExt));
-
-    // 他の拡張子パターンも試行
-    for (const ext of possibleExtensions) {
-      if (!fileWithExt.endsWith(ext)) {
-        possiblePaths.push(join(dir, `${baseName}${ext}`));
-      }
-    }
-
-    for (const path of possiblePaths) {
-      if (await fileExists(path)) {
-        return [path];
-      }
-    }
-    return [];
-  }
-
-  // 全ファイルを検索
-  const allFiles: string[] = [];
-  for (const dir of searchOptions.directories) {
-    const files = await findFiles(dir, searchOptions);
-    allFiles.push(...files);
-  }
-
-  return allFiles;
+  return findCommandFiles("gemini", specificFile, geminiDir);
 }
 
 /**

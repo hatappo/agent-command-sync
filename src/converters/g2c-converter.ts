@@ -1,11 +1,13 @@
 import type { ClaudeCommand, ConversionOptions, Converter, GeminiCommand } from "../types/index.js";
 import { ConversionError } from "../types/index.js";
+import { CLAUDE_SPECIFIC_FIELDS, FILE_EXTENSIONS } from "../utils/constants.js";
+import { convertGeminiToClaudePlaceholders } from "../utils/placeholder-utils.js";
 
 export class G2CConverter implements Converter<GeminiCommand, ClaudeCommand> {
   /**
    * Gemini CommandをClaude Commandに変換
    */
-  convert(source: GeminiCommand, options: ConversionOptions): ClaudeCommand {
+  convert(source: GeminiCommand, _options: ConversionOptions): ClaudeCommand {
     try {
       // フロントマターの構築
       const frontmatter: ClaudeCommand["frontmatter"] = {};
@@ -16,12 +18,12 @@ export class G2CConverter implements Converter<GeminiCommand, ClaudeCommand> {
       }
 
       // Claude固有フィールドの復元
-      this.restoreClaudeSpecificFields(source, frontmatter, options);
+      this.restoreClaudeSpecificFields(source, frontmatter);
 
       // 基本フィールドマッピング
       const result: ClaudeCommand = {
         frontmatter,
-        content: this.convertPrompt(source.prompt, options),
+        content: this.convertPrompt(source.prompt),
         filePath: this.convertFilePath(source.filePath),
       };
 
@@ -39,49 +41,22 @@ export class G2CConverter implements Converter<GeminiCommand, ClaudeCommand> {
   /**
    * プロンプト内容を変換（プレースホルダー変換含む）
    */
-  private convertPrompt(prompt: string, options: ConversionOptions): string {
-    let convertedContent = prompt;
-
-    // {{args}} → $ARGUMENTS の変換
-    convertedContent = this.convertArgumentPlaceholder(convertedContent);
-
-    // !{command} → !command の変換
-    convertedContent = this.convertShellCommands(convertedContent);
-
-    return convertedContent;
-  }
-
-  /**
-   * 引数プレースホルダーを変換
-   */
-  private convertArgumentPlaceholder(content: string): string {
-    return content.replace(/\{\{args\}\}/g, "$ARGUMENTS");
-  }
-
-  /**
-   * シェルコマンド構文を変換
-   */
-  private convertShellCommands(content: string): string {
-    // !{command} → !`command` の変換
-    return content.replace(/!\{([^}]+)\}/g, "!`$1`");
+  private convertPrompt(prompt: string): string {
+    return convertGeminiToClaudePlaceholders(prompt);
   }
 
   /**
    * ファイルパスを変換（.toml → .md）
    */
   private convertFilePath(geminiPath: string): string {
-    return geminiPath.replace(/\.toml$/, ".md");
+    return geminiPath.replace(/\.toml$/, FILE_EXTENSIONS.CLAUDE);
   }
 
   /**
    * Claude固有フィールドを復元
    */
-  private restoreClaudeSpecificFields(
-    source: GeminiCommand,
-    frontmatter: ClaudeCommand["frontmatter"],
-    options: ConversionOptions,
-  ): void {
-    const claudeSpecificFields = ["allowed-tools", "argument-hint", "model"];
+  private restoreClaudeSpecificFields(source: GeminiCommand, frontmatter: ClaudeCommand["frontmatter"]): void {
+    const claudeSpecificFields = CLAUDE_SPECIFIC_FIELDS;
 
     // Claude固有フィールドをそのまま復元
     for (const field of claudeSpecificFields) {

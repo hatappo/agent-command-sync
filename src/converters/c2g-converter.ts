@@ -1,5 +1,7 @@
 import type { ClaudeCommand, ConversionOptions, Converter, GeminiCommand } from "../types/index.js";
 import { ConversionError } from "../types/index.js";
+import { CLAUDE_SPECIFIC_FIELDS, FILE_EXTENSIONS } from "../utils/constants.js";
+import { convertClaudeToGeminiPlaceholders } from "../utils/placeholder-utils.js";
 
 export class C2GConverter implements Converter<ClaudeCommand, GeminiCommand> {
   /**
@@ -9,7 +11,7 @@ export class C2GConverter implements Converter<ClaudeCommand, GeminiCommand> {
     try {
       // 基本フィールドマッピング
       const result: GeminiCommand = {
-        prompt: this.convertPrompt(source.content, options),
+        prompt: this.convertPrompt(source.content),
         filePath: this.convertFilePath(source.filePath),
       };
 
@@ -36,45 +38,15 @@ export class C2GConverter implements Converter<ClaudeCommand, GeminiCommand> {
   /**
    * プロンプト内容を変換（プレースホルダー変換含む）
    */
-  private convertPrompt(content: string, options: ConversionOptions): string {
-    let convertedContent = content;
-
-    // $ARGUMENTS → {{args}} の変換
-    convertedContent = this.convertArgumentPlaceholder(convertedContent);
-
-    // !command → !{command} の変換
-    convertedContent = this.convertShellCommands(convertedContent);
-
-    return convertedContent;
-  }
-
-  /**
-   * 引数プレースホルダーを変換
-   */
-  private convertArgumentPlaceholder(content: string): string {
-    return content.replace(/\$ARGUMENTS/g, "{{args}}");
-  }
-
-  /**
-   * シェルコマンド構文を変換
-   */
-  private convertShellCommands(content: string): string {
-    let convertedContent = content;
-
-    // !`command` → !{command} の変換（バッククォート形式）
-    convertedContent = convertedContent.replace(/!`([^`]+)`/g, "!{$1}");
-
-    // 行頭の !command → !{command} の変換
-    convertedContent = convertedContent.replace(/^!\s*([^\s{][^\n]*)/gm, "!{$1}");
-
-    return convertedContent;
+  private convertPrompt(content: string): string {
+    return convertClaudeToGeminiPlaceholders(content);
   }
 
   /**
    * ファイルパスを変換（.md → .toml）
    */
   private convertFilePath(claudePath: string): string {
-    return claudePath.replace(/\.md$/, ".toml");
+    return claudePath.replace(/\.md$/, FILE_EXTENSIONS.GEMINI);
   }
 
   /**
@@ -84,7 +56,7 @@ export class C2GConverter implements Converter<ClaudeCommand, GeminiCommand> {
     frontmatter: ClaudeCommand["frontmatter"],
     options: ConversionOptions,
   ): Record<string, unknown> {
-    const claudeSpecificFields = ["allowed-tools", "argument-hint", "model"];
+    const claudeSpecificFields = CLAUDE_SPECIFIC_FIELDS;
     const result: Record<string, unknown> = {};
 
     for (const field of claudeSpecificFields) {

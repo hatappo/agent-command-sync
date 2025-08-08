@@ -279,6 +279,16 @@ async function handleSyncDelete(
 }
 
 /**
+ * 操作タイプごとのスタイル定義
+ */
+const operationStyles = {
+  A: { prefix: picocolors.green("[A]"), color: picocolors.green },
+  M: { prefix: picocolors.yellow("[M]"), color: picocolors.yellow },
+  D: { prefix: picocolors.red("[D]"), color: picocolors.red },
+  "-": { prefix: picocolors.gray("[-]"), color: picocolors.gray },
+} as const;
+
+/**
  * 結果を表示
  */
 function displayResults(operations: FileOperation[], errors: Error[], isDryRun: boolean): void {
@@ -291,32 +301,12 @@ function displayResults(operations: FileOperation[], errors: Error[], isDryRun: 
 
   // 操作を表示
   for (const op of operations) {
-    let prefix: string;
-    let color: (str: string) => string;
+    const style = operationStyles[op.type] || {
+      prefix: `[${op.type}]`,
+      color: (s: string) => s,
+    };
 
-    switch (op.type) {
-      case "A":
-        prefix = picocolors.green("[A]");
-        color = picocolors.green;
-        break;
-      case "M":
-        prefix = picocolors.yellow("[M]");
-        color = picocolors.yellow;
-        break;
-      case "D":
-        prefix = picocolors.red("[D]");
-        color = picocolors.red;
-        break;
-      case "-":
-        prefix = picocolors.gray("[-]");
-        color = picocolors.gray;
-        break;
-      default:
-        prefix = `[${op.type}]`;
-        color = (s: string) => s;
-    }
-
-    console.log(`${prefix} ${op.filePath} - ${color(op.description)}`);
+    console.log(`${style.prefix} ${op.filePath} - ${style.color(op.description)}`);
   }
 
   // 統計を表示
