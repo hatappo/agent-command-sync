@@ -1,24 +1,32 @@
 import picocolors from "picocolors";
-import { C2GConverter } from "../converters/c2g-converter.js";
-import { G2CConverter } from "../converters/g2c-converter.js";
+import { ClaudeToIRConverter } from "../converters/claude-to-ir.js";
+import { CodexToIRConverter } from "../converters/codex-to-ir.js";
+import { GeminiToIRConverter } from "../converters/gemini-to-ir.js";
+import { IRToClaudeConverter } from "../converters/ir-to-claude.js";
+import { IRToCodexConverter } from "../converters/ir-to-codex.js";
+import { IRToGeminiConverter } from "../converters/ir-to-gemini.js";
 import { ClaudeParser } from "../parsers/claude-parser.js";
+import { CodexParser } from "../parsers/codex-parser.js";
 import { GeminiParser } from "../parsers/gemini-parser.js";
-import type { ConversionResult, FileOperation } from "../types/index.js";
+import type { ConversionResult, FileOperation, IntermediateRepresentation } from "../types/index.js";
+import { CLAUDE_SPECIFIC_FIELDS } from "../utils/constants.js";
 import {
   deleteFile,
   fileExists,
   findClaudeCommands,
+  findCodexCommands,
   findGeminiCommands,
   getCommandDirectories,
   getCommandName,
   getFilePathFromCommandName,
   writeFile,
 } from "../utils/file-utils.js";
+import { convertClaudeToGeminiPlaceholders, convertGeminiToClaudePlaceholders } from "../utils/placeholder-utils.js";
 import type { CLIOptions } from "./options.js";
 import { cliOptionsToConversionOptions } from "./options.js";
 
 /**
- * コマンド同期のメイン関数
+ * Main function for command synchronization
  */
 export async function syncCommands(options: CLIOptions): Promise<ConversionResult> {
   const conversionOptions = cliOptionsToConversionOptions(options);
@@ -31,15 +39,13 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
   let skipped = 0;
 
   try {
-    console.log(
-      picocolors.cyan(`Starting ${options.direction === "c2g" ? "Claude → Gemini" : "Gemini → Claude"} conversion...`),
-    );
+    console.log(picocolors.cyan(`Starting ${options.source} → ${options.destination} conversion...`));
 
-    if (options.dryRun) {
-      console.log(picocolors.yellow("DRY RUN MODE - No files will be modified"));
+    if (options.noop) {
+      console.log(picocolors.yellow("NOOP MODE - No files will be modified"));
     }
 
-    // ソースファイルを検索
+    // Search for source files
     const sourceFiles = await getSourceFiles(options);
     console.log(picocolors.dim(`Found ${sourceFiles.length} source file(s)`));
 
@@ -53,14 +59,14 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
       };
     }
 
-    // 各ファイルを変換
+    // Convert each file
     for (const sourceFile of sourceFiles) {
       try {
         const result = await convertSingleFile(sourceFile, conversionOptions);
         operations.push(...result.operations);
         errors.push(...result.errors);
 
-        // 統計を更新
+        // Update statistics
         for (const op of result.operations) {
           switch (op.type) {
             case "A":
@@ -84,7 +90,7 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
       }
     }
 
-    // sync-deleteオプションの処理
+    // Handle sync-delete option
     if (options.syncDelete) {
       const deleteResult = await handleSyncDelete(options, sourceFiles);
       operations.push(...deleteResult.operations);
@@ -92,8 +98,8 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
       deleted += deleteResult.operations.filter((op) => op.type === "D").length;
     }
 
-    // 結果を表示
-    displayResults(operations, errors, options.dryRun);
+    // Display results
+    displayResults(operations, errors, options.noop);
 
     return {
       success: errors.length === 0,
@@ -116,17 +122,20 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
 }
 
 /**
- * ソースファイルを取得
+ * Get source files
  */
 async function getSourceFiles(options: CLIOptions): Promise<string[]> {
-  if (options.direction === "c2g") {
+  if (options.source === "claude") {
     return await findClaudeCommands(options.file, options.claudeDir);
   }
-  return await findGeminiCommands(options.file, options.geminiDir);
+  if (options.source === "gemini") {
+    return await findGeminiCommands(options.file, options.geminiDir);
+  }
+  return await findCodexCommands(options.file, options.codexDir);
 }
 
 /**
- * 単一ファイルを変換
+ * Convert a single file
  */
 async function convertSingleFile(
   sourceFile: string,
@@ -136,51 +145,96 @@ async function convertSingleFile(
   const errors: Error[] = [];
 
   try {
-    if (options.direction === "c2g") {
-      // Claude → Gemini変換
+    // Convert to intermediate representation
+    let ir: IntermediateRepresentation;
+
+    if (options.source === "claude") {
       const parser = new ClaudeParser();
-      const converter = new C2GConverter();
-      const geminiParser = new GeminiParser();
-
+      const toIRConverter = new ClaudeToIRConverter();
       const claudeCommand = await parser.parse(sourceFile);
-      const geminiCommand = converter.convert(claudeCommand, options);
-
-      // ターゲットファイルパスを決定（user ディレクトリのみ対象）
-      const directories = getCommandDirectories(options.claudeDir, options.geminiDir);
-
-      if (!sourceFile.startsWith(directories.claude.user)) {
-        throw new Error(`Source file ${sourceFile} is not in the Claude user commands directory`);
-      }
-
-      const commandName = getCommandName(sourceFile, directories.claude.user);
-      const targetFile = getFilePathFromCommandName(commandName, directories.gemini.user, ".toml");
-
-      // ファイル操作を実行
-      const operation = await handleFileOperation(targetFile, geminiParser.stringify(geminiCommand), options);
-      operations.push(operation);
-    } else {
-      // Gemini → Claude変換
+      ir = toIRConverter.toIntermediate(claudeCommand);
+    } else if (options.source === "gemini") {
       const parser = new GeminiParser();
-      const converter = new G2CConverter();
-      const claudeParser = new ClaudeParser();
-
+      const toIRConverter = new GeminiToIRConverter();
       const geminiCommand = await parser.parse(sourceFile);
-      const claudeCommand = converter.convert(geminiCommand, options);
-
-      // ターゲットファイルパスを決定（user ディレクトリのみ対象）
-      const directories = getCommandDirectories(options.claudeDir, options.geminiDir);
-
-      if (!sourceFile.startsWith(directories.gemini.user)) {
-        throw new Error(`Source file ${sourceFile} is not in the Gemini user commands directory`);
-      }
-
-      const commandName = getCommandName(sourceFile, directories.gemini.user);
-      const targetFile = getFilePathFromCommandName(commandName, directories.claude.user, ".md");
-
-      // ファイル操作を実行
-      const operation = await handleFileOperation(targetFile, claudeParser.stringify(claudeCommand), options);
-      operations.push(operation);
+      ir = toIRConverter.toIntermediate(geminiCommand);
+    } else {
+      const parser = new CodexParser();
+      const toIRConverter = new CodexToIRConverter();
+      const codexCommand = await parser.parse(sourceFile);
+      ir = toIRConverter.toIntermediate(codexCommand);
     }
+
+    // Set target type in metadata
+    ir.meta.targetType = options.destination;
+
+    // Placeholder conversion
+    if ((options.source === "claude" || options.source === "codex") && options.destination === "gemini") {
+      // Claude/Codex → Gemini: $ARGUMENTS → {{args}}
+      ir.body = convertClaudeToGeminiPlaceholders(ir.body);
+    } else if (options.source === "gemini" && (options.destination === "claude" || options.destination === "codex")) {
+      // Gemini → Claude/Codex: {{args}} → $ARGUMENTS
+      ir.body = convertGeminiToClaudePlaceholders(ir.body);
+    }
+    // Note: Claude ↔ Codex both use $ARGUMENTS, so no conversion needed
+
+    // Remove Claude-specific fields (if necessary)
+    // When removeUnsupported is specified for conversion to Gemini or Codex
+    if (options.removeUnsupported && (options.destination === "gemini" || options.destination === "codex")) {
+      for (const field of CLAUDE_SPECIFIC_FIELDS) {
+        delete ir.header[field];
+      }
+    }
+
+    // Convert to target format
+    let targetContent: string;
+    let targetExt: string;
+
+    if (options.destination === "claude") {
+      const fromIRConverter = new IRToClaudeConverter();
+      const claudeParser = new ClaudeParser();
+      const claudeCommand = fromIRConverter.fromIntermediate(ir);
+      targetContent = claudeParser.stringify(claudeCommand);
+      targetExt = ".md";
+    } else if (options.destination === "gemini") {
+      const fromIRConverter = new IRToGeminiConverter();
+      const geminiParser = new GeminiParser();
+      const geminiCommand = fromIRConverter.fromIntermediate(ir);
+      targetContent = geminiParser.stringify(geminiCommand);
+      targetExt = ".toml";
+    } else {
+      const fromIRConverter = new IRToCodexConverter();
+      const codexParser = new CodexParser();
+      const codexCommand = fromIRConverter.fromIntermediate(ir);
+      targetContent = codexParser.stringify(codexCommand);
+      targetExt = ".md";
+    }
+
+    // Determine target file path (user directory only)
+    const directories = getCommandDirectories(options.claudeDir, options.geminiDir, options.codexDir);
+    const sourceDir =
+      options.source === "claude"
+        ? directories.claude.user
+        : options.source === "gemini"
+          ? directories.gemini.user
+          : directories.codex.user;
+    const targetDir =
+      options.destination === "claude"
+        ? directories.claude.user
+        : options.destination === "gemini"
+          ? directories.gemini.user
+          : directories.codex.user;
+
+    if (!sourceFile.startsWith(sourceDir)) {
+      throw new Error(`Source file ${sourceFile} is not in the ${options.source} user commands directory`);
+    }
+
+    const commandName = getCommandName(sourceFile, sourceDir);
+    const targetFile = getFilePathFromCommandName(commandName, targetDir, targetExt);
+
+    // Execute file operation
+    const operation = await handleFileOperation(targetFile, targetContent, options);
+    operations.push(operation);
   } catch (error) {
     errors.push(error instanceof Error ? error : new Error(String(error)));
   }
@@ -189,12 +243,12 @@ async function convertSingleFile(
 }
 
 /**
- * ファイル操作を処理
+ * Handle file operation
  */
 async function handleFileOperation(targetFile: string, content: string, options: CLIOptions): Promise<FileOperation> {
   const exists = await fileExists(targetFile);
 
-  // no-overwriteオプションのチェック
+  // Check no-overwrite option
   if (exists && options.noOverwrite) {
     return {
       type: "-",
@@ -203,8 +257,8 @@ async function handleFileOperation(targetFile: string, content: string, options:
     };
   }
 
-  // ドライランモードの場合
-  if (options.dryRun) {
+  // In no-op mode
+  if (options.noop) {
     return {
       type: exists ? "M" : "A",
       filePath: targetFile,
@@ -212,7 +266,7 @@ async function handleFileOperation(targetFile: string, content: string, options:
     };
   }
 
-  // 実際のファイル操作
+  // Actual file operation
   await writeFile(targetFile, content);
 
   return {
@@ -223,7 +277,7 @@ async function handleFileOperation(targetFile: string, content: string, options:
 }
 
 /**
- * sync-deleteオプションの処理
+ * Handle sync-delete option
  */
 async function handleSyncDelete(
   options: CLIOptions,
@@ -233,29 +287,41 @@ async function handleSyncDelete(
   const errors: Error[] = [];
 
   try {
-    // ターゲットファイルを取得
+    // Get target files
     const targetFiles =
-      options.direction === "c2g"
-        ? await findGeminiCommands(undefined, options.geminiDir)
-        : await findClaudeCommands(undefined, options.claudeDir);
+      options.destination === "claude"
+        ? await findClaudeCommands(undefined, options.claudeDir)
+        : options.destination === "gemini"
+          ? await findGeminiCommands(undefined, options.geminiDir)
+          : await findCodexCommands(undefined, options.codexDir);
 
-    // ソースに対応するターゲットファイル名を生成（user ディレクトリのみ）
-    const directories = getCommandDirectories(options.claudeDir, options.geminiDir);
+    // Generate target file names corresponding to source (user directory only)
+    const directories = getCommandDirectories(options.claudeDir, options.geminiDir, options.codexDir);
+    const sourceDir =
+      options.source === "claude"
+        ? directories.claude.user
+        : options.source === "gemini"
+          ? directories.gemini.user
+          : directories.codex.user;
+    const targetDir =
+      options.destination === "claude"
+        ? directories.claude.user
+        : options.destination === "gemini"
+          ? directories.gemini.user
+          : directories.codex.user;
+    const targetExt = options.destination === "claude" || options.destination === "codex" ? ".md" : ".toml";
+
     const expectedTargetFiles = new Set(
       sourceFiles.map((sourceFile) => {
-        const sourceDir = options.direction === "c2g" ? directories.claude.user : directories.gemini.user;
-        const targetDir = options.direction === "c2g" ? directories.gemini.user : directories.claude.user;
-        const targetExt = options.direction === "c2g" ? ".toml" : ".md";
-
         const commandName = getCommandName(sourceFile, sourceDir);
         return getFilePathFromCommandName(commandName, targetDir, targetExt);
       }),
     );
 
-    // 不要なターゲットファイルを削除
+    // Delete unnecessary target files
     for (const targetFile of targetFiles) {
       if (!expectedTargetFiles.has(targetFile)) {
-        if (options.dryRun) {
+        if (options.noop) {
           operations.push({
             type: "D",
             filePath: targetFile,
@@ -279,7 +345,7 @@ async function handleSyncDelete(
 }
 
 /**
- * 操作タイプごとのスタイル定義
+ * Style definition for each operation type
  */
 const operationStyles = {
   A: { prefix: picocolors.green("[A]"), color: picocolors.green },
@@ -289,9 +355,9 @@ const operationStyles = {
 } as const;
 
 /**
- * 結果を表示
+ * Display results
  */
-function displayResults(operations: FileOperation[], errors: Error[], isDryRun: boolean): void {
+function displayResults(operations: FileOperation[], errors: Error[], isNoop: boolean): void {
   console.log(picocolors.bold("\nResults:"));
 
   if (operations.length === 0) {
@@ -299,7 +365,7 @@ function displayResults(operations: FileOperation[], errors: Error[], isDryRun: 
     return;
   }
 
-  // 操作を表示
+  // Display operations
   for (const op of operations) {
     const style = operationStyles[op.type] || {
       prefix: `[${op.type}]`,
@@ -309,7 +375,7 @@ function displayResults(operations: FileOperation[], errors: Error[], isDryRun: 
     console.log(`${style.prefix} ${op.filePath} - ${style.color(op.description)}`);
   }
 
-  // 統計を表示
+  // Display statistics
   const stats = {
     A: operations.filter((op) => op.type === "A").length,
     M: operations.filter((op) => op.type === "M").length,
@@ -323,7 +389,7 @@ function displayResults(operations: FileOperation[], errors: Error[], isDryRun: 
   if (stats.D > 0) console.log(`  ${picocolors.red("Deleted:")} ${stats.D}`);
   if (stats["-"] > 0) console.log(`  ${picocolors.gray("Skipped:")} ${stats["-"]}`);
 
-  // エラーを表示
+  // Display errors
   if (errors.length > 0) {
     console.log(picocolors.red(picocolors.bold("\nErrors:")));
     errors.forEach((error, index) => {
@@ -331,8 +397,8 @@ function displayResults(operations: FileOperation[], errors: Error[], isDryRun: 
     });
   }
 
-  if (isDryRun) {
-    console.log(picocolors.cyan("\nThis was a dry run. Use without --dry-run to apply changes."));
+  if (isNoop) {
+    console.log(picocolors.cyan("\nThis was a no-op run. Use without --noop to apply changes."));
   } else if (errors.length === 0) {
     console.log(picocolors.green("\n✓ Conversion completed successfully!"));
   }

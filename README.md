@@ -2,45 +2,43 @@
 
 --------------------------------------------------------------------------------
 
-# agent-slash-sync
+# agent-command-sync
 
-[![npm version](https://badge.fury.io/js/agent-slash-sync.svg)](https://www.npmjs.com/package/agent-slash-sync)
+[![npm version](https://badge.fury.io/js/agent-command-sync.svg)](https://www.npmjs.com/package/agent-command-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Bidirectionally convert and sync Custom Slash Commands between Claude Code and Gemini CLI with intuitive visual feedback.
+Bidirectionally convert and sync Custom Slash Commands between Claude Code, Gemini CLI, and Codex CLI with intuitive visual feedback.
+
+## CHANGELOG
+
+[CHANGELOG.txt](CHANGELOG.txt)
 
 ## Installation
 
 ```bash
-npm install -g agent-slash-sync
+npm install -g agent-command-sync
 ```
 
 ## Quick Start
 
 ```bash
 # Convert Claude Code → Gemini CLI
-agent-slash-sync -c c2g
-# or use short form
-assync -c c2g
+acsync -s claude -d gemini
 
 # Convert Gemini CLI → Claude Code
-agent-slash-sync -c g2c
-# or use short form
-assync -c g2c
+acsync -s gemini -d claude
 
 # Preview changes without applying
-agent-slash-sync -d -c c2g
-# or use short form
-assync -d -c c2g
+acsync -n -s claude -d gemini
 ```
 
 ## Screenshots
 
 ### Usage Example
-![agent-slash-sync usage](docs/assync-usage.png)
+![agent-command-sync usage](docs/acsync-usage.png)
 
 ### Conversion Example
-![agent-slash-sync example](docs/assync-example.png)
+![agent-command-sync example](docs/acsync-example.png)
 
 ## Features
 
@@ -48,56 +46,65 @@ assync -d -c c2g
 - **Fast Conversion** - Efficiently sync commands between Claude Code and Gemini CLI
 - **Bidirectional** - Convert in both directions (Claude ↔ Gemini)
 - **Safe by Default** - Preview changes with dry-run mode before applying
-- **Short Command** - Use `assync` instead of `agent-slash-sync`
+- **Short Command** - Use `acsync` instead of `agent-command-sync`
 - **Selective Sync** - Convert specific files or all commands at once
 
 ## Options
 
-| Option                      | Description                                                     |
-| --------------------------- | --------------------------------------------------------------- |
-| `-c, --convert <direction>` | **Required.** Conversion direction: `c2g` or `g2c`              |
-| `-f, --file <filename>`     | Convert specific file only (supports `.md`, `.toml` extensions) |
-| `-d, --dry-run`             | Preview changes without applying them                           |
-| `-v, --verbose`             | Show detailed debug information                                 |
-| `--claude-dir <path>`       | Claude base directory (default: ~/.claude)                      |
-| `--gemini-dir <path>`       | Gemini base directory (default: ~/.gemini)                      |
-| `--no-overwrite`            | Skip existing files in target directory                         |
-| `--sync-delete`             | Delete orphaned files in target directory                       |
-| `--remove-unsupported`      | Remove fields not supported by target format                    |
+| Option                      | Description                                                           |
+| --------------------------- | --------------------------------------------------------------------- |
+| `-s, --src <product>`       | **Required.** Source product: `claude`, `gemini`, or `codex`         |
+| `-d, --dest <product>`      | **Required.** Destination product: `claude`, `gemini`, or `codex`    |
+| `-f, --file <filename>`     | Convert specific file only (supports `.md`, `.toml` extensions)      |
+| `-n, --noop`                | Preview changes without applying them                                 |
+| `-v, --verbose`             | Show detailed debug information                                       |
+| `--claude-dir <path>`       | Claude base directory (default: ~/.claude)                            |
+| `--gemini-dir <path>`       | Gemini base directory (default: ~/.gemini)                            |
+| `--codex-dir <path>`        | Codex base directory (default: ~/.codex)                              |
+| `--no-overwrite`            | Skip existing files in target directory                               |
+| `--sync-delete`             | Delete orphaned files in target directory                             |
+| `--remove-unsupported`      | Remove fields not supported by target format                          |
 
 ## Examples
 
 ```bash
 # Convert all commands with preview
-assync -d -c c2g
+acsync -n -s claude -d gemini
 
 # Convert specific file
-assync -c g2c -f analyze-code
+acsync -s gemini -d claude -f analyze-code
 
 # Full sync with cleanup
-assync -c c2g --sync-delete --remove-unsupported
+acsync -s claude -d gemini --sync-delete --remove-unsupported
 
 # Use custom directories (base directories, /commands will be added automatically)
-assync -c c2g --claude-dir ~/my-claude --gemini-dir ~/my-gemini
+acsync -s claude -d gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
 
 # Show verbose output for debugging
-assync -c c2g -v
+acsync -s claude -d gemini -v
 ```
 
 ## File Locations
 
 - **Claude Code**: `~/.claude/commands/*.md`
 - **Gemini CLI**: `~/.gemini/commands/*.toml`
+- **Codex CLI**: `~/.codex/prompts/*.md`
 
 ## Format Conversion
 
-| Claude Code                               | Gemini CLI    | Notes                                        |
-| ----------------------------------------- | ------------- | -------------------------------------------- |
-| Markdown content                          | `prompt`      | Main command content                         |
-| Frontmatter `description`                 | `description` | Command description                          |
-| `$ARGUMENTS`                              | `{{args}}`    | Argument placeholder                         |
-| `!command`                                | `!{command}`  | Shell command syntax                         |
-| `allowed-tools`, `argument-hint`, `model` | -             | Claude-specific (use `--remove-unsupported`) |
+| Claude Code                               | Gemini CLI    | Codex CLI     | Notes                                        |
+| ----------------------------------------- | ------------- | ------------- | -------------------------------------------- |
+| Markdown                                  | `prompt`      | Markdown      | Main command content                         |
+| Frontmatter `description`                 | `description` | -             | Command description                          |
+| `allowed-tools`, `argument-hint`, `model` | -             | -             | Claude-specific (use `--remove-unsupported`) |
+| `$ARGUMENTS`                              | `{{args}}`    | `$ARGUMENTS`  | Argument placeholder                         |
+| `!command`                                | `!{command}`  | -             | Shell command syntax                         |
+
+### Official Documents
+
+- [Slash commands - Claude Docs](https://docs.claude.com/en/docs/claude-code/slash-commands)
+- [gemini-cli/docs/cli/custom-commands.md at main · google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/custom-commands.md)
+- [codex/docs/prompts.md at main · openai/codex](https://github.com/openai/codex/blob/main/docs/prompts.md)
 
 ## Status Indicators
 

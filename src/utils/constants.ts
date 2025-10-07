@@ -1,24 +1,24 @@
 /**
- * 共通定数の定義
+ * Common constant definitions
  */
 
 /**
- * Claude Code固有のフィールド名
+ * Claude Code specific field names
  */
 export const CLAUDE_SPECIFIC_FIELDS = ["allowed-tools", "argument-hint", "model"] as const;
 export type ClaudeSpecificField = (typeof CLAUDE_SPECIFIC_FIELDS)[number];
 
 /**
- * プレースホルダー定数
+ * Placeholder constants
  */
 export const PLACEHOLDERS = {
-  // Claude形式
+  // Claude format
   CLAUDE: {
     ARGUMENTS: "$ARGUMENTS",
     SHELL_COMMAND_BACKTICK: /!`([^`]+)`/g,
     SHELL_COMMAND_LINE_START: /^!\s*([^\s{][^\n]*)/gm,
   },
-  // Gemini形式
+  // Gemini format
   GEMINI: {
     ARGUMENTS: "{{args}}",
     SHELL_COMMAND: /!\{([^}]+)\}/g,
@@ -26,7 +26,7 @@ export const PLACEHOLDERS = {
 } as const;
 
 /**
- * ファイル拡張子
+ * File extensions
  */
 export const FILE_EXTENSIONS = {
   CLAUDE: ".md",
@@ -34,7 +34,7 @@ export const FILE_EXTENSIONS = {
 } as const;
 
 /**
- * サポートされるモデル
+ * Supported models
  */
 export const SUPPORTED_MODELS = [
   "sonnet",
@@ -50,7 +50,7 @@ export const SUPPORTED_MODELS = [
 export type SupportedModel = (typeof SUPPORTED_MODELS)[number];
 
 /**
- * 操作タイプごとのスタイル定義
+ * Style definitions for each operation type
  */
 export interface OperationStyle {
   prefix: string;
@@ -58,7 +58,7 @@ export interface OperationStyle {
 }
 
 /**
- * デフォルトのディレクトリパス
+ * Default directory paths
  */
 export const DEFAULT_PATHS = {
   CLAUDE_BASE: ".claude",
@@ -67,7 +67,7 @@ export const DEFAULT_PATHS = {
 } as const;
 
 /**
- * エラーメッセージテンプレート
+ * Error message templates
  */
 export const ERROR_MESSAGES = {
   PARSE_ERROR: "Failed to parse file",
@@ -78,6 +78,6 @@ export const ERROR_MESSAGES = {
 } as const;
 
 /**
- * 危険な文字パターン
+ * Dangerous character patterns
  */
 export const DANGEROUS_PATTERNS = ["~", ".."] as const;

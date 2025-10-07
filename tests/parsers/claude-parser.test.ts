@@ -18,7 +18,7 @@ describe("ClaudeParser", () => {
     try {
       await deleteFile(testFilePath);
     } catch {
-      // ファイルが存在しない場合は無視
+      // Ignore if file does not exist
     }
   });
 
@@ -41,7 +41,7 @@ Execute: !git status`;
       expect(result.frontmatter.description).toBe("Test command");
       expect(result.frontmatter.model).toBe("sonnet");
       expect(result.frontmatter["allowed-tools"]).toBe("Bash(git status:*)");
-      expect(result.frontmatter["argument-hint"]).toEqual(["message"]); // YAMLパーサーが配列として解析
+      expect(result.frontmatter["argument-hint"]).toEqual(["message"]); // YAML parser parses as array
       expect(result.content.trim()).toBe("This is a test command with $ARGUMENTS placeholder.\n\nExecute: !git status");
       expect(result.filePath).toBe(testFilePath);
     });

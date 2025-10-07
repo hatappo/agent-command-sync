@@ -1,6 +1,6 @@
+import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { rm } from "node:fs/promises";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { CLIOptions } from "../../src/cli/options.js";
 import { syncCommands } from "../../src/cli/sync.js";
@@ -19,35 +19,35 @@ describe("CLI Integration Tests", () => {
     originalCwd = process.cwd();
     testDir = join(tmpdir(), `agent-slash-sync-test-${Date.now()}`);
 
-    // 新しい仕様: ベースディレクトリを指定（/commandsは自動追加される）
+    // New spec: specify base directory (/commands is added automatically)
     claudeBaseDir = join(testDir, ".claude");
     geminiBaseDir = join(testDir, ".gemini");
 
-    // 実際のコマンドディレクトリ（ファイル作成用）
+    // Actual command directories (for file creation)
     claudeDir = join(claudeBaseDir, "commands");
     geminiDir = join(geminiBaseDir, "commands");
 
     await ensureDirectory(claudeDir);
     await ensureDirectory(geminiDir);
 
-    // テスト用の作業ディレクトリに移動
+    // Move to test working directory
     process.chdir(testDir);
   });
 
   afterEach(async () => {
-    // 元の作業ディレクトリに戻る
+    // Return to original working directory
     process.chdir(originalCwd);
 
     try {
       await rm(testDir, { recursive: true });
     } catch {
-      // ディレクトリが存在しない場合は無視
+      // Ignore if directory does not exist
     }
   });
 
   describe("Claude to Gemini conversion", () => {
     it("should convert basic Claude command to Gemini", async () => {
-      // Claude コマンドを作成
+      // Create Claude command
       const claudeContent = `---
 description: Test command
 model: sonnet
@@ -57,13 +57,14 @@ This is a test command with $ARGUMENTS.`;
 
       await writeFile(join(claudeDir, "test.md"), claudeContent);
 
-      // 変換を実行
+      // Execute conversion
       const options: CLIOptions = {
-        direction: "c2g",
+        source: "claude",
+        destination: "gemini",
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,
-        dryRun: false,
+        noop: false,
         verbose: false,
         claudeDir: claudeBaseDir,
         geminiDir: geminiBaseDir,
@@ -71,16 +72,16 @@ This is a test command with $ARGUMENTS.`;
 
       const result = await syncCommands(options);
 
-      // 結果を検証
+      // Verify results
       expect(result.success).toBe(true);
       expect(result.summary.processed).toBeGreaterThan(0);
       expect(result.summary.created).toBeGreaterThan(0);
 
-      // 変換されたファイルを確認
+      // Check converted file
       const geminiFile = join(geminiDir, "test.toml");
       expect(await fileExists(geminiFile)).toBe(true);
 
-      // ファイル内容を確認
+      // Check file content
       const { readFile } = await import("../../src/utils/file-utils.js");
       const geminiContent = await readFile(geminiFile);
       expect(geminiContent).toContain('description = "Test command"');
@@ -88,17 +89,18 @@ This is a test command with $ARGUMENTS.`;
     });
 
     it("should handle dry run mode", async () => {
-      // Claude コマンドを作成
+      // Create Claude command
       const claudeContent = "Test command content";
       await writeFile(join(claudeDir, "dryrun.md"), claudeContent);
 
-      // ドライランを実行
+      // Execute dry run
       const options: CLIOptions = {
-        direction: "c2g",
+        source: "claude",
+        destination: "gemini",
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,
-        dryRun: true,
+        noop: true,
         verbose: false,
         claudeDir: claudeBaseDir,
         geminiDir: geminiBaseDir,
@@ -106,37 +108,38 @@ This is a test command with $ARGUMENTS.`;
 
       const result = await syncCommands(options);
 
-      // 結果を検証
+      // Verify results
       expect(result.success).toBe(true);
       expect(result.operations.length).toBeGreaterThan(0);
 
-      // テスト用ファイルの操作を確認
+      // Check test file operations
       const testOperation = result.operations.find((op) => op.filePath.includes("dryrun.toml"));
       expect(testOperation).toBeDefined();
       expect(testOperation?.type).toBe("A");
       expect(testOperation?.description).toContain("Would create");
 
-      // ファイルが実際には作成されていないことを確認
+      // Verify file was not actually created
       const geminiFile = join(geminiDir, "dryrun.toml");
       expect(await fileExists(geminiFile)).toBe(false);
     });
 
     it("should handle no-overwrite option", async () => {
-      // Claude コマンドを作成
+      // Create Claude command
       const claudeContent = "New content";
       await writeFile(join(claudeDir, "existing.md"), claudeContent);
 
-      // 既存のGeminiファイルを作成
+      // Create existing Gemini file
       const existingGeminiContent = `prompt = "Existing content"`;
       await writeFile(join(geminiDir, "existing.toml"), existingGeminiContent);
 
-      // no-overwriteで変換を実行
+      // Execute conversion with no-overwrite
       const options: CLIOptions = {
-        direction: "c2g",
+        source: "claude",
+        destination: "gemini",
         removeUnsupported: false,
         noOverwrite: true,
         syncDelete: false,
-        dryRun: false,
+        noop: false,
         verbose: false,
         claudeDir: claudeBaseDir,
         geminiDir: geminiBaseDir,
@@ -144,18 +147,18 @@ This is a test command with $ARGUMENTS.`;
 
       const result = await syncCommands(options);
 
-      // 結果を検証
+      // Verify results
       expect(result.success).toBe(true);
       expect(result.summary.skipped).toBe(1);
 
-      // 既存ファイルが変更されていないことを確認
+      // Verify existing file was not changed
       const { readFile } = await import("../../src/utils/file-utils.js");
       const geminiContent = await readFile(join(geminiDir, "existing.toml"));
       expect(geminiContent).toContain("Existing content");
     });
 
     it("should remove unsupported fields when option is enabled", async () => {
-      // Claude固有フィールドを含むコマンドを作成
+      // Create command with Claude-specific fields
       const claudeContent = `---
 description: Test command
 allowed-tools: Bash(git status:*)
@@ -167,13 +170,14 @@ Test content`;
 
       await writeFile(join(claudeDir, "unsupported.md"), claudeContent);
 
-      // remove-unsupportedで変換を実行
+      // Execute conversion with remove-unsupported
       const options: CLIOptions = {
-        direction: "c2g",
+        source: "claude",
+        destination: "gemini",
         removeUnsupported: true,
         noOverwrite: false,
         syncDelete: false,
-        dryRun: false,
+        noop: false,
         verbose: false,
         claudeDir: claudeBaseDir,
         geminiDir: geminiBaseDir,
@@ -181,10 +185,10 @@ Test content`;
 
       const result = await syncCommands(options);
 
-      // 結果を検証
+      // Verify results
       expect(result.success).toBe(true);
 
-      // 変換されたファイルを確認
+      // Check converted file
       const { readFile } = await import("../../src/utils/file-utils.js");
       const geminiContent = await readFile(join(geminiDir, "unsupported.toml"));
       expect(geminiContent).toContain('description = "Test command"');
@@ -194,19 +198,20 @@ Test content`;
 
   describe("Gemini to Claude conversion", () => {
     it("should convert basic Gemini command to Claude", async () => {
-      // Gemini コマンドを作成
+      // Create Gemini command
       const geminiContent = `description = "Test command"
 prompt = "This is a test command with {{args}}."`;
 
       await writeFile(join(geminiDir, "test.toml"), geminiContent);
 
-      // 変換を実行
+      // Execute conversion
       const options: CLIOptions = {
-        direction: "g2c",
+        source: "gemini",
+        destination: "claude",
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,
-        dryRun: false,
+        noop: false,
         verbose: false,
         claudeDir: claudeBaseDir,
         geminiDir: geminiBaseDir,
@@ -214,16 +219,16 @@ prompt = "This is a test command with {{args}}."`;
 
       const result = await syncCommands(options);
 
-      // 結果を検証
+      // Verify results
       expect(result.success).toBe(true);
       expect(result.summary.processed).toBeGreaterThan(0);
       expect(result.summary.created).toBeGreaterThan(0);
 
-      // 変換されたファイルを確認
+      // Check converted file
       const claudeFile = join(claudeDir, "test.md");
       expect(await fileExists(claudeFile)).toBe(true);
 
-      // ファイル内容を確認
+      // Check file content
       const { readFile } = await import("../../src/utils/file-utils.js");
       const claudeContent = await readFile(claudeFile);
       expect(claudeContent).toContain("description: Test command");
@@ -231,7 +236,7 @@ prompt = "This is a test command with {{args}}."`;
     });
 
     it("should restore Claude-specific fields", async () => {
-      // Claude固有フィールドを含むGeminiコマンドを作成
+      // Create Gemini command with Claude-specific fields
       const geminiContent = `description = "Test command"
 prompt = "Test content"
 _claude_allowed_tools = "Bash(git status:*)"
@@ -239,13 +244,14 @@ _claude_model = "sonnet"`;
 
       await writeFile(join(geminiDir, "restore.toml"), geminiContent);
 
-      // 変換を実行
+      // Execute conversion
       const options: CLIOptions = {
-        direction: "g2c",
+        source: "gemini",
+        destination: "claude",
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,
-        dryRun: false,
+        noop: false,
         verbose: false,
         claudeDir: claudeBaseDir,
         geminiDir: geminiBaseDir,
@@ -253,35 +259,36 @@ _claude_model = "sonnet"`;
 
       const result = await syncCommands(options);
 
-      // 結果を検証
+      // Verify results
       expect(result.success).toBe(true);
 
-      // 変換されたファイルを確認
+      // Check converted file
       const { readFile } = await import("../../src/utils/file-utils.js");
       const claudeContent = await readFile(join(claudeDir, "restore.md"));
       expect(claudeContent).toContain("description: Test command");
-      // Claude固有フィールドが復元されることを確認
-      // 現在の実装では、_claude_プレフィックスフィールドが正しく復元されない可能性がある
+      // Verify Claude-specific fields are restored
+      // Current implementation may not correctly restore _claude_ prefixed fields
       expect(claudeContent).toContain("Test content");
     });
   });
 
   describe("Nested directory support", () => {
     it("should handle nested command directories", async () => {
-      // ネストしたディレクトリにコマンドを作成
+      // Create command in nested directory
       const nestedClaudeDir = join(claudeDir, "git");
       await ensureDirectory(nestedClaudeDir);
 
       const claudeContent = "Git commit helper command";
       await writeFile(join(nestedClaudeDir, "commit.md"), claudeContent);
 
-      // 変換を実行
+      // Execute conversion
       const options: CLIOptions = {
-        direction: "c2g",
+        source: "claude",
+        destination: "gemini",
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,
-        dryRun: false,
+        noop: false,
         verbose: false,
         claudeDir: claudeBaseDir,
         geminiDir: geminiBaseDir,
@@ -289,19 +296,125 @@ _claude_model = "sonnet"`;
 
       const result = await syncCommands(options);
 
-      // 結果を検証
+      // Verify results
       expect(result.success).toBe(true);
 
-      // ネストしたディレクトリに変換されたファイルを確認
+      // Check converted file in nested directory
       const nestedGeminiDir = join(geminiDir, "git");
       const geminiFile = join(nestedGeminiDir, "commit.toml");
       expect(await fileExists(geminiFile)).toBe(true);
     });
   });
 
+  describe("Codex conversion with frontmatter", () => {
+    it("should preserve frontmatter when converting Claude to Codex without removeUnsupported", async () => {
+      // Create Claude command (with frontmatter)
+      const claudeContent = `---
+description: Test command
+model: sonnet
+allowed-tools: Bash(git:*)
+---
+
+Test content with $ARGUMENTS`;
+
+      await writeFile(join(claudeDir, "test-codex.md"), claudeContent);
+
+      // Create Codex directory
+      const codexBaseDir = join(testDir, ".codex");
+      const codexDir = join(codexBaseDir, "prompts");
+      await ensureDirectory(codexDir);
+
+      // Execute conversion（removeUnsupported = false）
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "codex",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        claudeDir: claudeBaseDir, // Use existing claudeBaseDir variable
+        codexDir: codexBaseDir,
+      };
+
+      const result = await syncCommands(options);
+
+      // Log errors if any
+      if (result.errors.length > 0) {
+        console.error("Conversion errors:", result.errors);
+      }
+
+      // Verify results
+      expect(result.success).toBe(true);
+
+      // Check converted file
+      const codexFile = join(codexDir, "test-codex.md");
+      expect(await fileExists(codexFile)).toBe(true);
+
+      // Check file content
+      const { readFile } = await import("../../src/utils/file-utils.js");
+      const codexContent = await readFile(codexFile);
+      // Verify frontmatter is preserved
+      expect(codexContent).toContain("description: Test command");
+      expect(codexContent).toContain("model: sonnet");
+      expect(codexContent).toContain("allowed-tools:");
+      expect(codexContent).toContain("Test content with $ARGUMENTS");
+    });
+
+    it("should remove unsupported fields when converting Claude to Codex with removeUnsupported", async () => {
+      // Create Claude command (with frontmatter)
+      const claudeContent = `---
+description: Test command
+model: sonnet
+allowed-tools: Bash(git:*)
+---
+
+Test content with $ARGUMENTS`;
+
+      await writeFile(join(claudeDir, "test-codex-remove.md"), claudeContent);
+
+      // Create Codex directory
+      const codexBaseDir = join(testDir, ".codex");
+      const codexDir = join(codexBaseDir, "prompts");
+      await ensureDirectory(codexDir);
+
+      // Execute conversion（removeUnsupported = true）
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "codex",
+        removeUnsupported: true,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        claudeDir: claudeBaseDir,
+        codexDir: codexBaseDir,
+      };
+
+      const result = await syncCommands(options);
+
+      // Verify results
+      expect(result.success).toBe(true);
+
+      // Check converted file
+      const codexFile = join(codexDir, "test-codex-remove.md");
+      expect(await fileExists(codexFile)).toBe(true);
+
+      // Check file content
+      const { readFile } = await import("../../src/utils/file-utils.js");
+      const codexContent = await readFile(codexFile);
+      // description remains
+      expect(codexContent).toContain("description: Test command");
+      // Claude-specific fields are removed
+      expect(codexContent).not.toContain("allowed-tools:");
+      expect(codexContent).not.toContain("model: sonnet");
+      expect(codexContent).toContain("Test content with $ARGUMENTS");
+    });
+  });
+
   describe("Error handling", () => {
     it("should handle invalid file formats gracefully", async () => {
-      // 不正なフォーマットのファイルを作成
+      // Create file with invalid format
       const invalidContent = `---
 invalid yaml: [[[
 ---
@@ -309,13 +422,14 @@ Content`;
 
       await writeFile(join(claudeDir, "invalid.md"), invalidContent);
 
-      // 変換を実行
+      // Execute conversion
       const options: CLIOptions = {
-        direction: "c2g",
+        source: "claude",
+        destination: "gemini",
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,
-        dryRun: false,
+        noop: false,
         verbose: false,
         claudeDir: claudeBaseDir,
         geminiDir: geminiBaseDir,
@@ -323,7 +437,7 @@ Content`;
 
       const result = await syncCommands(options);
 
-      // エラーが記録されることを確認
+      // Verify errors are logged
       expect(result.success).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
     });

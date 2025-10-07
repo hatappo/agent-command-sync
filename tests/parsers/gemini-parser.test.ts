@@ -18,7 +18,7 @@ describe("GeminiParser", () => {
     try {
       await deleteFile(testFilePath);
     } catch {
-      // ファイルが存在しない場合は無視
+      // Ignore if file does not exist
     }
   });
 
@@ -165,7 +165,7 @@ prompt = ""`;
       };
 
       const result = parser.stringify(command);
-      // TOMLライブラリは複数行文字列を三重引用符で出力する
+      // TOML library outputs multiline strings with triple quotes
       expect(result).toContain('prompt = """');
     });
 

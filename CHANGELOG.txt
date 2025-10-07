@@ -1,0 +1,32 @@
+# Changelog
+
+## [2.0.0] - 2025-01-07
+
+### Breaking Changes
+- Renamed package from `agent-slash-sync` to `agent-command-sync`
+- Renamed command from `assync` to `acsync`
+- Changed `-d, --dry-run` option to `-n, --noop`
+- Removed `-c, --convert` option; now use `-s, --src` and `-d, --dest` to specify source and destination
+- Package URLs have changed:
+  - npm: `https://www.npmjs.com/package/agent-slash-sync` → `https://www.npmjs.com/package/agent-command-sync`
+  - GitHub: `https://github.com/hatappo/agent-slash-sync` → `https://github.com/hatappo/agent-command-sync`
+
+### Added
+- **Codex CLI support**: Added support for Codex CLI as a third tool format
+  - Supports markdown with optional YAML frontmatter
+  - Bidirectional conversion between Claude Code, Gemini CLI, and Codex CLI
+  - Frontmatter preservation when `--remove-unsupported` is not specified
+- **Intermediate Representation (IR) architecture**: Completely rewrote the conversion system
+  - Centralized conversion logic through intermediate representation
+  - Easier to add new tool formats in the future
+  - More maintainable and testable codebase
+
+### Changed
+- Translated all inline comments from Japanese to English
+- Improved error handling and validation throughout the codebase
+
+### Dependencies
+- Updated to latest versions of all dependencies
+
+## [1.2.0] - Previous release
+- Added support for custom base directories with `--claude-dir` and `--gemini-dir` options
