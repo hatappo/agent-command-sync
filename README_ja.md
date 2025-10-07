@@ -19,19 +19,13 @@ npm install -g agent-slash-sync
 
 ```bash
 # Claude Code → Gemini CLI に変換
-agent-slash-sync -c c2g
-# またはショートコマンド
-assync -c c2g
+assync -s claude -d gemini
 
 # Gemini CLI → Claude Code に変換
-agent-slash-sync -c g2c
-# またはショートコマンド
-assync -c g2c
+assync -s gemini -d claude
 
 # 適用前に変更をプレビュー
-agent-slash-sync -d -c c2g
-# またはショートコマンド
-assync -d -c c2g
+assync --dry-run -s claude -d gemini
 ```
 
 ## スクリーンショット
@@ -55,9 +49,10 @@ assync -d -c c2g
 
 | オプション                    | 説明                                                              |
 | --------------------------- | --------------------------------------------------------------- |
-| `-c, --convert <direction>` | **必須。** 変換方向: `c2g` または `g2c`                            |
+| `-s, --src <product>`       | **必須。** ソース製品: `claude` または `gemini`                     |
+| `-d, --dest <product>`      | **必須。** 宛先製品: `claude` または `gemini`                       |
 | `-f, --file <filename>`     | 特定のファイルのみ変換（`.md`, `.toml` 拡張子をサポート）             |
-| `-d, --dry-run`             | 変更を適用せずにプレビュー                                          |
+| `--dry-run`                 | 変更を適用せずにプレビュー                                          |
 | `-v, --verbose`             | 詳細なデバッグ情報を表示                                           |
 | `--claude-dir <path>`       | Claude ベースディレクトリ（デフォルト: ~/.claude）                   |
 | `--gemini-dir <path>`       | Gemini ベースディレクトリ（デフォルト: ~/.gemini）                   |
@@ -69,19 +64,19 @@ assync -d -c c2g
 
 ```bash
 # プレビュー付きで全コマンドを変換
-assync -d -c c2g
+assync --dry-run -s claude -d gemini
 
 # 特定のファイルを変換
-assync -c g2c -f analyze-code
+assync -s gemini -d claude -f analyze-code
 
 # クリーンアップ付きの完全同期
-assync -c c2g --sync-delete --remove-unsupported
+assync -s claude -d gemini --sync-delete --remove-unsupported
 
 # カスタムディレクトリを使用（ベースディレクトリを指定、/commands は自動的に追加されます）
-assync -c c2g --claude-dir ~/my-claude --gemini-dir ~/my-gemini
+assync -s claude -d gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
 
 # デバッグ用の詳細出力を表示
-assync -c c2g -v
+assync -s claude -d gemini -v
 ```
 
 ## ファイルの場所

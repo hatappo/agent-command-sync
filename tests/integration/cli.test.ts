@@ -59,7 +59,8 @@ This is a test command with $ARGUMENTS.`;
 
       // 変換を実行
       const options: CLIOptions = {
-        direction: "c2g",
+        source: "claude",
+        destination: "gemini",
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,
@@ -94,7 +95,8 @@ This is a test command with $ARGUMENTS.`;
 
       // ドライランを実行
       const options: CLIOptions = {
-        direction: "c2g",
+        source: "claude",
+        destination: "gemini",
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,
@@ -132,7 +134,8 @@ This is a test command with $ARGUMENTS.`;
 
       // no-overwriteで変換を実行
       const options: CLIOptions = {
-        direction: "c2g",
+        source: "claude",
+        destination: "gemini",
         removeUnsupported: false,
         noOverwrite: true,
         syncDelete: false,
@@ -169,7 +172,8 @@ Test content`;
 
       // remove-unsupportedで変換を実行
       const options: CLIOptions = {
-        direction: "c2g",
+        source: "claude",
+        destination: "gemini",
         removeUnsupported: true,
         noOverwrite: false,
         syncDelete: false,
@@ -202,7 +206,8 @@ prompt = "This is a test command with {{args}}."`;
 
       // 変換を実行
       const options: CLIOptions = {
-        direction: "g2c",
+        source: "gemini",
+        destination: "claude",
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,
@@ -241,7 +246,8 @@ _claude_model = "sonnet"`;
 
       // 変換を実行
       const options: CLIOptions = {
-        direction: "g2c",
+        source: "gemini",
+        destination: "claude",
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,
@@ -277,7 +283,8 @@ _claude_model = "sonnet"`;
 
       // 変換を実行
       const options: CLIOptions = {
-        direction: "c2g",
+        source: "claude",
+        destination: "gemini",
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,
@@ -311,7 +318,8 @@ Content`;
 
       // 変換を実行
       const options: CLIOptions = {
-        direction: "c2g",
+        source: "claude",
+        destination: "gemini",
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,

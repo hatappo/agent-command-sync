@@ -130,3 +130,14 @@ export interface CommandDirectories {
     user: string;
   };
 }
+
+// Re-export intermediate representation types
+export type {
+  IntermediateRepresentation,
+  ProductType,
+  ToIntermediateConverter,
+  FromIntermediateConverter,
+  BidirectionalConverter,
+  IntermediateConversionOptions,
+} from "./intermediate.js";
+export { validateIntermediateRepresentation } from "./intermediate.js";

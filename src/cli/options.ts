@@ -1,11 +1,12 @@
-import type { ConversionOptions } from "../types/index.js";
+import type { IntermediateConversionOptions, ProductType } from "../types/index.js";
 
 /**
  * CLIオプションの型定義
  */
-export interface CLIOptions extends ConversionOptions {
-  // ConversionOptionsから継承されるフィールド:
-  // direction: 'c2g' | 'g2c';
+export interface CLIOptions extends IntermediateConversionOptions {
+  // IntermediateConversionOptionsから継承されるフィールド:
+  // source: ProductType;
+  // destination: ProductType;
   // removeUnsupported: boolean;
   // noOverwrite: boolean;
   // syncDelete: boolean;
@@ -33,11 +34,23 @@ export const defaultCLIOptions: Partial<CLIOptions> = {
 export function validateCLIOptions(options: Partial<CLIOptions>): string[] {
   const errors: string[] = [];
 
-  // direction の検証
-  if (!options.direction) {
-    errors.push("--convert option is required");
-  } else if (!["c2g", "g2c"].includes(options.direction)) {
-    errors.push('--convert must be either "c2g" or "g2c"');
+  // source の検証
+  if (!options.source) {
+    errors.push("--src option is required");
+  } else if (!["claude", "gemini"].includes(options.source)) {
+    errors.push('--src must be either "claude" or "gemini"');
+  }
+
+  // destination の検証
+  if (!options.destination) {
+    errors.push("--dest option is required");
+  } else if (!["claude", "gemini"].includes(options.destination)) {
+    errors.push('--dest must be either "claude" or "gemini"');
+  }
+
+  // source と destination が同じ場合のチェック
+  if (options.source && options.destination && options.source === options.destination) {
+    errors.push("Source and destination must be different");
   }
 
   // file オプションの検証
@@ -73,11 +86,12 @@ export function validateCLIOptions(options: Partial<CLIOptions>): string[] {
 }
 
 /**
- * CLIオプションをConversionOptionsに変換
+ * CLIオプションをIntermediateConversionOptionsに変換
  */
-export function cliOptionsToConversionOptions(cliOptions: CLIOptions): ConversionOptions {
+export function cliOptionsToConversionOptions(cliOptions: CLIOptions): IntermediateConversionOptions {
   return {
-    direction: cliOptions.direction,
+    source: cliOptions.source,
+    destination: cliOptions.destination,
     removeUnsupported: cliOptions.removeUnsupported,
     noOverwrite: cliOptions.noOverwrite,
     syncDelete: cliOptions.syncDelete,

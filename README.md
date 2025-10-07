@@ -19,19 +19,13 @@ npm install -g agent-slash-sync
 
 ```bash
 # Convert Claude Code → Gemini CLI
-agent-slash-sync -c c2g
-# or use short form
-assync -c c2g
+assync -s claude -d gemini
 
 # Convert Gemini CLI → Claude Code
-agent-slash-sync -c g2c
-# or use short form
-assync -c g2c
+assync -s gemini -d claude
 
 # Preview changes without applying
-agent-slash-sync -d -c c2g
-# or use short form
-assync -d -c c2g
+assync --dry-run -s claude -d gemini
 ```
 
 ## Screenshots
@@ -55,9 +49,10 @@ assync -d -c c2g
 
 | Option                      | Description                                                     |
 | --------------------------- | --------------------------------------------------------------- |
-| `-c, --convert <direction>` | **Required.** Conversion direction: `c2g` or `g2c`              |
+| `-s, --src <product>`       | **Required.** Source product: `claude` or `gemini`              |
+| `-d, --dest <product>`      | **Required.** Destination product: `claude` or `gemini`         |
 | `-f, --file <filename>`     | Convert specific file only (supports `.md`, `.toml` extensions) |
-| `-d, --dry-run`             | Preview changes without applying them                           |
+| `--dry-run`                 | Preview changes without applying them                           |
 | `-v, --verbose`             | Show detailed debug information                                 |
 | `--claude-dir <path>`       | Claude base directory (default: ~/.claude)                      |
 | `--gemini-dir <path>`       | Gemini base directory (default: ~/.gemini)                      |
@@ -69,19 +64,19 @@ assync -d -c c2g
 
 ```bash
 # Convert all commands with preview
-assync -d -c c2g
+assync --dry-run -s claude -d gemini
 
 # Convert specific file
-assync -c g2c -f analyze-code
+assync -s gemini -d claude -f analyze-code
 
 # Full sync with cleanup
-assync -c c2g --sync-delete --remove-unsupported
+assync -s claude -d gemini --sync-delete --remove-unsupported
 
 # Use custom directories (base directories, /commands will be added automatically)
-assync -c c2g --claude-dir ~/my-claude --gemini-dir ~/my-gemini
+assync -s claude -d gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
 
 # Show verbose output for debugging
-assync -c c2g -v
+assync -s claude -d gemini -v
 ```
 
 ## File Locations
