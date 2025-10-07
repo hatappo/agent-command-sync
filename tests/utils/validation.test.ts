@@ -82,7 +82,7 @@ describe("Validation", () => {
       };
 
       const errors = validateClaudeCommand(command);
-      // 現在の実装では、ハイフンを含むモデル名は許可されているため、エラーは発生しない
+      // Current implementation allows model names with hyphens, so no error occurs
       expect(errors).toHaveLength(0);
     });
 

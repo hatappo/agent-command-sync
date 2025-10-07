@@ -67,7 +67,7 @@ export interface FromIntermediateConverter<TTarget> {
  */
 export interface BidirectionalConverter<TFormat>
   extends ToIntermediateConverter<TFormat>,
-          FromIntermediateConverter<TFormat> {}
+    FromIntermediateConverter<TFormat> {}
 
 /**
  * Options for conversion via intermediate representation
@@ -86,13 +86,15 @@ export interface IntermediateConversionOptions {
   /** Convert only specific file */
   file?: string;
   /** Preview changes without applying */
-  dryRun: boolean;
+  noop: boolean;
   /** Show detailed debug information */
   verbose: boolean;
   /** Claude base directory */
   claudeDir?: string;
   /** Gemini base directory */
   geminiDir?: string;
+  /** Codex base directory */
+  codexDir?: string;
 }
 
 /**

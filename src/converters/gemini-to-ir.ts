@@ -1,8 +1,4 @@
-import type {
-  GeminiCommand,
-  IntermediateRepresentation,
-  ToIntermediateConverter,
-} from "../types/index.js";
+import type { GeminiCommand, IntermediateRepresentation, ToIntermediateConverter } from "../types/index.js";
 
 /**
  * Gemini CLI format to Intermediate Representation converter

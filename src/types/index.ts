@@ -1,4 +1,4 @@
-// 共通のコマンド表現
+// Common command representation
 export interface Command {
   name: string;
   description?: string;
@@ -6,7 +6,7 @@ export interface Command {
   metadata?: Record<string, unknown>;
 }
 
-// Claude Code形式
+// Claude Code format
 export interface ClaudeCommand {
   frontmatter: {
     "allowed-tools"?: string;
@@ -19,36 +19,43 @@ export interface ClaudeCommand {
   filePath: string;
 }
 
-// Gemini CLI形式
+// Gemini CLI format
 export interface GeminiCommand {
   description?: string;
   prompt: string;
   filePath: string;
-  // Claude固有フィールドを保持するための拡張フィールド
+  // Extended fields to preserve Claude-specific fields
   [key: string]: unknown;
 }
 
-// 変換オプション
+// Codex CLI format
+export interface CodexCommand {
+  frontmatter?: Record<string, unknown>;
+  content: string;
+  filePath: string;
+}
+
+// Conversion options
 export interface ConversionOptions {
   direction: "c2g" | "g2c";
   removeUnsupported: boolean;
   noOverwrite: boolean;
   syncDelete: boolean;
   file?: string;
-  dryRun: boolean;
+  noop: boolean;
   verbose: boolean;
   claudeDir?: string;
   geminiDir?: string;
 }
 
-// ファイル操作結果
+// File operation result
 export interface FileOperation {
   type: "A" | "M" | "D" | "-";
   filePath: string;
   description: string;
 }
 
-// エラー型
+// Error types
 export class ParseError extends Error {
   constructor(
     message: string,
@@ -83,7 +90,7 @@ export class ValidationError extends Error {
   }
 }
 
-// 変換結果
+// Conversion result
 export interface ConversionResult {
   success: boolean;
   operations: FileOperation[];
@@ -97,21 +104,21 @@ export interface ConversionResult {
   };
 }
 
-// パーサーインターフェース
+// Parser interface
 export interface Parser<T> {
   parse(filePath: string): Promise<T>;
   validate(data: T): boolean;
 }
 
-// コンバーターインターフェース
+// Converter interface
 export interface Converter<TSource, TTarget> {
   convert(source: TSource, options: ConversionOptions): TTarget;
 }
 
-// バリデーション関数の型
+// Validation function type
 export type ValidationFunction<T> = (data: T) => ValidationError[];
 
-// ファイル検索オプション
+// File search options
 export interface FileSearchOptions {
   extensions: string[];
   directories: string[];
@@ -119,13 +126,17 @@ export interface FileSearchOptions {
   excludePatterns?: string[];
 }
 
-// コマンドディレクトリの設定
+// Command directory configuration
 export interface CommandDirectories {
   claude: {
     project: string;
     user: string;
   };
   gemini: {
+    project: string;
+    user: string;
+  };
+  codex: {
     project: string;
     user: string;
   };

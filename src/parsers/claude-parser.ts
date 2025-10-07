@@ -6,7 +6,7 @@ import { formatValidationErrors, validateClaudeCommand } from "../utils/validati
 
 export class ClaudeParser implements Parser<ClaudeCommand> {
   /**
-   * Markdownファイルを解析してClaudeCommandオブジェクトを生成
+   * Parse a Markdown file and generate a ClaudeCommand object
    */
   async parse(filePath: string): Promise<ClaudeCommand> {
     try {
@@ -19,7 +19,7 @@ export class ClaudeParser implements Parser<ClaudeCommand> {
           "argument-hint": parsed.data["argument-hint"],
           description: parsed.data.description,
           model: parsed.data.model,
-          ...parsed.data, // その他のフィールドも保持
+          ...parsed.data, // Preserve other fields
         },
         content: parsed.content,
         filePath,
@@ -34,7 +34,7 @@ export class ClaudeParser implements Parser<ClaudeCommand> {
   }
 
   /**
-   * ClaudeCommandオブジェクトの妥当性を検証
+   * Validate a ClaudeCommand object
    */
   validate(data: ClaudeCommand): boolean {
     const errors = validateClaudeCommand(data);
@@ -42,7 +42,7 @@ export class ClaudeParser implements Parser<ClaudeCommand> {
   }
 
   /**
-   * ClaudeCommandオブジェクトの詳細バリデーション（エラー詳細付き）
+   * Detailed validation of a ClaudeCommand object (with error details)
    */
   validateWithErrors(data: ClaudeCommand): {
     isValid: boolean;
@@ -56,12 +56,12 @@ export class ClaudeParser implements Parser<ClaudeCommand> {
   }
 
   /**
-   * ClaudeCommandオブジェクトをMarkdown形式に変換
+   * Convert a ClaudeCommand object to Markdown format
    */
   stringify(command: ClaudeCommand): string {
     const { frontmatter, content } = command;
 
-    // 空のフロントマターの場合はフロントマターなしで出力
+    // Output without frontmatter if frontmatter is empty
     const hasValidFrontmatter = Object.keys(frontmatter).some(
       (key) => frontmatter[key] !== undefined && frontmatter[key] !== null,
     );
@@ -70,7 +70,7 @@ export class ClaudeParser implements Parser<ClaudeCommand> {
       return content;
     }
 
-    // フロントマターから undefined/null 値を除去
+    // Remove undefined/null values from frontmatter
     const cleanFrontmatter: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(frontmatter)) {
       if (value !== undefined && value !== null) {

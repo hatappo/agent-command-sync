@@ -1,50 +1,50 @@
 /**
- * プレースホルダー変換ユーティリティ
+ * Placeholder conversion utilities
  */
 
 import { PLACEHOLDERS } from "./constants.js";
 
 /**
- * Claude形式からGemini形式へプレースホルダーを変換
+ * Convert placeholders from Claude format to Gemini format
  */
 export function convertClaudeToGeminiPlaceholders(content: string): string {
   let result = content;
 
-  // $ARGUMENTS → {{args}} の変換
+  // Convert $ARGUMENTS → {{args}}
   result = result.replace(
     new RegExp(PLACEHOLDERS.CLAUDE.ARGUMENTS.replace("$", "\\$"), "g"),
     PLACEHOLDERS.GEMINI.ARGUMENTS,
   );
 
-  // !`command` → !{command} の変換（バッククォート形式）
+  // Convert !`command` → !{command} (backtick format)
   result = result.replace(PLACEHOLDERS.CLAUDE.SHELL_COMMAND_BACKTICK, "!{$1}");
 
-  // 行頭の !command → !{command} の変換
+  // Convert !command → !{command} at line start
   result = result.replace(PLACEHOLDERS.CLAUDE.SHELL_COMMAND_LINE_START, "!{$1}");
 
   return result;
 }
 
 /**
- * Gemini形式からClaude形式へプレースホルダーを変換
+ * Convert placeholders from Gemini format to Claude format
  */
 export function convertGeminiToClaudePlaceholders(content: string): string {
   let result = content;
 
-  // {{args}} → $ARGUMENTS の変換
+  // Convert {{args}} → $ARGUMENTS
   result = result.replace(
     new RegExp(PLACEHOLDERS.GEMINI.ARGUMENTS.replace(/[{}]/g, "\\$&"), "g"),
     PLACEHOLDERS.CLAUDE.ARGUMENTS,
   );
 
-  // !{command} → !`command` の変換
+  // Convert !{command} → !`command`
   result = result.replace(PLACEHOLDERS.GEMINI.SHELL_COMMAND, "!`$1`");
 
   return result;
 }
 
 /**
- * 引数プレースホルダーをClaude形式からGemini形式へ変換
+ * Convert argument placeholder from Claude format to Gemini format
  */
 export function convertArgumentPlaceholder(content: string, direction: "c2g" | "g2c"): string {
   if (direction === "c2g") {
@@ -60,17 +60,17 @@ export function convertArgumentPlaceholder(content: string, direction: "c2g" | "
 }
 
 /**
- * シェルコマンド構文を変換
+ * Convert shell command syntax
  */
 export function convertShellCommands(content: string, direction: "c2g" | "g2c"): string {
   if (direction === "c2g") {
     let result = content;
-    // !`command` → !{command} の変換（バッククォート形式）
+    // Convert !`command` → !{command} (backtick format)
     result = result.replace(PLACEHOLDERS.CLAUDE.SHELL_COMMAND_BACKTICK, "!{$1}");
-    // 行頭の !command → !{command} の変換
+    // Convert !command → !{command} at line start
     result = result.replace(PLACEHOLDERS.CLAUDE.SHELL_COMMAND_LINE_START, "!{$1}");
     return result;
   }
-  // !{command} → !`command` の変換
+  // Convert !{command} → !`command`
   return content.replace(PLACEHOLDERS.GEMINI.SHELL_COMMAND, "!`$1`");
 }

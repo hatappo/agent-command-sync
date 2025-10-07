@@ -1,8 +1,4 @@
-import type {
-  ClaudeCommand,
-  IntermediateRepresentation,
-  ToIntermediateConverter,
-} from "../types/index.js";
+import type { ClaudeCommand, IntermediateRepresentation, ToIntermediateConverter } from "../types/index.js";
 
 /**
  * Claude Code format to Intermediate Representation converter

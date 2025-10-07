@@ -1,6 +1,6 @@
+import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { rm } from "node:fs/promises";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   autoCompleteExtension,
@@ -29,7 +29,7 @@ describe("FileUtils", () => {
     try {
       await rm(testDir, { recursive: true });
     } catch {
-      // ディレクトリが存在しない場合は無視
+      // Ignore if directory does not exist
     }
   });
 

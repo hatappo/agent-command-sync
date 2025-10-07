@@ -39,6 +39,33 @@ describe("Agent Slash Sync Tests", () => {
       expect(result.prompt).toContain("!{git status}");
       expect(parser.validate(result)).toBe(true);
     });
+
+    it("should parse Codex command without frontmatter", async () => {
+      const { CodexParser } = await import("../../src/parsers/codex-parser.js");
+      const parser = new CodexParser();
+      const filePath = join(fixturesDir, "codex-commands", "simple.md");
+
+      const result = await parser.parse(filePath);
+
+      expect(result.content).toContain("simple Codex custom prompt");
+      expect(result.frontmatter).toBeUndefined();
+      expect(parser.validate(result)).toBe(true);
+    });
+
+    it("should parse Codex command with frontmatter", async () => {
+      const { CodexParser } = await import("../../src/parsers/codex-parser.js");
+      const parser = new CodexParser();
+      const filePath = join(fixturesDir, "codex-commands", "with-frontmatter.md");
+
+      const result = await parser.parse(filePath);
+
+      expect(result.content).toContain("Codex command that includes frontmatter");
+      expect(result.frontmatter).toBeDefined();
+      expect(result.frontmatter?.description).toBe("Codex command with frontmatter");
+      expect(result.frontmatter?.model).toBe("gpt-4");
+      expect(result.frontmatter?.temperature).toBe(0.7);
+      expect(parser.validate(result)).toBe(true);
+    });
   });
 
   describe("Edge Cases", () => {
@@ -135,9 +162,9 @@ describe("Agent Slash Sync Tests", () => {
       const lines = toml.trim().split("\n");
 
       // Find the index of each field
-      const descriptionIndex = lines.findIndex((line) => line.includes('description = '));
-      const modelIndex = lines.findIndex((line) => line.includes('model = '));
-      const promptIndex = lines.findIndex((line) => line.includes('prompt = '));
+      const descriptionIndex = lines.findIndex((line) => line.includes("description = "));
+      const modelIndex = lines.findIndex((line) => line.includes("model = "));
+      const promptIndex = lines.findIndex((line) => line.includes("prompt = "));
 
       // Ensure prompt comes after other fields
       expect(promptIndex).toBeGreaterThan(descriptionIndex);
@@ -167,7 +194,7 @@ describe("Agent Slash Sync Tests", () => {
         removeUnsupported: false,
         noOverwrite: true,
         syncDelete: false,
-        dryRun: true,
+        noop: true,
         verbose: true,
         claudeDir: "~/custom-claude",
         geminiDir: "~/custom-gemini",
@@ -180,7 +207,7 @@ describe("Agent Slash Sync Tests", () => {
       expect(conversionOptions.removeUnsupported).toBe(false);
       expect(conversionOptions.noOverwrite).toBe(true);
       expect(conversionOptions.syncDelete).toBe(false);
-      expect(conversionOptions.dryRun).toBe(true);
+      expect(conversionOptions.noop).toBe(true);
       expect(conversionOptions.verbose).toBe(true);
       expect(conversionOptions.claudeDir).toBe("~/custom-claude");
       expect(conversionOptions.geminiDir).toBe("~/custom-gemini");
@@ -195,7 +222,7 @@ describe("Agent Slash Sync Tests", () => {
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,
-        dryRun: false,
+        noop: false,
         verbose: false,
         claudeDir: "~/claude-commands",
         geminiDir: "~/gemini-commands",
@@ -215,13 +242,13 @@ describe("Agent Slash Sync Tests", () => {
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,
-        dryRun: false,
+        noop: false,
         verbose: false,
       };
 
       const errors = validateCLIOptions(invalidOptions);
       expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0]).toContain('--src must be either "claude" or "gemini"');
+      expect(errors[0]).toContain('--src must be one of "claude", "gemini", or "codex"');
     });
   });
 });

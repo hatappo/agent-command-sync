@@ -6,7 +6,7 @@ import { formatValidationErrors, validateGeminiCommand } from "../utils/validati
 
 export class GeminiParser implements Parser<GeminiCommand> {
   /**
-   * TOMLファイルを解析してGeminiCommandオブジェクトを生成
+   * Parse a TOML file and generate a GeminiCommand object
    */
   async parse(filePath: string): Promise<GeminiCommand> {
     try {
@@ -17,7 +17,7 @@ export class GeminiParser implements Parser<GeminiCommand> {
         description: typeof parsed.description === "string" ? parsed.description : undefined,
         prompt: typeof parsed.prompt === "string" ? parsed.prompt : "",
         filePath,
-        ...parsed, // その他のフィールドも保持
+        ...parsed, // Preserve other fields
       };
     } catch (error) {
       throw new ParseError(
@@ -29,7 +29,7 @@ export class GeminiParser implements Parser<GeminiCommand> {
   }
 
   /**
-   * GeminiCommandオブジェクトの妥当性を検証
+   * Validate a GeminiCommand object
    */
   validate(data: GeminiCommand): boolean {
     const errors = validateGeminiCommand(data);
@@ -37,7 +37,7 @@ export class GeminiParser implements Parser<GeminiCommand> {
   }
 
   /**
-   * GeminiCommandオブジェクトの詳細バリデーション（エラー詳細付き）
+   * Detailed validation of a GeminiCommand object (with error details)
    */
   validateWithErrors(data: GeminiCommand): {
     isValid: boolean;
@@ -51,17 +51,17 @@ export class GeminiParser implements Parser<GeminiCommand> {
   }
 
   /**
-   * GeminiCommandオブジェクトをTOML形式に変換
+   * Convert a GeminiCommand object to TOML format
    */
   stringify(command: GeminiCommand): string {
     const tomlData: TOML.JsonMap = {};
 
-    // descriptionが存在する場合のみ追加
+    // Add description only if it exists
     if (command.description !== undefined && command.description.trim().length > 0) {
       tomlData.description = command.description;
     }
 
-    // その他のフィールド（Claude固有フィールドなど）を追加
+    // Add other fields (such as Claude-specific fields)
     const excludeFields = new Set(["prompt", "description", "filePath"]);
     for (const [key, value] of Object.entries(command)) {
       if (!excludeFields.has(key) && value !== undefined && value !== null) {
@@ -69,7 +69,7 @@ export class GeminiParser implements Parser<GeminiCommand> {
       }
     }
 
-    // promptフィールドを最後に追加
+    // Add prompt field at the end
     tomlData.prompt = command.prompt;
 
     try {

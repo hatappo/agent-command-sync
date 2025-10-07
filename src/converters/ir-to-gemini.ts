@@ -1,8 +1,4 @@
-import type {
-  FromIntermediateConverter,
-  GeminiCommand,
-  IntermediateRepresentation,
-} from "../types/index.js";
+import type { FromIntermediateConverter, GeminiCommand, IntermediateRepresentation } from "../types/index.js";
 import { FILE_EXTENSIONS } from "../utils/constants.js";
 
 /**

@@ -1,8 +1,4 @@
-import type {
-  ClaudeCommand,
-  FromIntermediateConverter,
-  IntermediateRepresentation,
-} from "../types/index.js";
+import type { ClaudeCommand, FromIntermediateConverter, IntermediateRepresentation } from "../types/index.js";
 import { FILE_EXTENSIONS } from "../utils/constants.js";
 
 /**

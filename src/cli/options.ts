@@ -1,65 +1,65 @@
 import type { IntermediateConversionOptions, ProductType } from "../types/index.js";
 
 /**
- * CLIオプションの型定義
+ * CLI option type definition
  */
 export interface CLIOptions extends IntermediateConversionOptions {
-  // IntermediateConversionOptionsから継承されるフィールド:
+  // Fields inherited from IntermediateConversionOptions:
   // source: ProductType;
   // destination: ProductType;
   // removeUnsupported: boolean;
   // noOverwrite: boolean;
   // syncDelete: boolean;
   // file?: string;
-  // dryRun: boolean;
+  // noop: boolean;
   // verbose: boolean;
   // claudeDir?: string;
   // geminiDir?: string;
 }
 
 /**
- * CLIオプションのデフォルト値
+ * Default values for CLI options
  */
 export const defaultCLIOptions: Partial<CLIOptions> = {
   removeUnsupported: false,
   noOverwrite: false,
   syncDelete: false,
-  dryRun: false,
+  noop: false,
   verbose: false,
 };
 
 /**
- * CLIオプションを検証
+ * Validate CLI options
  */
 export function validateCLIOptions(options: Partial<CLIOptions>): string[] {
   const errors: string[] = [];
 
-  // source の検証
+  // Validate source
   if (!options.source) {
     errors.push("--src option is required");
-  } else if (!["claude", "gemini"].includes(options.source)) {
-    errors.push('--src must be either "claude" or "gemini"');
+  } else if (!["claude", "gemini", "codex"].includes(options.source)) {
+    errors.push('--src must be one of "claude", "gemini", or "codex"');
   }
 
-  // destination の検証
+  // Validate destination
   if (!options.destination) {
     errors.push("--dest option is required");
-  } else if (!["claude", "gemini"].includes(options.destination)) {
-    errors.push('--dest must be either "claude" or "gemini"');
+  } else if (!["claude", "gemini", "codex"].includes(options.destination)) {
+    errors.push('--dest must be one of "claude", "gemini", or "codex"');
   }
 
-  // source と destination が同じ場合のチェック
+  // Check if source and destination are the same
   if (options.source && options.destination && options.source === options.destination) {
     errors.push("Source and destination must be different");
   }
 
-  // file オプションの検証
+  // Validate file option
   if (options.file) {
     if (typeof options.file !== "string" || options.file.trim().length === 0) {
       errors.push("--file must be a non-empty string");
     }
 
-    // 危険な文字をチェック
+    // Check for dangerous characters
     const dangerousChars = ["..", "/", "\\", "<", ">", "|", "?", "*"];
     for (const char of dangerousChars) {
       if (options.file.includes(char)) {
@@ -68,14 +68,14 @@ export function validateCLIOptions(options: Partial<CLIOptions>): string[] {
     }
   }
 
-  // claudeDir オプションの検証
+  // Validate claudeDir option
   if (options.claudeDir?.endsWith("/commands")) {
     errors.push(
       "--claude-dir should point to the base Claude directory (e.g., ~/.claude), not the commands subdirectory. The '/commands' suffix will be added automatically. (Changed in v1.2.0)",
     );
   }
 
-  // geminiDir オプションの検証
+  // Validate geminiDir option
   if (options.geminiDir?.endsWith("/commands")) {
     errors.push(
       "--gemini-dir should point to the base Gemini directory (e.g., ~/.gemini), not the commands subdirectory. The '/commands' suffix will be added automatically. (Changed in v1.2.0)",
@@ -86,7 +86,7 @@ export function validateCLIOptions(options: Partial<CLIOptions>): string[] {
 }
 
 /**
- * CLIオプションをIntermediateConversionOptionsに変換
+ * Convert CLI options to IntermediateConversionOptions
  */
 export function cliOptionsToConversionOptions(cliOptions: CLIOptions): IntermediateConversionOptions {
   return {
@@ -96,9 +96,10 @@ export function cliOptionsToConversionOptions(cliOptions: CLIOptions): Intermedi
     noOverwrite: cliOptions.noOverwrite,
     syncDelete: cliOptions.syncDelete,
     file: cliOptions.file,
-    dryRun: cliOptions.dryRun,
+    noop: cliOptions.noop,
     verbose: cliOptions.verbose,
     claudeDir: cliOptions.claudeDir,
     geminiDir: cliOptions.geminiDir,
+    codexDir: cliOptions.codexDir,
   };
 }

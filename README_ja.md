@@ -7,7 +7,7 @@
 [![npm version](https://badge.fury.io/js/agent-slash-sync.svg)](https://www.npmjs.com/package/agent-slash-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Claude Code と Gemini CLI 間でカスタムスラッシュコマンドを双方向に変換・同期する、直感的なビジュアルフィードバック付きのツールです。
+Claude Code、Gemini CLI、Codex CLI 間でカスタムスラッシュコマンドを双方向に変換・同期する、直感的なビジュアルフィードバック付きのツールです。
 
 ## インストール
 
@@ -25,7 +25,7 @@ assync -s claude -d gemini
 assync -s gemini -d claude
 
 # 適用前に変更をプレビュー
-assync --dry-run -s claude -d gemini
+assync -n -s claude -d gemini
 ```
 
 ## スクリーンショット
@@ -47,24 +47,25 @@ assync --dry-run -s claude -d gemini
 
 ## オプション
 
-| オプション                    | 説明                                                              |
-| --------------------------- | --------------------------------------------------------------- |
-| `-s, --src <product>`       | **必須。** ソース製品: `claude` または `gemini`                     |
-| `-d, --dest <product>`      | **必須。** 宛先製品: `claude` または `gemini`                       |
-| `-f, --file <filename>`     | 特定のファイルのみ変換（`.md`, `.toml` 拡張子をサポート）             |
-| `--dry-run`                 | 変更を適用せずにプレビュー                                          |
-| `-v, --verbose`             | 詳細なデバッグ情報を表示                                           |
-| `--claude-dir <path>`       | Claude ベースディレクトリ（デフォルト: ~/.claude）                   |
-| `--gemini-dir <path>`       | Gemini ベースディレクトリ（デフォルト: ~/.gemini）                   |
-| `--no-overwrite`            | ターゲットディレクトリの既存ファイルをスキップ                         |
-| `--sync-delete`             | ターゲットディレクトリの孤立ファイルを削除                            |
-| `--remove-unsupported`      | ターゲット形式でサポートされていないフィールドを削除                    |
+| オプション                    | 説明                                                                     |
+| --------------------------- | ----------------------------------------------------------------------- |
+| `-s, --src <product>`       | **必須。** ソース製品: `claude`、`gemini`、または `codex`                   |
+| `-d, --dest <product>`      | **必須。** 宛先製品: `claude`、`gemini`、または `codex`                     |
+| `-f, --file <filename>`     | 特定のファイルのみ変換（`.md`, `.toml` 拡張子をサポート）                    |
+| `-n, --noop`                | 変更を適用せずにプレビュー                                                 |
+| `-v, --verbose`             | 詳細なデバッグ情報を表示                                                  |
+| `--claude-dir <path>`       | Claude ベースディレクトリ（デフォルト: ~/.claude）                          |
+| `--gemini-dir <path>`       | Gemini ベースディレクトリ（デフォルト: ~/.gemini）                          |
+| `--codex-dir <path>`        | Codex ベースディレクトリ（デフォルト: ~/.codex）                           |
+| `--no-overwrite`            | ターゲットディレクトリの既存ファイルをスキップ                                |
+| `--sync-delete`             | ターゲットディレクトリの孤立ファイルを削除                                   |
+| `--remove-unsupported`      | ターゲット形式でサポートされていないフィールドを削除                           |
 
 ## 使用例
 
 ```bash
 # プレビュー付きで全コマンドを変換
-assync --dry-run -s claude -d gemini
+assync -n -s claude -d gemini
 
 # 特定のファイルを変換
 assync -s gemini -d claude -f analyze-code
@@ -83,16 +84,17 @@ assync -s claude -d gemini -v
 
 - **Claude Code**: `~/.claude/commands/*.md`
 - **Gemini CLI**: `~/.gemini/commands/*.toml`
+- **Codex CLI**: `~/.codex/prompts/*.md`
 
 ## 形式変換
 
-| Claude Code                               | Gemini CLI    | 備考                                            |
-| ----------------------------------------- | ------------- | ----------------------------------------------- |
-| Markdown コンテンツ                         | `prompt`      | メインコマンドの内容                               |
-| Frontmatter の `description`               | `description` | コマンドの説明                                    |
-| `$ARGUMENTS`                              | `{{args}}`    | 引数プレースホルダー                                |
-| `!command`                                | `!{command}`  | シェルコマンド構文                                  |
-| `allowed-tools`, `argument-hint`, `model` | -             | Claude 固有（`--remove-unsupported` を使用して削除）|
+| Claude Code                               | Gemini CLI    | Codex CLI     | 備考                                            |
+| ----------------------------------------- | ------------- | ------------- | ----------------------------------------------- |
+| Markdown                                  | `prompt`      | Markdown      | メインコマンドの内容                               |
+| Frontmatter の `description`               | `description` | -             | コマンドの説明                                    |
+| `allowed-tools`, `argument-hint`, `model` | -             | -             | Claude 固有（`--remove-unsupported` を使用して削除）|
+| `$ARGUMENTS`                              | `{{args}}`    | `$ARGUMENTS`  | 引数プレースホルダー                                |
+| `!command`                                | `!{command}`  | -             | シェルコマンド構文                                  |
 
 ## ステータスインジケータ
 
@@ -130,6 +132,9 @@ npm run lint:tsc
 
 # 開発モード（ウォッチ）
 npm run dev
+
+# 実行
+node dist/cli/index.js
 ```
 
 ### パブリッシング

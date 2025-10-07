@@ -2,23 +2,23 @@ import type { ClaudeCommand, GeminiCommand, ValidationFunction } from "../types/
 import { ValidationError } from "../types/index.js";
 
 /**
- * Claude Commandの詳細バリデーション
+ * Detailed validation for Claude Command
  */
 export const validateClaudeCommand: ValidationFunction<ClaudeCommand> = (data) => {
   const errors: ValidationError[] = [];
 
-  // ファイルパスの検証
+  // Validate file path
   if (!data.filePath || typeof data.filePath !== "string") {
     errors.push(new ValidationError("File path is required and must be a string", "filePath", data.filePath));
   }
 
-  // フロントマターの検証
+  // Validate frontmatter
   if (!data.frontmatter || typeof data.frontmatter !== "object") {
     errors.push(new ValidationError("Frontmatter is required and must be an object", "frontmatter", data.frontmatter));
   } else {
     const { frontmatter } = data;
 
-    // allowed-tools フィールドの検証
+    // Validate allowed-tools field
     if (frontmatter["allowed-tools"] !== undefined) {
       if (typeof frontmatter["allowed-tools"] !== "string") {
         errors.push(
@@ -31,7 +31,7 @@ export const validateClaudeCommand: ValidationFunction<ClaudeCommand> = (data) =
       }
     }
 
-    // argument-hint フィールドの検証
+    // Validate argument-hint field
     if (frontmatter["argument-hint"] !== undefined) {
       if (typeof frontmatter["argument-hint"] !== "string") {
         errors.push(
@@ -44,7 +44,7 @@ export const validateClaudeCommand: ValidationFunction<ClaudeCommand> = (data) =
       }
     }
 
-    // description フィールドの検証
+    // Validate description field
     if (frontmatter.description !== undefined) {
       if (typeof frontmatter.description !== "string") {
         errors.push(
@@ -57,14 +57,14 @@ export const validateClaudeCommand: ValidationFunction<ClaudeCommand> = (data) =
       }
     }
 
-    // model フィールドの検証
+    // Validate model field
     if (frontmatter.model !== undefined) {
       if (typeof frontmatter.model !== "string") {
         errors.push(new ValidationError("model must be a string", "frontmatter.model", frontmatter.model));
       } else {
         const validModels = ["opus", "sonnet", "haiku"];
         if (!validModels.includes(frontmatter.model) && !frontmatter.model.includes("-")) {
-          // 特定のモデル文字列も許可するため、ハイフンを含む場合は通す
+          // Allow specific model strings containing hyphens
           errors.push(
             new ValidationError(
               `model must be one of: ${validModels.join(", ")} or a specific model string`,
@@ -77,7 +77,7 @@ export const validateClaudeCommand: ValidationFunction<ClaudeCommand> = (data) =
     }
   }
 
-  // コンテンツの検証
+  // Validate content
   if (typeof data.content !== "string") {
     errors.push(new ValidationError("Content must be a string", "content", data.content));
   }
@@ -86,17 +86,17 @@ export const validateClaudeCommand: ValidationFunction<ClaudeCommand> = (data) =
 };
 
 /**
- * Gemini Commandの詳細バリデーション
+ * Detailed validation for Gemini Command
  */
 export const validateGeminiCommand: ValidationFunction<GeminiCommand> = (data) => {
   const errors: ValidationError[] = [];
 
-  // ファイルパスの検証
+  // Validate file path
   if (!data.filePath || typeof data.filePath !== "string") {
     errors.push(new ValidationError("File path is required and must be a string", "filePath", data.filePath));
   }
 
-  // prompt フィールドの検証（必須）
+  // Validate prompt field (required)
   if (!data.prompt) {
     errors.push(new ValidationError("prompt is required", "prompt", data.prompt));
   } else if (typeof data.prompt !== "string") {
@@ -105,7 +105,7 @@ export const validateGeminiCommand: ValidationFunction<GeminiCommand> = (data) =
     errors.push(new ValidationError("prompt cannot be empty", "prompt", data.prompt));
   }
 
-  // description フィールドの検証（オプション）
+  // Validate description field (optional)
   if (data.description !== undefined) {
     if (typeof data.description !== "string") {
       errors.push(new ValidationError("description must be a string", "description", data.description));
@@ -118,7 +118,7 @@ export const validateGeminiCommand: ValidationFunction<GeminiCommand> = (data) =
 };
 
 /**
- * ファイルパスの妥当性を検証
+ * Validate file path validity
  */
 export function validateFilePath(filePath: string): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -128,7 +128,7 @@ export function validateFilePath(filePath: string): ValidationError[] {
     return errors;
   }
 
-  // 危険な文字をチェック
+  // Check for dangerous characters
   const dangerousChars = ["..", "<", ">", "|", "?", "*"];
   for (const char of dangerousChars) {
     if (filePath.includes(char)) {
@@ -136,7 +136,7 @@ export function validateFilePath(filePath: string): ValidationError[] {
     }
   }
 
-  // 絶対パスかどうかをチェック（セキュリティ上の理由）
+  // Check if absolute path (for security reasons)
   if (filePath.startsWith("/") && !filePath.startsWith(process.cwd()) && !filePath.startsWith(process.env.HOME || "")) {
     errors.push(
       new ValidationError(
@@ -151,7 +151,7 @@ export function validateFilePath(filePath: string): ValidationError[] {
 }
 
 /**
- * バリデーションエラーを人間が読みやすい形式でフォーマット
+ * Format validation errors in human-readable form
  */
 export function formatValidationErrors(errors: ValidationError[]): string {
   if (errors.length === 0) {
