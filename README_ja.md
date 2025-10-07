@@ -2,39 +2,43 @@
 
 --------------------------------------------------------------------------------
 
-# agent-slash-sync
+# agent-command-sync
 
-[![npm version](https://badge.fury.io/js/agent-slash-sync.svg)](https://www.npmjs.com/package/agent-slash-sync)
+[![npm version](https://badge.fury.io/js/agent-command-sync.svg)](https://www.npmjs.com/package/agent-command-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Claude Code、Gemini CLI、Codex CLI 間でカスタムスラッシュコマンドを双方向に変換・同期する、直感的なビジュアルフィードバック付きのツールです。
 
+## CHANGELOG
+
+[CHANGELOG_ja.txt](CHANGELOG_ja.txt)
+
 ## インストール
 
 ```bash
-npm install -g agent-slash-sync
+npm install -g agent-command-sync
 ```
 
 ## クイックスタート
 
 ```bash
 # Claude Code → Gemini CLI に変換
-assync -s claude -d gemini
+acsync -s claude -d gemini
 
 # Gemini CLI → Claude Code に変換
-assync -s gemini -d claude
+acsync -s gemini -d claude
 
 # 適用前に変更をプレビュー
-assync -n -s claude -d gemini
+acsync -n -s claude -d gemini
 ```
 
 ## スクリーンショット
 
 ### 使用例
-![agent-slash-sync usage](docs/assync-usage.png)
+![agent-command-sync usage](docs/acsync-usage.png)
 
 ### 変換例
-![agent-slash-sync example](docs/assync-example.png)
+![agent-command-sync example](docs/acsync-example.png)
 
 ## 機能
 
@@ -42,7 +46,7 @@ assync -n -s claude -d gemini
 - **高速変換** - Claude Code と Gemini CLI 間でコマンドを効率的に同期
 - **双方向対応** - 両方向への変換に対応（Claude ↔ Gemini）
 - **デフォルトで安全** - ドライランモードで適用前に変更をプレビュー
-- **短縮コマンド** - `agent-slash-sync` の代わりに `assync` を使用可能
+- **短縮コマンド** - `agent-command-sync` の代わりに `acsync` を使用可能
 - **選択的同期** - 特定のファイルまたは全コマンドを一括変換
 
 ## オプション
@@ -65,19 +69,19 @@ assync -n -s claude -d gemini
 
 ```bash
 # プレビュー付きで全コマンドを変換
-assync -n -s claude -d gemini
+acsync -n -s claude -d gemini
 
 # 特定のファイルを変換
-assync -s gemini -d claude -f analyze-code
+acsync -s gemini -d claude -f analyze-code
 
 # クリーンアップ付きの完全同期
-assync -s claude -d gemini --sync-delete --remove-unsupported
+acsync -s claude -d gemini --sync-delete --remove-unsupported
 
 # カスタムディレクトリを使用（ベースディレクトリを指定、/commands は自動的に追加されます）
-assync -s claude -d gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
+acsync -s claude -d gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
 
 # デバッグ用の詳細出力を表示
-assync -s claude -d gemini -v
+acsync -s claude -d gemini -v
 ```
 
 ## ファイルの場所
@@ -95,6 +99,12 @@ assync -s claude -d gemini -v
 | `allowed-tools`, `argument-hint`, `model` | -             | -             | Claude 固有（`--remove-unsupported` を使用して削除）|
 | `$ARGUMENTS`                              | `{{args}}`    | `$ARGUMENTS`  | 引数プレースホルダー                                |
 | `!command`                                | `!{command}`  | -             | シェルコマンド構文                                  |
+
+### 公式ドキュメント
+
+- [Slash commands - Claude Docs](https://docs.claude.com/en/docs/claude-code/slash-commands)
+- [gemini-cli/docs/cli/custom-commands.md at main · google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/custom-commands.md)
+- [codex/docs/prompts.md at main · openai/codex](https://github.com/openai/codex/blob/main/docs/prompts.md)
 
 ## ステータスインジケータ
 

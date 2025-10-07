@@ -9,7 +9,7 @@ import { syncCommands } from "./sync.js";
 const program = new Command();
 
 program
-  .name("agent-slash-sync")
+  .name("agent-command-sync")
   .description("Convert Custom Slash Commands between Claude Code and Gemini CLI")
   .version(version);
 
@@ -88,17 +88,17 @@ program
 program.on("--help", () => {
   console.log("");
   console.log("Examples:");
-  console.log("  $ assync -s claude -d gemini               # Convert all Claude commands to Gemini");
-  console.log("  $ assync -s gemini -d claude -n            # Preview Gemini to Claude conversion");
-  console.log("  $ assync -s codex -d claude                # Convert Codex commands to Claude");
-  console.log("  $ assync -s claude -d gemini --file mycommand   # Convert specific file");
-  console.log("  $ assync -s claude -d gemini --remove-unsupported # Remove unsupported fields");
-  console.log("  $ assync -s gemini -d claude --no-overwrite     # Skip existing files");
-  console.log("  $ assync -s claude -d gemini --sync-delete      # Delete orphaned files");
-  console.log("  $ assync -s claude -d gemini --verbose          # Show detailed debug information");
-  console.log("  $ assync -s claude -d gemini --claude-dir ~/my-claude # Use custom Claude base directory");
-  console.log("  $ assync -s gemini -d claude --gemini-dir ~/my-gemini # Use custom Gemini base directory");
-  console.log("  $ assync -s codex -d gemini --codex-dir ~/my-codex   # Use custom Codex base directory");
+  console.log("  $ acsync -s claude -d gemini               # Convert all Claude commands to Gemini");
+  console.log("  $ acsync -s gemini -d claude -n            # Preview Gemini to Claude conversion");
+  console.log("  $ acsync -s codex -d claude                # Convert Codex commands to Claude");
+  console.log("  $ acsync -s claude -d gemini --file mycommand   # Convert specific file");
+  console.log("  $ acsync -s claude -d gemini --remove-unsupported # Remove unsupported fields");
+  console.log("  $ acsync -s gemini -d claude --no-overwrite     # Skip existing files");
+  console.log("  $ acsync -s claude -d gemini --sync-delete      # Delete orphaned files");
+  console.log("  $ acsync -s claude -d gemini --verbose          # Show detailed debug information");
+  console.log("  $ acsync -s claude -d gemini --claude-dir ~/my-claude # Use custom Claude base directory");
+  console.log("  $ acsync -s gemini -d claude --gemini-dir ~/my-gemini # Use custom Gemini base directory");
+  console.log("  $ acsync -s codex -d gemini --codex-dir ~/my-codex   # Use custom Codex base directory");
 });
 
 program.parse();

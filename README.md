@@ -2,39 +2,43 @@
 
 --------------------------------------------------------------------------------
 
-# agent-slash-sync
+# agent-command-sync
 
-[![npm version](https://badge.fury.io/js/agent-slash-sync.svg)](https://www.npmjs.com/package/agent-slash-sync)
+[![npm version](https://badge.fury.io/js/agent-command-sync.svg)](https://www.npmjs.com/package/agent-command-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Bidirectionally convert and sync Custom Slash Commands between Claude Code, Gemini CLI, and Codex CLI with intuitive visual feedback.
 
+## CHANGELOG
+
+[CHANGELOG.txt](CHANGELOG.txt)
+
 ## Installation
 
 ```bash
-npm install -g agent-slash-sync
+npm install -g agent-command-sync
 ```
 
 ## Quick Start
 
 ```bash
 # Convert Claude Code → Gemini CLI
-assync -s claude -d gemini
+acsync -s claude -d gemini
 
 # Convert Gemini CLI → Claude Code
-assync -s gemini -d claude
+acsync -s gemini -d claude
 
 # Preview changes without applying
-assync -n -s claude -d gemini
+acsync -n -s claude -d gemini
 ```
 
 ## Screenshots
 
 ### Usage Example
-![agent-slash-sync usage](docs/assync-usage.png)
+![agent-command-sync usage](docs/acsync-usage.png)
 
 ### Conversion Example
-![agent-slash-sync example](docs/assync-example.png)
+![agent-command-sync example](docs/acsync-example.png)
 
 ## Features
 
@@ -42,7 +46,7 @@ assync -n -s claude -d gemini
 - **Fast Conversion** - Efficiently sync commands between Claude Code and Gemini CLI
 - **Bidirectional** - Convert in both directions (Claude ↔ Gemini)
 - **Safe by Default** - Preview changes with dry-run mode before applying
-- **Short Command** - Use `assync` instead of `agent-slash-sync`
+- **Short Command** - Use `acsync` instead of `agent-command-sync`
 - **Selective Sync** - Convert specific files or all commands at once
 
 ## Options
@@ -65,19 +69,19 @@ assync -n -s claude -d gemini
 
 ```bash
 # Convert all commands with preview
-assync -n -s claude -d gemini
+acsync -n -s claude -d gemini
 
 # Convert specific file
-assync -s gemini -d claude -f analyze-code
+acsync -s gemini -d claude -f analyze-code
 
 # Full sync with cleanup
-assync -s claude -d gemini --sync-delete --remove-unsupported
+acsync -s claude -d gemini --sync-delete --remove-unsupported
 
 # Use custom directories (base directories, /commands will be added automatically)
-assync -s claude -d gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
+acsync -s claude -d gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
 
 # Show verbose output for debugging
-assync -s claude -d gemini -v
+acsync -s claude -d gemini -v
 ```
 
 ## File Locations
@@ -95,6 +99,12 @@ assync -s claude -d gemini -v
 | `allowed-tools`, `argument-hint`, `model` | -             | -             | Claude-specific (use `--remove-unsupported`) |
 | `$ARGUMENTS`                              | `{{args}}`    | `$ARGUMENTS`  | Argument placeholder                         |
 | `!command`                                | `!{command}`  | -             | Shell command syntax                         |
+
+### Official Documents
+
+- [Slash commands - Claude Docs](https://docs.claude.com/en/docs/claude-code/slash-commands)
+- [gemini-cli/docs/cli/custom-commands.md at main · google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/custom-commands.md)
+- [codex/docs/prompts.md at main · openai/codex](https://github.com/openai/codex/blob/main/docs/prompts.md)
 
 ## Status Indicators
 

@@ -1,12 +1,12 @@
 {
-  "name": "agent-slash-sync",
+  "name": "agent-command-sync",
   "version": "2.0.0",
   "description": "Bidirectionally convert and sync Custom Slash Commands between Claude Code and Gemini CLI with intuitive visual feedback",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "agent-slash-sync": "./bin/agent-slash-sync",
-    "assync": "./bin/agent-slash-sync"
+    "agent-command-sync": "./bin/agent-command-sync",
+    "acsync": "./bin/agent-command-sync"
   },
   "scripts": {
     "build": "vite build",
@@ -41,12 +41,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hatappo/agent-slash-sync.git"
+    "url": "git+https://github.com/hatappo/agent-command-sync.git"
   },
   "bugs": {
-    "url": "https://github.com/hatappo/agent-slash-sync/issues"
+    "url": "https://github.com/hatappo/agent-command-sync/issues"
   },
-  "homepage": "https://github.com/hatappo/agent-slash-sync#readme",
+  "homepage": "https://github.com/hatappo/agent-command-sync#readme",
   "engines": {
     "node": ">=18.0.0"
   },
