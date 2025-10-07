@@ -1,3 +1,7 @@
+<div align="center"> en | <a href="README_ja.md">ja</a> </div>
+
+--------------------------------------------------------------------------------
+
 # agent-slash-sync
 
 [![npm version](https://badge.fury.io/js/agent-slash-sync.svg)](https://www.npmjs.com/package/agent-slash-sync)
