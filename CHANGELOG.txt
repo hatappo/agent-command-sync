@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.1.0] - 2025-01-08
+
+### Added
+- **File reference conversion**: Added automatic conversion of file reference syntax between Claude Code (`@path/to/file`) and Gemini CLI (`@{path/to/file}`)
+- **Individual argument placeholders documentation**: Documented support for `$1` through `$9` placeholders in Claude Code and Codex CLI
+
+### Changed
+- Improved README documentation with clearer format comparison tables
+  - Separated into "File Structure and Metadata" and "Content Placeholders and Syntax" sections
+  - Added detailed explanations for all placeholder types
+
+### Fixed
+- File reference patterns now correctly handle various file paths and extensions
+
 ## [2.0.0] - 2025-01-07
 
 ### Breaking Changes
