@@ -70,11 +70,8 @@ describe("Agent Slash Sync Tests", () => {
 
   describe("Placeholder Conversions", () => {
     it("should convert file references between Claude and Gemini", async () => {
-      const {
-        convertClaudeToGeminiPlaceholders,
-        convertGeminiToClaudePlaceholders,
-        convertFileReferences,
-      } = await import("../../src/utils/placeholder-utils.js");
+      const { convertClaudeToGeminiPlaceholders, convertGeminiToClaudePlaceholders, convertFileReferences } =
+        await import("../../src/utils/placeholder-utils.js");
 
       // Claude to Gemini file reference conversion
       const claudeContent = "Load config from @config.json and template from @templates/main.html";
@@ -93,10 +90,9 @@ describe("Agent Slash Sync Tests", () => {
     });
 
     it("should preserve individual argument placeholders", async () => {
-      const {
-        convertClaudeToGeminiPlaceholders,
-        convertGeminiToClaudePlaceholders,
-      } = await import("../../src/utils/placeholder-utils.js");
+      const { convertClaudeToGeminiPlaceholders, convertGeminiToClaudePlaceholders } = await import(
+        "../../src/utils/placeholder-utils.js"
+      );
 
       // Individual arguments should be preserved (not converted)
       const claudeContent = "First: $1, Second: $2, All: $ARGUMENTS";
@@ -110,10 +106,9 @@ describe("Agent Slash Sync Tests", () => {
     });
 
     it("should handle mixed placeholders correctly", async () => {
-      const {
-        convertClaudeToGeminiPlaceholders,
-        convertGeminiToClaudePlaceholders,
-      } = await import("../../src/utils/placeholder-utils.js");
+      const { convertClaudeToGeminiPlaceholders, convertGeminiToClaudePlaceholders } = await import(
+        "../../src/utils/placeholder-utils.js"
+      );
 
       // Mixed Claude placeholders
       const claudeMixed = "Run !`git status` with $ARGUMENTS and load @config.json for user $1";
