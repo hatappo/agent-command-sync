@@ -84,21 +84,42 @@ acsync -s claude -d gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
 acsync -s claude -d gemini -v
 ```
 
-## File Locations
+## Default File Locations
 
 - **Claude Code**: `~/.claude/commands/*.md`
 - **Gemini CLI**: `~/.gemini/commands/*.toml`
 - **Codex CLI**: `~/.codex/prompts/*.md`
 
-## Format Conversion
+## Format Comparison and Conversion Specification
 
-| Claude Code                               | Gemini CLI    | Codex CLI     | Notes                                        |
-| ----------------------------------------- | ------------- | ------------- | -------------------------------------------- |
-| Markdown                                  | `prompt`      | Markdown      | Main command content                         |
-| Frontmatter `description`                 | `description` | -             | Command description                          |
-| `allowed-tools`, `argument-hint`, `model` | -             | -             | Claude-specific (use `--remove-unsupported`) |
-| `$ARGUMENTS`                              | `{{args}}`    | `$ARGUMENTS`  | Argument placeholder                         |
-| `!command`                                | `!{command}`  | -             | Shell command syntax                         |
+### File Structure and Metadata
+
+| Feature                                   | Claude Code   | Gemini CLI    | Codex CLI     | Conversion Notes                             |
+| ----------------------------------------- | ------------- | ------------- | ------------- | -------------------------------------------- |
+| File format                               | Markdown      | TOML          | Markdown      | Automatically converted                      |
+| Content field                             | Body content  | `prompt`      | Body content  | Main command content                         |
+| Description metadata                      | `description` | `description` | `description` | Preserved across formats                     |
+| `allowed-tools`, `argument-hint`, `model` | Supported     | -             | -             | Claude-specific (use `--remove-unsupported`) |
+
+### Content Placeholders and Syntax
+
+| Feature               | Claude Code    | Gemini CLI     | Codex CLI      | Conversion Behavior                    |
+| --------------------- | -------------- | -------------- | -------------- | -------------------------------------- |
+| All arguments         | `$ARGUMENTS`   | `{{args}}`     | `$ARGUMENTS`   | Converted between formats              |
+| Individual arguments  | `$1` ... `$9`  | -              | `$1` ... `$9`  | Preserved (not supported in Gemini)    |
+| Shell command         | `!command`     | `!{command}`   | -              | Converted between Claude/Gemini        |
+| File reference        | `@path/to/file`| `@{path/to/file}` | -           | Converted between Claude/Gemini        |
+
+#### Individual Arguments
+The placeholders `$1` through `$9` allow referencing individual command arguments. For example, `$1` refers to the first argument, `$2` to the second, and so on. This feature is supported in Claude Code and Codex CLI, but not in Gemini CLI. During conversion, these placeholders are preserved as-is.
+
+#### File References
+File references allow embedding file contents inline within the command. The syntax differs between tools:
+- Claude Code uses `@path/to/file.txt`
+- Gemini CLI uses `@{path/to/file.txt}`
+- Codex CLI does not support this feature
+
+During conversion between Claude and Gemini, the syntax is automatically converted. When converting to/from Codex, the file reference syntax is preserved unchanged.
 
 ### Official Documents
 

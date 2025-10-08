@@ -84,21 +84,42 @@ acsync -s claude -d gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
 acsync -s claude -d gemini -v
 ```
 
-## ファイルの場所
+## デフォルトのファイルの場所
 
 - **Claude Code**: `~/.claude/commands/*.md`
 - **Gemini CLI**: `~/.gemini/commands/*.toml`
 - **Codex CLI**: `~/.codex/prompts/*.md`
 
-## 形式変換
+## 形式比較と変換仕様
 
-| Claude Code                               | Gemini CLI    | Codex CLI     | 備考                                            |
-| ----------------------------------------- | ------------- | ------------- | ----------------------------------------------- |
-| Markdown                                  | `prompt`      | Markdown      | メインコマンドの内容                               |
-| Frontmatter の `description`               | `description` | -             | コマンドの説明                                    |
-| `allowed-tools`, `argument-hint`, `model` | -             | -             | Claude 固有（`--remove-unsupported` を使用して削除）|
-| `$ARGUMENTS`                              | `{{args}}`    | `$ARGUMENTS`  | 引数プレースホルダー                                |
-| `!command`                                | `!{command}`  | -             | シェルコマンド構文                                  |
+### ファイル構造とメタデータ
+
+| 機能                                      | Claude Code   | Gemini CLI    | Codex CLI     | 変換メモ                                      |
+| ----------------------------------------- | ------------- | ------------- | ------------- | -------------------------------------------- |
+| ファイル形式                               | Markdown      | TOML          | Markdown      | 自動変換                                     |
+| コンテンツフィールド                        | 本文コンテンツ  | `prompt`      | 本文コンテンツ  | メインコマンドの内容                           |
+| 説明メタデータ                            | `description` | `description` | `description` | 形式間で保持                                  |
+| `allowed-tools`, `argument-hint`, `model` | サポート       | -             | -             | Claude固有（`--remove-unsupported`を使用して削除）|
+
+### コンテンツプレースホルダーと構文
+
+| 機能                  | Claude Code    | Gemini CLI     | Codex CLI      | 変換動作                               |
+| -------------------- | -------------- | -------------- | -------------- | ------------------------------------- |
+| すべての引数          | `$ARGUMENTS`   | `{{args}}`     | `$ARGUMENTS`   | 形式間で変換                           |
+| 個別引数              | `$1` ... `$9`  | -              | `$1` ... `$9`  | そのまま保持（Geminiはサポートなし）      |
+| シェルコマンド        | `!command`     | `!{command}`   | -              | Claude/Gemini間で変換                  |
+| ファイル参照          | `@path/to/file`| `@{path/to/file}` | -           | Claude/Gemini間で変換                  |
+
+#### 個別引数
+プレースホルダー `$1` から `$9` は、個々のコマンド引数を参照できます。例えば、`$1` は最初の引数、`$2` は2番目の引数を参照します。この機能はClaude CodeとCodex CLIでサポートされていますが、Gemini CLIではサポートされていません。変換時、これらのプレースホルダーはそのまま保持されます。
+
+#### ファイル参照
+ファイル参照を使用すると、コマンド内にファイルの内容をインラインで埋め込むことができます。ツール間で構文が異なります：
+- Claude Codeは `@path/to/file.txt` を使用
+- Gemini CLIは `@{path/to/file.txt}` を使用
+- Codex CLIはこの機能をサポートしていません
+
+ClaudeとGemini間の変換では、構文が自動的に変換されます。Codexとの変換では、ファイル参照構文はそのまま保持されます。
 
 ### 公式ドキュメント
 
