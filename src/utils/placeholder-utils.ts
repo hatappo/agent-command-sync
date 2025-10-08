@@ -22,6 +22,9 @@ export function convertClaudeToGeminiPlaceholders(content: string): string {
   // Convert !command → !{command} at line start
   result = result.replace(PLACEHOLDERS.CLAUDE.SHELL_COMMAND_LINE_START, "!{$1}");
 
+  // Convert @path/to/file → @{path/to/file}
+  result = result.replace(PLACEHOLDERS.CLAUDE.FILE_REFERENCE, "@{$1}");
+
   return result;
 }
 
@@ -39,6 +42,9 @@ export function convertGeminiToClaudePlaceholders(content: string): string {
 
   // Convert !{command} → !`command`
   result = result.replace(PLACEHOLDERS.GEMINI.SHELL_COMMAND, "!`$1`");
+
+  // Convert @{path/to/file} → @path/to/file
+  result = result.replace(PLACEHOLDERS.GEMINI.FILE_REFERENCE, "@$1");
 
   return result;
 }
@@ -73,4 +79,16 @@ export function convertShellCommands(content: string, direction: "c2g" | "g2c"):
   }
   // Convert !{command} → !`command`
   return content.replace(PLACEHOLDERS.GEMINI.SHELL_COMMAND, "!`$1`");
+}
+
+/**
+ * Convert file reference syntax
+ */
+export function convertFileReferences(content: string, direction: "c2g" | "g2c"): string {
+  if (direction === "c2g") {
+    // Convert @path/to/file → @{path/to/file}
+    return content.replace(PLACEHOLDERS.CLAUDE.FILE_REFERENCE, "@{$1}");
+  }
+  // Convert @{path/to/file} → @path/to/file
+  return content.replace(PLACEHOLDERS.GEMINI.FILE_REFERENCE, "@$1");
 }

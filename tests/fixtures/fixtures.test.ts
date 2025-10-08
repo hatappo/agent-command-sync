@@ -68,6 +68,65 @@ describe("Agent Slash Sync Tests", () => {
     });
   });
 
+  describe("Placeholder Conversions", () => {
+    it("should convert file references between Claude and Gemini", async () => {
+      const {
+        convertClaudeToGeminiPlaceholders,
+        convertGeminiToClaudePlaceholders,
+        convertFileReferences,
+      } = await import("../../src/utils/placeholder-utils.js");
+
+      // Claude to Gemini file reference conversion
+      const claudeContent = "Load config from @config.json and template from @templates/main.html";
+      const geminiContent = convertClaudeToGeminiPlaceholders(claudeContent);
+      expect(geminiContent).toBe("Load config from @{config.json} and template from @{templates/main.html}");
+
+      // Gemini to Claude file reference conversion
+      const geminiSource = "Include @{src/main.ts} and @{README.md}";
+      const claudeResult = convertGeminiToClaudePlaceholders(geminiSource);
+      expect(claudeResult).toBe("Include @src/main.ts and @README.md");
+
+      // Using convertFileReferences function
+      const testContent = "Load @settings.yml and @data/users.json";
+      expect(convertFileReferences(testContent, "c2g")).toBe("Load @{settings.yml} and @{data/users.json}");
+      expect(convertFileReferences("@{config.toml}", "g2c")).toBe("@config.toml");
+    });
+
+    it("should preserve individual argument placeholders", async () => {
+      const {
+        convertClaudeToGeminiPlaceholders,
+        convertGeminiToClaudePlaceholders,
+      } = await import("../../src/utils/placeholder-utils.js");
+
+      // Individual arguments should be preserved (not converted)
+      const claudeContent = "First: $1, Second: $2, All: $ARGUMENTS";
+      const geminiContent = convertClaudeToGeminiPlaceholders(claudeContent);
+      expect(geminiContent).toBe("First: $1, Second: $2, All: {{args}}");
+
+      // Reverse conversion should also preserve individual arguments
+      const geminiSource = "Args: {{args}}, First: $1, Last: $9";
+      const claudeResult = convertGeminiToClaudePlaceholders(geminiSource);
+      expect(claudeResult).toBe("Args: $ARGUMENTS, First: $1, Last: $9");
+    });
+
+    it("should handle mixed placeholders correctly", async () => {
+      const {
+        convertClaudeToGeminiPlaceholders,
+        convertGeminiToClaudePlaceholders,
+      } = await import("../../src/utils/placeholder-utils.js");
+
+      // Mixed Claude placeholders
+      const claudeMixed = "Run !`git status` with $ARGUMENTS and load @config.json for user $1";
+      const geminiMixed = convertClaudeToGeminiPlaceholders(claudeMixed);
+      expect(geminiMixed).toBe("Run !{git status} with {{args}} and load @{config.json} for user $1");
+
+      // Mixed Gemini placeholders
+      const geminiMixed2 = "Execute !{npm test} with {{args}} and @{package.json}";
+      const claudeMixed2 = convertGeminiToClaudePlaceholders(geminiMixed2);
+      expect(claudeMixed2).toBe("Execute !`npm test` with $ARGUMENTS and @package.json");
+    });
+  });
+
   describe("Edge Cases", () => {
     it("should handle empty files gracefully", async () => {
       const parser = new ClaudeParser();

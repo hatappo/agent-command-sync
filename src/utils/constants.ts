@@ -17,11 +17,13 @@ export const PLACEHOLDERS = {
     ARGUMENTS: "$ARGUMENTS",
     SHELL_COMMAND_BACKTICK: /!`([^`]+)`/g,
     SHELL_COMMAND_LINE_START: /^!\s*([^\s{][^\n]*)/gm,
+    FILE_REFERENCE: /@([^\s{}\[\]()<>]+(?:\.[a-zA-Z0-9]+)?)/g,
   },
   // Gemini format
   GEMINI: {
     ARGUMENTS: "{{args}}",
     SHELL_COMMAND: /!\{([^}]+)\}/g,
+    FILE_REFERENCE: /@\{([^}]+)\}/g,
   },
 } as const;
 
