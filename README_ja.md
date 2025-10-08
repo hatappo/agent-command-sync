@@ -172,16 +172,19 @@ node dist/cli/index.js
 
 ```bash
 # パッケージ内容を確認
-npm run release:dry
+npm pack --dry-run
 
-# パッチバージョンをパブリッシュ（1.0.0 → 1.0.1）
-npm run release:patch
+# パッチバージョンを更新（1.0.0 → 1.0.1）
+npm version patch
 
-# マイナーバージョンをパブリッシュ（1.0.0 → 1.1.0）
-npm run release:minor
+# マイナーバージョンを更新（1.0.0 → 1.1.0）
+npm version minor
 
-# メジャーバージョンをパブリッシュ（1.0.0 → 2.0.0）
-npm run release:major
+# メジャーバージョンを更新（1.0.0 → 2.0.0）
+npm version major
+
+# パッケージを公開
+npm publish
 ```
 
 ## ライセンス

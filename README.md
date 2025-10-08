@@ -169,16 +169,19 @@ npm run dev
 
 ```bash
 # Check package contents
-npm run release:dry
+npm pack --dry-run
 
-# Publish patch version (1.0.0 → 1.0.1)
-npm run release:patch
+# Update patch version (1.0.0 → 1.0.1)
+npm version patch
 
-# Publish minor version (1.0.0 → 1.1.0)
-npm run release:minor
+# Update minor version (1.0.0 → 1.1.0)
+npm version minor
 
-# Publish major version (1.0.0 → 2.0.0)
-npm run release:major
+# Update major version (1.0.0 → 2.0.0)
+npm version major
+
+# Publish a package
+npm publish
 ```
 
 ## License

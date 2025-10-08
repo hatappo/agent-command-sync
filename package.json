@@ -21,11 +21,6 @@
     "prepublishOnly": "npm run check && npm run build",
     "preversion": "npm run check",
     "version": "npm run format && git add -A",
-    "postversion": "git push && git push --tags",
-    "release:patch": "npm version patch && npm publish",
-    "release:minor": "npm version minor && npm publish",
-    "release:major": "npm version major && npm publish",
-    "release:dry": "npm pack --dry-run",
     "npm:login": "npm login",
     "npm:whoami": "npm whoami"
   },
