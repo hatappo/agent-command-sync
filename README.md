@@ -7,7 +7,7 @@
 [![npm version](https://badge.fury.io/js/agent-command-sync.svg)](https://www.npmjs.com/package/agent-command-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Bidirectionally convert and sync Custom Slash Commands between Claude Code, Gemini CLI, and Codex CLI with intuitive visual feedback.
+Bidirectionally convert and sync Custom Slash Commands and Skills between Claude Code, Gemini CLI, and Codex CLI with intuitive visual feedback.
 
 ## CHANGELOG
 
@@ -22,11 +22,17 @@ npm install -g agent-command-sync
 ## Quick Start
 
 ```bash
-# Convert Claude Code → Gemini CLI
+# Convert Claude Code → Gemini CLI (Commands + Skills)
 acsync -s claude -d gemini
 
 # Convert Gemini CLI → Claude Code
 acsync -s gemini -d claude
+
+# Convert Skills only
+acsync -s claude -d gemini -t skills
+
+# Convert Commands only
+acsync -s claude -d gemini -t commands
 
 # Preview changes without applying
 acsync -n -s claude -d gemini
@@ -55,6 +61,7 @@ acsync -n -s claude -d gemini
 | --------------------------- | --------------------------------------------------------------------- |
 | `-s, --src <product>`       | **Required.** Source product: `claude`, `gemini`, or `codex`         |
 | `-d, --dest <product>`      | **Required.** Destination product: `claude`, `gemini`, or `codex`    |
+| `-t, --type <type>`         | Content type: `commands`, `skills`, or `both` (default: `both`)      |
 | `-f, --file <filename>`     | Convert specific file only (supports `.md`, `.toml` extensions)      |
 | `-n, --noop`                | Preview changes without applying them                                 |
 | `-v, --verbose`             | Show detailed debug information                                       |
@@ -68,16 +75,22 @@ acsync -n -s claude -d gemini
 ## Examples
 
 ```bash
-# Convert all commands with preview
+# Convert all commands and skills with preview
 acsync -n -s claude -d gemini
 
 # Convert specific file
 acsync -s gemini -d claude -f analyze-code
 
+# Convert Skills only
+acsync -s claude -d gemini -t skills
+
+# Convert specific skill
+acsync -s claude -d gemini -t skills -f my-skill
+
 # Full sync with cleanup
 acsync -s claude -d gemini --sync-delete --remove-unsupported
 
-# Use custom directories (base directories, /commands will be added automatically)
+# Use custom directories (base directories, /commands and /skills will be added automatically)
 acsync -s claude -d gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
 
 # Show verbose output for debugging
@@ -86,11 +99,29 @@ acsync -s claude -d gemini -v
 
 ## Default File Locations
 
+### Commands
 - **Claude Code**: `~/.claude/commands/*.md`
 - **Gemini CLI**: `~/.gemini/commands/*.toml`
 - **Codex CLI**: `~/.codex/prompts/*.md`
 
+### Skills
+- **Claude Code**: `~/.claude/skills/<skill-name>/SKILL.md`
+- **Gemini CLI**: `~/.gemini/skills/<skill-name>/SKILL.md`
+- **Codex CLI**: `~/.codex/skills/<skill-name>/SKILL.md`
+
 ## Format Comparison and Conversion Specification
+
+### Commands vs Skills
+
+| Aspect | Commands | Skills |
+| ------ | -------- | ------ |
+| Structure | Single file (`.md`, `.toml`) | Directory (`SKILL.md` + support files) |
+| Location | `~/.{tool}/commands/` | `~/.{tool}/skills/<name>/` |
+| Use Case | Simple prompts | Complex tasks with multiple files |
+
+---
+
+## Commands Format
 
 ### File Structure and Metadata
 
@@ -121,11 +152,121 @@ File references allow embedding file contents inline within the command. The syn
 
 During conversion between Claude and Gemini, the syntax is automatically converted. When converting to/from Codex, the file reference syntax is preserved unchanged.
 
-### Official Documents
+---
 
+## Skills Format
+
+Skills follow the [Agent Skills](https://agentskills.io/) open standard adopted by Claude Code, Gemini CLI, and Codex CLI.
+
+### Directory Structure
+
+Each skill is a directory containing `SKILL.md` and optional support files:
+
+```
+~/.claude/skills/
+└── my-skill/
+    ├── SKILL.md           # Main skill definition (required)
+    ├── helper.sh          # Support file (optional)
+    └── config.json        # Support file (optional)
+```
+
+### SKILL.md Format
+
+All tools use the same `SKILL.md` format with YAML frontmatter:
+
+```markdown
+---
+name: my-skill
+description: A helpful skill description
+---
+
+Skill instructions go here.
+
+Use $ARGUMENTS for user input.
+```
+
+### Skill Metadata Comparison
+
+| Field | Claude Code | Gemini CLI | Codex CLI | Conversion Notes |
+| ----- | ----------- | ---------- | --------- | ---------------- |
+| `name` | ✓ | ✓ | ✓ | Required |
+| `description` | ✓ | ✓ | ✓ | Preserved |
+| `argument-hint` | ✓ | - | - | Claude-specific |
+| `allowed-tools` | ✓ | - | - | Claude-specific |
+| `model` | ✓ | - | - | Claude-specific |
+| `context` | ✓ | - | - | Claude-specific (e.g., `"fork"`) |
+| `agent` | ✓ | - | - | Claude-specific |
+| `hooks` | ✓ | - | - | Claude-specific (before/after/on_error) |
+| `disable-model-invocation` | ✓ | - | ✓* | Converted (see below) |
+| `user-invocable` | ✓ | - | - | Claude-specific |
+
+\* Codex uses `policy.allow_implicit_invocation` in `agents/openai.yaml` (inverted logic)
+
+### Codex-Specific: agents/openai.yaml
+
+Codex CLI supports an optional `agents/openai.yaml` configuration file:
+
+```
+~/.codex/skills/
+└── my-skill/
+    ├── SKILL.md
+    └── agents/
+        └── openai.yaml    # Codex-specific configuration
+```
+
+Example `openai.yaml`:
+```yaml
+interface:
+  display_name: "My Skill"
+  short_description: "A skill description"
+policy:
+  allow_implicit_invocation: true
+```
+
+#### Model Invocation Control Conversion
+
+The `policy.allow_implicit_invocation` field in Codex is converted to/from Claude's `disable-model-invocation` with inverted logic:
+
+| Claude Code | Codex CLI (`openai.yaml`) |
+| ----------- | ------------------------- |
+| `disable-model-invocation: true` | `policy.allow_implicit_invocation: false` |
+| `disable-model-invocation: false` | `policy.allow_implicit_invocation: true` |
+
+When converting Claude → Codex with `disable-model-invocation` set, an `agents/openai.yaml` file is automatically generated.
+
+Other `openai.yaml` fields (`interface.display_name`, `interface.short_description`) are Codex-specific and not converted.
+
+### Support Files
+
+Support files (scripts, configs, images, etc.) are copied as-is during conversion:
+
+| File Type | Examples | Handling |
+| --------- | -------- | -------- |
+| Text | `.sh`, `.py`, `.json`, `.yaml` | Copied as-is |
+| Binary | `.png`, `.jpg`, `.pdf` | Copied as-is |
+| Config | `openai.yaml` | Codex-specific, ignored for other targets |
+
+### Placeholder Conversion (Skills)
+
+Same as Commands:
+
+| Feature | Claude Code / Codex CLI | Gemini CLI |
+| ------- | ----------------------- | ---------- |
+| All arguments | `$ARGUMENTS` | `{{args}}` |
+| Individual arguments | `$1` ... `$9` | Not supported |
+
+---
+
+## Official Documents
+
+### Commands
 - [Slash commands - Claude Docs](https://docs.claude.com/en/docs/claude-code/slash-commands)
 - [gemini-cli/docs/cli/custom-commands.md at main · google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/custom-commands.md)
 - [codex/docs/prompts.md at main · openai/codex](https://github.com/openai/codex/blob/main/docs/prompts.md)
+
+### Skills
+- [Agent Skills Standard](https://agentskills.io/)
+- [Custom skills - Claude Docs](https://docs.claude.com/en/docs/claude-code/custom-skills)
 
 ## Status Indicators
 

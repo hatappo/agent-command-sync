@@ -2,6 +2,25 @@ import { promises as fs } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, extname, join, relative, resolve } from "node:path";
 import type { CommandDirectories, FileSearchOptions } from "../types/index.js";
+import { SKILL_CONSTANTS } from "./constants.js";
+
+/**
+ * Skill directory configuration
+ */
+export interface SkillDirectories {
+  claude: {
+    project: string;
+    user: string;
+  };
+  gemini: {
+    project: string;
+    user: string;
+  };
+  codex: {
+    project: string;
+    user: string;
+  };
+}
 
 /**
  * Check if a file exists
@@ -286,4 +305,120 @@ export function getFilePathFromCommandName(commandName: string, baseDirectory: s
   // Convert colon to directory separator
   const relativePath = commandName.replace(/:/g, "/");
   return join(baseDirectory, `${relativePath}${extension}`);
+}
+
+/**
+ * Get skill directory configuration
+ */
+export function getSkillDirectories(claudeDir?: string, geminiDir?: string, codexDir?: string): SkillDirectories {
+  const homeDir = homedir();
+  const currentDir = process.cwd();
+
+  return {
+    claude: {
+      project: join(currentDir, ".claude", "skills"),
+      user: claudeDir ? join(resolvePath(claudeDir), "skills") : join(homeDir, ".claude", "skills"),
+    },
+    gemini: {
+      project: join(currentDir, ".gemini", "skills"),
+      user: geminiDir ? join(resolvePath(geminiDir), "skills") : join(homeDir, ".gemini", "skills"),
+    },
+    codex: {
+      project: join(currentDir, ".codex", "skills"),
+      user: codexDir ? join(resolvePath(codexDir), "skills") : join(homeDir, ".codex", "skills"),
+    },
+  };
+}
+
+/**
+ * Find skill directories (directories containing SKILL.md)
+ */
+async function findSkillDirs(
+  format: "claude" | "gemini" | "codex",
+  specificSkill?: string,
+  baseDir?: string,
+): Promise<string[]> {
+  const directories = getSkillDirectories(
+    format === "claude" ? baseDir : undefined,
+    format === "gemini" ? baseDir : undefined,
+    format === "codex" ? baseDir : undefined,
+  );
+
+  const directory =
+    format === "claude"
+      ? directories.claude.user
+      : format === "gemini"
+        ? directories.gemini.user
+        : directories.codex.user;
+
+  if (!(await directoryExists(directory))) {
+    return [];
+  }
+
+  if (specificSkill) {
+    // If a specific skill is specified
+    const skillPath = join(directory, specificSkill);
+    const skillFilePath = join(skillPath, SKILL_CONSTANTS.SKILL_FILE_NAME);
+    if (await fileExists(skillFilePath)) {
+      return [skillPath];
+    }
+    return [];
+  }
+
+  // Search all skill directories
+  const skillDirs: string[] = [];
+
+  try {
+    const entries = await fs.readdir(directory, { withFileTypes: true });
+
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const skillPath = join(directory, entry.name);
+        const skillFilePath = join(skillPath, SKILL_CONSTANTS.SKILL_FILE_NAME);
+        if (await fileExists(skillFilePath)) {
+          skillDirs.push(skillPath);
+        }
+      }
+    }
+  } catch {
+    // Ignore directory access errors
+  }
+
+  return skillDirs.sort();
+}
+
+/**
+ * Search for Claude Code skill directories
+ */
+export async function findClaudeSkills(specificSkill?: string, claudeDir?: string): Promise<string[]> {
+  return findSkillDirs("claude", specificSkill, claudeDir);
+}
+
+/**
+ * Search for Gemini CLI skill directories
+ */
+export async function findGeminiSkills(specificSkill?: string, geminiDir?: string): Promise<string[]> {
+  return findSkillDirs("gemini", specificSkill, geminiDir);
+}
+
+/**
+ * Search for Codex CLI skill directories
+ */
+export async function findCodexSkills(specificSkill?: string, codexDir?: string): Promise<string[]> {
+  return findSkillDirs("codex", specificSkill, codexDir);
+}
+
+/**
+ * Get skill name from directory path
+ */
+export function getSkillNameFromPath(dirPath: string, baseDirectory: string): string {
+  const relativePath = relative(baseDirectory, dirPath);
+  return relativePath;
+}
+
+/**
+ * Get skill directory path from skill name
+ */
+export function getSkillPathFromName(skillName: string, baseDirectory: string): string {
+  return join(baseDirectory, skillName);
 }

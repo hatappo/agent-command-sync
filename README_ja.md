@@ -7,7 +7,7 @@
 [![npm version](https://badge.fury.io/js/agent-command-sync.svg)](https://www.npmjs.com/package/agent-command-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Claude Code、Gemini CLI、Codex CLI 間でカスタムスラッシュコマンドを双方向に変換・同期する、直感的なビジュアルフィードバック付きのツールです。
+Claude Code、Gemini CLI、Codex CLI 間でカスタムスラッシュコマンドとスキル（Skills）を双方向に変換・同期する、直感的なビジュアルフィードバック付きのツールです。
 
 ## CHANGELOG
 
@@ -22,11 +22,17 @@ npm install -g agent-command-sync
 ## クイックスタート
 
 ```bash
-# Claude Code → Gemini CLI に変換
+# Claude Code → Gemini CLI に変換（Commands + Skills）
 acsync -s claude -d gemini
 
 # Gemini CLI → Claude Code に変換
 acsync -s gemini -d claude
+
+# Skills のみ変換
+acsync -s claude -d gemini -t skills
+
+# Commands のみ変換
+acsync -s claude -d gemini -t commands
 
 # 適用前に変更をプレビュー
 acsync -n -s claude -d gemini
@@ -55,6 +61,7 @@ acsync -n -s claude -d gemini
 | --------------------------- | ----------------------------------------------------------------------- |
 | `-s, --src <product>`       | **必須。** ソース製品: `claude`、`gemini`、または `codex`                   |
 | `-d, --dest <product>`      | **必須。** 宛先製品: `claude`、`gemini`、または `codex`                     |
+| `-t, --type <type>`         | コンテンツタイプ: `commands`、`skills`、または `both`（デフォルト: `both`）  |
 | `-f, --file <filename>`     | 特定のファイルのみ変換（`.md`, `.toml` 拡張子をサポート）                    |
 | `-n, --noop`                | 変更を適用せずにプレビュー                                                 |
 | `-v, --verbose`             | 詳細なデバッグ情報を表示                                                  |
@@ -68,16 +75,22 @@ acsync -n -s claude -d gemini
 ## 使用例
 
 ```bash
-# プレビュー付きで全コマンドを変換
+# プレビュー付きで全コマンドとスキルを変換
 acsync -n -s claude -d gemini
 
 # 特定のファイルを変換
 acsync -s gemini -d claude -f analyze-code
 
+# Skills のみ変換
+acsync -s claude -d gemini -t skills
+
+# 特定のスキルを変換
+acsync -s claude -d gemini -t skills -f my-skill
+
 # クリーンアップ付きの完全同期
 acsync -s claude -d gemini --sync-delete --remove-unsupported
 
-# カスタムディレクトリを使用（ベースディレクトリを指定、/commands は自動的に追加されます）
+# カスタムディレクトリを使用（ベースディレクトリを指定、/commands と /skills は自動的に追加されます）
 acsync -s claude -d gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
 
 # デバッグ用の詳細出力を表示
@@ -86,11 +99,29 @@ acsync -s claude -d gemini -v
 
 ## デフォルトのファイルの場所
 
+### Commands
 - **Claude Code**: `~/.claude/commands/*.md`
 - **Gemini CLI**: `~/.gemini/commands/*.toml`
 - **Codex CLI**: `~/.codex/prompts/*.md`
 
+### Skills
+- **Claude Code**: `~/.claude/skills/<skill-name>/SKILL.md`
+- **Gemini CLI**: `~/.gemini/skills/<skill-name>/SKILL.md`
+- **Codex CLI**: `~/.codex/skills/<skill-name>/SKILL.md`
+
 ## 形式比較と変換仕様
+
+### Commands と Skills の違い
+
+| 観点 | Commands | Skills |
+| ---- | -------- | ------ |
+| 構造 | 単一ファイル（`.md`, `.toml`） | ディレクトリ（`SKILL.md` + サポートファイル） |
+| 場所 | `~/.{tool}/commands/` | `~/.{tool}/skills/<name>/` |
+| 用途 | シンプルなプロンプト | 複数ファイルを伴う複雑なタスク |
+
+---
+
+## Commands 形式
 
 ### ファイル構造とメタデータ
 
@@ -121,11 +152,121 @@ acsync -s claude -d gemini -v
 
 ClaudeとGemini間の変換では、構文が自動的に変換されます。Codexとの変換では、ファイル参照構文はそのまま保持されます。
 
-### 公式ドキュメント
+---
 
+## Skills 形式
+
+Skills は Claude Code、Gemini CLI、Codex CLI が採用している [Agent Skills](https://agentskills.io/) オープンスタンダードに従います。
+
+### ディレクトリ構造
+
+各スキルは `SKILL.md` とオプションのサポートファイルを含むディレクトリです：
+
+```
+~/.claude/skills/
+└── my-skill/
+    ├── SKILL.md           # メインスキル定義（必須）
+    ├── helper.sh          # サポートファイル（オプション）
+    └── config.json        # サポートファイル（オプション）
+```
+
+### SKILL.md 形式
+
+すべてのツールで YAML frontmatter 付きの同じ `SKILL.md` 形式を使用します：
+
+```markdown
+---
+name: my-skill
+description: スキルの説明
+---
+
+スキルの指示をここに記述します。
+
+ユーザー入力には $ARGUMENTS を使用します。
+```
+
+### スキルメタデータの比較
+
+| フィールド | Claude Code | Gemini CLI | Codex CLI | 変換メモ |
+| --------- | ----------- | ---------- | --------- | -------- |
+| `name` | ✓ | ✓ | ✓ | 必須 |
+| `description` | ✓ | ✓ | ✓ | 保持 |
+| `argument-hint` | ✓ | - | - | Claude 固有 |
+| `allowed-tools` | ✓ | - | - | Claude 固有 |
+| `model` | ✓ | - | - | Claude 固有 |
+| `context` | ✓ | - | - | Claude 固有（例: `"fork"`） |
+| `agent` | ✓ | - | - | Claude 固有 |
+| `hooks` | ✓ | - | - | Claude 固有（before/after/on_error） |
+| `disable-model-invocation` | ✓ | - | ✓* | 変換あり（下記参照） |
+| `user-invocable` | ✓ | - | - | Claude 固有 |
+
+\* Codex は `agents/openai.yaml` 内の `policy.allow_implicit_invocation` を使用（論理反転）
+
+### Codex 固有: agents/openai.yaml
+
+Codex CLI はオプションの `agents/openai.yaml` 設定ファイルをサポートしています：
+
+```
+~/.codex/skills/
+└── my-skill/
+    ├── SKILL.md
+    └── agents/
+        └── openai.yaml    # Codex 固有の設定
+```
+
+`openai.yaml` の例：
+```yaml
+interface:
+  display_name: "My Skill"
+  short_description: "スキルの説明"
+policy:
+  allow_implicit_invocation: true
+```
+
+#### モデル呼び出し制御の変換
+
+Codex の `policy.allow_implicit_invocation` フィールドは、Claude の `disable-model-invocation` と論理反転して相互変換されます：
+
+| Claude Code | Codex CLI (`openai.yaml`) |
+| ----------- | ------------------------- |
+| `disable-model-invocation: true` | `policy.allow_implicit_invocation: false` |
+| `disable-model-invocation: false` | `policy.allow_implicit_invocation: true` |
+
+Claude → Codex 変換時に `disable-model-invocation` が設定されている場合、`agents/openai.yaml` ファイルが自動生成されます。
+
+その他の `openai.yaml` フィールド（`interface.display_name`, `interface.short_description`）は Codex 固有であり、変換されません。
+
+### サポートファイル
+
+サポートファイル（スクリプト、設定、画像など）は変換時にそのままコピーされます：
+
+| ファイルタイプ | 例 | 処理 |
+| ------------ | -- | ---- |
+| テキスト | `.sh`, `.py`, `.json`, `.yaml` | そのままコピー |
+| バイナリ | `.png`, `.jpg`, `.pdf` | そのままコピー |
+| 設定 | `openai.yaml` | Codex 固有、他のターゲットでは無視 |
+
+### プレースホルダー変換（Skills）
+
+Commands と同様：
+
+| 機能 | Claude Code / Codex CLI | Gemini CLI |
+| ---- | ----------------------- | ---------- |
+| すべての引数 | `$ARGUMENTS` | `{{args}}` |
+| 個別引数 | `$1` ... `$9` | サポートなし |
+
+---
+
+## 公式ドキュメント
+
+### Commands
 - [Slash commands - Claude Docs](https://docs.claude.com/en/docs/claude-code/slash-commands)
 - [gemini-cli/docs/cli/custom-commands.md at main · google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/custom-commands.md)
 - [codex/docs/prompts.md at main · openai/codex](https://github.com/openai/codex/blob/main/docs/prompts.md)
+
+### Skills
+- [Agent Skills Standard](https://agentskills.io/)
+- [Custom skills - Claude Docs](https://docs.claude.com/en/docs/claude-code/custom-skills)
 
 ## ステータスインジケータ
 

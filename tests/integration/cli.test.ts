@@ -61,6 +61,7 @@ This is a test command with $ARGUMENTS.`;
       const options: CLIOptions = {
         source: "claude",
         destination: "gemini",
+        contentType: "commands",
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,
@@ -97,6 +98,7 @@ This is a test command with $ARGUMENTS.`;
       const options: CLIOptions = {
         source: "claude",
         destination: "gemini",
+        contentType: "commands",
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,
@@ -136,6 +138,7 @@ This is a test command with $ARGUMENTS.`;
       const options: CLIOptions = {
         source: "claude",
         destination: "gemini",
+        contentType: "commands",
         removeUnsupported: false,
         noOverwrite: true,
         syncDelete: false,
@@ -174,6 +177,7 @@ Test content`;
       const options: CLIOptions = {
         source: "claude",
         destination: "gemini",
+        contentType: "commands",
         removeUnsupported: true,
         noOverwrite: false,
         syncDelete: false,
@@ -208,6 +212,7 @@ prompt = "This is a test command with {{args}}."`;
       const options: CLIOptions = {
         source: "gemini",
         destination: "claude",
+        contentType: "commands",
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,
@@ -248,6 +253,7 @@ _claude_model = "sonnet"`;
       const options: CLIOptions = {
         source: "gemini",
         destination: "claude",
+        contentType: "commands",
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,
@@ -285,6 +291,7 @@ _claude_model = "sonnet"`;
       const options: CLIOptions = {
         source: "claude",
         destination: "gemini",
+        contentType: "commands",
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,
@@ -328,6 +335,7 @@ Test content with $ARGUMENTS`;
       const options: CLIOptions = {
         source: "claude",
         destination: "codex",
+        contentType: "commands",
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,
@@ -382,6 +390,7 @@ Test content with $ARGUMENTS`;
       const options: CLIOptions = {
         source: "claude",
         destination: "codex",
+        contentType: "commands",
         removeUnsupported: true,
         noOverwrite: false,
         syncDelete: false,
@@ -426,6 +435,7 @@ Content`;
       const options: CLIOptions = {
         source: "claude",
         destination: "gemini",
+        contentType: "commands",
         removeUnsupported: false,
         noOverwrite: false,
         syncDelete: false,

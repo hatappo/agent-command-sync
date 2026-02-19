@@ -1,0 +1,5 @@
+interface:
+  display_name: "With Config Skill"
+  short_description: "A skill with configuration"
+policy:
+  allow_implicit_invocation: true

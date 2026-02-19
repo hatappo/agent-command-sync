@@ -65,8 +65,60 @@ export interface OperationStyle {
 export const DEFAULT_PATHS = {
   CLAUDE_BASE: ".claude",
   GEMINI_BASE: ".gemini",
+  CODEX_BASE: ".codex",
   COMMANDS_DIR: "commands",
+  SKILLS_DIR: "skills",
+  CODEX_PROMPTS_DIR: "prompts",
 } as const;
+
+/**
+ * Skill file constants
+ */
+export const SKILL_CONSTANTS = {
+  /** Main skill definition file */
+  SKILL_FILE_NAME: "SKILL.md",
+  /** Codex-specific config file */
+  CODEX_CONFIG_DIR: "agents",
+  CODEX_CONFIG_FILE: "openai.yaml",
+} as const;
+
+/**
+ * Binary file extensions (copied as-is, not processed)
+ */
+export const BINARY_EXTENSIONS = [
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".webp",
+  ".ico",
+  ".svg",
+  ".pdf",
+  ".zip",
+  ".tar",
+  ".gz",
+  ".mp3",
+  ".mp4",
+  ".wav",
+  ".webm",
+] as const;
+
+/**
+ * Config file names (require special handling)
+ */
+export const CONFIG_FILES = ["openai.yaml", "config.yaml", "config.json", "config.toml"] as const;
+
+/**
+ * Claude-specific skill fields (not supported in other tools)
+ */
+export const CLAUDE_SKILL_SPECIFIC_FIELDS = [
+  "context",
+  "agent",
+  "hooks",
+  "disable-model-invocation",
+  "user-invocable",
+  ...CLAUDE_SPECIFIC_FIELDS,
+] as const;
 
 /**
  * Error message templates

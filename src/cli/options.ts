@@ -26,6 +26,7 @@ export const defaultCLIOptions: Partial<CLIOptions> = {
   syncDelete: false,
   noop: false,
   verbose: false,
+  contentType: "both",
 };
 
 /**
@@ -82,6 +83,11 @@ export function validateCLIOptions(options: Partial<CLIOptions>): string[] {
     );
   }
 
+  // Validate contentType option
+  if (options.contentType && !["commands", "skills", "both"].includes(options.contentType)) {
+    errors.push('--type must be one of "commands", "skills", or "both"');
+  }
+
   return errors;
 }
 
@@ -101,5 +107,6 @@ export function cliOptionsToConversionOptions(cliOptions: CLIOptions): Intermedi
     claudeDir: cliOptions.claudeDir,
     geminiDir: cliOptions.geminiDir,
     codexDir: cliOptions.codexDir,
+    contentType: cliOptions.contentType,
   };
 }

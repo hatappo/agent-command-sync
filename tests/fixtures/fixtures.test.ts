@@ -245,6 +245,7 @@ describe("Agent Slash Sync Tests", () => {
       const cliOptions = {
         source: "claude" as const,
         destination: "gemini" as const,
+        contentType: "commands" as const,
         removeUnsupported: false,
         noOverwrite: true,
         syncDelete: false,

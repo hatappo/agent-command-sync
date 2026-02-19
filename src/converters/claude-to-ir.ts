@@ -21,6 +21,7 @@ export class ClaudeToIRConverter implements ToIntermediateConverter<ClaudeComman
     };
 
     return {
+      contentType: "command",
       body,
       header,
       meta,

@@ -24,14 +24,23 @@
     "npm:login": "npm login",
     "npm:whoami": "npm whoami"
   },
-  "files": ["dist", "bin"],
+  "files": [
+    "dist",
+    "bin"
+  ],
   "exports": {
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     }
   },
-  "keywords": ["claude-code", "gemini-cli", "slash-commands", "converter", "cli"],
+  "keywords": [
+    "claude-code",
+    "gemini-cli",
+    "slash-commands",
+    "converter",
+    "cli"
+  ],
   "author": "hatappo",
   "license": "MIT",
   "repository": {
@@ -49,7 +58,8 @@
     "@iarna/toml": "2.2.5",
     "commander": "14.0.0",
     "gray-matter": "4.0.3",
-    "picocolors": "1.1.1"
+    "picocolors": "1.1.1",
+    "yaml": "2.8.2"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

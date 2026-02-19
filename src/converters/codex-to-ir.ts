@@ -9,6 +9,7 @@ export class CodexToIRConverter implements ToIntermediateConverter<CodexCommand>
    */
   toIntermediate(source: CodexCommand): IntermediateRepresentation {
     return {
+      contentType: "command",
       body: source.content,
       header: source.frontmatter || {}, // Extract frontmatter if present
       meta: {

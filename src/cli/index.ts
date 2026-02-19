@@ -16,10 +16,11 @@ program
 program
   .requiredOption("-s, --src <product>", "Source product: claude, gemini, or codex")
   .requiredOption("-d, --dest <product>", "Destination product: claude, gemini, or codex")
+  .option("-t, --type <type>", "Content type: commands, skills, or both", "both")
   .option("--remove-unsupported", "Remove keys that are not supported in the target format", false)
   .option("--no-overwrite", "Skip conversion if a command with the same name exists in the target")
   .option("--sync-delete", "Delete commands in the target that don't exist in the source", false)
-  .option("-f, --file <filename>", "Convert only the specified command file (without extension)")
+  .option("-f, --file <filename>", "Convert only the specified command/skill (without extension)")
   .option("-n, --noop", "Display a list of changes without applying them", false)
   .option("-v, --verbose", "Show detailed debug information", false)
   .option("--claude-dir <path>", "Claude base directory (default: ~/.claude)")
@@ -40,6 +41,7 @@ program
       const syncOptions = {
         source: options.src as "claude" | "gemini" | "codex",
         destination: options.dest as "claude" | "gemini" | "codex",
+        contentType: options.type as "commands" | "skills" | "both",
         removeUnsupported: options.removeUnsupported,
         noOverwrite: !options.overwrite, // commander.js no-prefix reverses the value
         syncDelete: options.syncDelete,
@@ -88,10 +90,12 @@ program
 program.on("--help", () => {
   console.log("");
   console.log("Examples:");
-  console.log("  $ acsync -s claude -d gemini               # Convert all Claude commands to Gemini");
+  console.log("  $ acsync -s claude -d gemini               # Convert all (commands + skills)");
+  console.log("  $ acsync -s claude -d gemini -t commands   # Convert only commands");
+  console.log("  $ acsync -s claude -d gemini -t skills     # Convert only skills");
   console.log("  $ acsync -s gemini -d claude -n            # Preview Gemini to Claude conversion");
-  console.log("  $ acsync -s codex -d claude                # Convert Codex commands to Claude");
-  console.log("  $ acsync -s claude -d gemini --file mycommand   # Convert specific file");
+  console.log("  $ acsync -s codex -d claude                # Convert Codex to Claude");
+  console.log("  $ acsync -s claude -d gemini -f mycommand  # Convert specific command/skill");
   console.log("  $ acsync -s claude -d gemini --remove-unsupported # Remove unsupported fields");
   console.log("  $ acsync -s gemini -d claude --no-overwrite     # Skip existing files");
   console.log("  $ acsync -s claude -d gemini --sync-delete      # Delete orphaned files");

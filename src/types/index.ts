@@ -152,3 +152,16 @@ export type {
   IntermediateConversionOptions,
 } from "./intermediate.js";
 export { validateIntermediateRepresentation } from "./intermediate.js";
+
+// Re-export skill types
+export type {
+  SkillBase,
+  SupportFile,
+  ClaudeSkill,
+  ClaudeSkillHooks,
+  GeminiSkill,
+  CodexSkill,
+  CodexOpenAIConfig,
+  ContentType as IRContentType,
+  ContentFilter,
+} from "./skill.js";

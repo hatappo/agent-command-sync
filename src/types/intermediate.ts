@@ -3,16 +3,23 @@
  * This provides a common format for bidirectional conversion
  */
 
+import type { ContentFilter, ContentType, SupportFile } from "./skill.js";
+
 /**
  * Supported product types
  */
 export type ProductType = "claude" | "gemini" | "codex";
 
 /**
- * Intermediate representation of a command
+ * Intermediate representation of a command or skill
  * Used as a common format for conversion between different AI tools
  */
 export interface IntermediateRepresentation {
+  /**
+   * Content type: command (single file) or skill (directory)
+   */
+  contentType: ContentType;
+
   /**
    * The main content/prompt body
    * - Claude: Markdown content
@@ -31,12 +38,14 @@ export interface IntermediateRepresentation {
    * Additional metadata for conversion context
    */
   meta: {
-    /** Source file path */
+    /** Source file path (for commands) or directory path (for skills) */
     sourcePath?: string;
     /** Source product type */
     sourceType?: ProductType;
     /** Target product type */
     targetType?: ProductType;
+    /** Support files for skills */
+    supportFiles?: SupportFile[];
     /** Additional metadata */
     [key: string]: unknown;
   };
@@ -83,7 +92,7 @@ export interface IntermediateConversionOptions {
   noOverwrite: boolean;
   /** Delete orphaned files in target directory */
   syncDelete: boolean;
-  /** Convert only specific file */
+  /** Convert only specific file or skill */
   file?: string;
   /** Preview changes without applying */
   noop: boolean;
@@ -95,6 +104,8 @@ export interface IntermediateConversionOptions {
   geminiDir?: string;
   /** Codex base directory */
   codexDir?: string;
+  /** Content type filter: commands, skills, or both (default: both) */
+  contentType: ContentFilter;
 }
 
 /**
@@ -108,6 +119,7 @@ export function validateIntermediateRepresentation(ir: unknown): ir is Intermedi
   const obj = ir as Record<string, unknown>;
 
   return (
+    (obj.contentType === "command" || obj.contentType === "skill") &&
     typeof obj.body === "string" &&
     typeof obj.header === "object" &&
     obj.header !== null &&

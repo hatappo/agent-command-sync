@@ -26,6 +26,7 @@ export class GeminiToIRConverter implements ToIntermediateConverter<GeminiComman
     };
 
     return {
+      contentType: "command",
       body,
       header,
       meta,

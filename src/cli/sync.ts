@@ -1,3 +1,5 @@
+import { rm } from "node:fs/promises";
+import { basename, join } from "node:path";
 import picocolors from "picocolors";
 import { ClaudeToIRConverter } from "../converters/claude-to-ir.js";
 import { CodexToIRConverter } from "../converters/codex-to-ir.js";
@@ -5,20 +7,36 @@ import { GeminiToIRConverter } from "../converters/gemini-to-ir.js";
 import { IRToClaudeConverter } from "../converters/ir-to-claude.js";
 import { IRToCodexConverter } from "../converters/ir-to-codex.js";
 import { IRToGeminiConverter } from "../converters/ir-to-gemini.js";
+import { ClaudeSkillToIRConverter } from "../converters/claude-skill-to-ir.js";
+import { GeminiSkillToIRConverter } from "../converters/gemini-skill-to-ir.js";
+import { CodexSkillToIRConverter } from "../converters/codex-skill-to-ir.js";
+import { IRToClaudeSkillConverter } from "../converters/ir-to-claude-skill.js";
+import { IRToGeminiSkillConverter } from "../converters/ir-to-gemini-skill.js";
+import { IRToCodexSkillConverter } from "../converters/ir-to-codex-skill.js";
 import { ClaudeParser } from "../parsers/claude-parser.js";
 import { CodexParser } from "../parsers/codex-parser.js";
 import { GeminiParser } from "../parsers/gemini-parser.js";
+import { ClaudeSkillParser } from "../parsers/claude-skill-parser.js";
+import { GeminiSkillParser } from "../parsers/gemini-skill-parser.js";
+import { CodexSkillParser } from "../parsers/codex-skill-parser.js";
 import type { ConversionResult, FileOperation, IntermediateRepresentation } from "../types/index.js";
-import { CLAUDE_SPECIFIC_FIELDS } from "../utils/constants.js";
+import { CLAUDE_SPECIFIC_FIELDS, CLAUDE_SKILL_SPECIFIC_FIELDS } from "../utils/constants.js";
 import {
   deleteFile,
+  directoryExists,
   fileExists,
   findClaudeCommands,
   findCodexCommands,
   findGeminiCommands,
+  findClaudeSkills,
+  findGeminiSkills,
+  findCodexSkills,
   getCommandDirectories,
+  getSkillDirectories,
   getCommandName,
   getFilePathFromCommandName,
+  getSkillNameFromPath,
+  getSkillPathFromName,
   writeFile,
 } from "../utils/file-utils.js";
 import { convertClaudeToGeminiPlaceholders, convertGeminiToClaudePlaceholders } from "../utils/placeholder-utils.js";
@@ -45,11 +63,97 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
       console.log(picocolors.yellow("NOOP MODE - No files will be modified"));
     }
 
-    // Search for source files
-    const sourceFiles = await getSourceFiles(options);
-    console.log(picocolors.dim(`Found ${sourceFiles.length} source file(s)`));
+    // Process commands if contentType includes commands
+    if (options.contentType === "commands" || options.contentType === "both") {
+      const sourceFiles = await getSourceFiles(options);
+      console.log(picocolors.dim(`Found ${sourceFiles.length} source command(s)`));
 
-    if (sourceFiles.length === 0) {
+      // Convert each command file
+      for (const sourceFile of sourceFiles) {
+        try {
+          const result = await convertSingleFile(sourceFile, conversionOptions);
+          operations.push(...result.operations);
+          errors.push(...result.errors);
+
+          // Update statistics
+          for (const op of result.operations) {
+            switch (op.type) {
+              case "A":
+                created++;
+                break;
+              case "M":
+                modified++;
+                break;
+              case "D":
+                deleted++;
+                break;
+              case "-":
+                skipped++;
+                break;
+            }
+          }
+
+          processed++;
+        } catch (error) {
+          errors.push(error instanceof Error ? error : new Error(String(error)));
+        }
+      }
+
+      // Handle sync-delete for commands
+      if (options.syncDelete) {
+        const deleteResult = await handleSyncDelete(options, sourceFiles);
+        operations.push(...deleteResult.operations);
+        errors.push(...deleteResult.errors);
+        deleted += deleteResult.operations.filter((op) => op.type === "D").length;
+      }
+    }
+
+    // Process skills if contentType includes skills
+    if (options.contentType === "skills" || options.contentType === "both") {
+      const sourceSkills = await getSourceSkills(options);
+      console.log(picocolors.dim(`Found ${sourceSkills.length} source skill(s)`));
+
+      // Convert each skill
+      for (const skillDir of sourceSkills) {
+        try {
+          const result = await convertSingleSkill(skillDir, conversionOptions);
+          operations.push(...result.operations);
+          errors.push(...result.errors);
+
+          // Update statistics
+          for (const op of result.operations) {
+            switch (op.type) {
+              case "A":
+                created++;
+                break;
+              case "M":
+                modified++;
+                break;
+              case "D":
+                deleted++;
+                break;
+              case "-":
+                skipped++;
+                break;
+            }
+          }
+
+          processed++;
+        } catch (error) {
+          errors.push(error instanceof Error ? error : new Error(String(error)));
+        }
+      }
+
+      // Handle sync-delete for skills
+      if (options.syncDelete) {
+        const deleteResult = await handleSkillSyncDelete(options, sourceSkills);
+        operations.push(...deleteResult.operations);
+        errors.push(...deleteResult.errors);
+        deleted += deleteResult.operations.filter((op) => op.type === "D").length;
+      }
+    }
+
+    if (operations.length === 0 && errors.length === 0) {
       console.log(picocolors.gray("No files to convert."));
       return {
         success: true,
@@ -57,45 +161,6 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
         errors,
         summary: { processed, created, modified, deleted, skipped },
       };
-    }
-
-    // Convert each file
-    for (const sourceFile of sourceFiles) {
-      try {
-        const result = await convertSingleFile(sourceFile, conversionOptions);
-        operations.push(...result.operations);
-        errors.push(...result.errors);
-
-        // Update statistics
-        for (const op of result.operations) {
-          switch (op.type) {
-            case "A":
-              created++;
-              break;
-            case "M":
-              modified++;
-              break;
-            case "D":
-              deleted++;
-              break;
-            case "-":
-              skipped++;
-              break;
-          }
-        }
-
-        processed++;
-      } catch (error) {
-        errors.push(error instanceof Error ? error : new Error(String(error)));
-      }
-    }
-
-    // Handle sync-delete option
-    if (options.syncDelete) {
-      const deleteResult = await handleSyncDelete(options, sourceFiles);
-      operations.push(...deleteResult.operations);
-      errors.push(...deleteResult.errors);
-      deleted += deleteResult.operations.filter((op) => op.type === "D").length;
     }
 
     // Display results
@@ -332,6 +397,208 @@ async function handleSyncDelete(
           operations.push({
             type: "D",
             filePath: targetFile,
+            description: "Deleted (orphaned)",
+          });
+        }
+      }
+    }
+  } catch (error) {
+    errors.push(error instanceof Error ? error : new Error(String(error)));
+  }
+
+  return { operations, errors };
+}
+
+/**
+ * Get source skill directories
+ */
+async function getSourceSkills(options: CLIOptions): Promise<string[]> {
+  if (options.source === "claude") {
+    return await findClaudeSkills(options.file, options.claudeDir);
+  }
+  if (options.source === "gemini") {
+    return await findGeminiSkills(options.file, options.geminiDir);
+  }
+  return await findCodexSkills(options.file, options.codexDir);
+}
+
+/**
+ * Convert a single skill
+ */
+async function convertSingleSkill(
+  skillDir: string,
+  options: CLIOptions,
+): Promise<{ operations: FileOperation[]; errors: Error[] }> {
+  const operations: FileOperation[] = [];
+  const errors: Error[] = [];
+
+  try {
+    // Convert to intermediate representation
+    let ir: IntermediateRepresentation;
+
+    if (options.source === "claude") {
+      const parser = new ClaudeSkillParser();
+      const toIRConverter = new ClaudeSkillToIRConverter();
+      const skill = await parser.parse(skillDir);
+      ir = toIRConverter.toIntermediate(skill);
+    } else if (options.source === "gemini") {
+      const parser = new GeminiSkillParser();
+      const toIRConverter = new GeminiSkillToIRConverter();
+      const skill = await parser.parse(skillDir);
+      ir = toIRConverter.toIntermediate(skill);
+    } else {
+      const parser = new CodexSkillParser();
+      const toIRConverter = new CodexSkillToIRConverter();
+      const skill = await parser.parse(skillDir);
+      ir = toIRConverter.toIntermediate(skill);
+    }
+
+    // Set target type in metadata
+    ir.meta.targetType = options.destination;
+
+    // Placeholder conversion
+    if ((options.source === "claude" || options.source === "codex") && options.destination === "gemini") {
+      ir.body = convertClaudeToGeminiPlaceholders(ir.body);
+    } else if (options.source === "gemini" && (options.destination === "claude" || options.destination === "codex")) {
+      ir.body = convertGeminiToClaudePlaceholders(ir.body);
+    }
+
+    // Remove Claude-specific fields (if necessary)
+    if (options.removeUnsupported && (options.destination === "gemini" || options.destination === "codex")) {
+      for (const field of CLAUDE_SKILL_SPECIFIC_FIELDS) {
+        delete ir.header[field];
+      }
+    }
+
+    // Get skill directories
+    const directories = getSkillDirectories(options.claudeDir, options.geminiDir, options.codexDir);
+    const sourceDir =
+      options.source === "claude"
+        ? directories.claude.user
+        : options.source === "gemini"
+          ? directories.gemini.user
+          : directories.codex.user;
+    const targetDir =
+      options.destination === "claude"
+        ? directories.claude.user
+        : options.destination === "gemini"
+          ? directories.gemini.user
+          : directories.codex.user;
+
+    const skillName = getSkillNameFromPath(skillDir, sourceDir);
+    const targetSkillDir = getSkillPathFromName(skillName, targetDir);
+
+    // Check if target exists
+    const targetExists = await directoryExists(targetSkillDir);
+
+    // Check no-overwrite option
+    if (targetExists && options.noOverwrite) {
+      operations.push({
+        type: "-",
+        filePath: targetSkillDir,
+        description: "Skipped (skill exists and --no-overwrite specified)",
+      });
+      return { operations, errors };
+    }
+
+    // In no-op mode
+    if (options.noop) {
+      operations.push({
+        type: targetExists ? "M" : "A",
+        filePath: targetSkillDir,
+        description: targetExists ? "Would modify" : "Would create",
+      });
+      return { operations, errors };
+    }
+
+    // Convert to target format and write
+    if (options.destination === "claude") {
+      const fromIRConverter = new IRToClaudeSkillConverter({ removeUnsupported: options.removeUnsupported });
+      const parser = new ClaudeSkillParser();
+      const skill = fromIRConverter.fromIntermediate(ir);
+      skill.dirPath = skillDir; // Keep source path for copying support files
+      await parser.writeToDirectory(skill, targetSkillDir);
+    } else if (options.destination === "gemini") {
+      const fromIRConverter = new IRToGeminiSkillConverter({ removeUnsupported: options.removeUnsupported });
+      const parser = new GeminiSkillParser();
+      const skill = fromIRConverter.fromIntermediate(ir);
+      skill.dirPath = skillDir;
+      await parser.writeToDirectory(skill, targetSkillDir);
+    } else {
+      const fromIRConverter = new IRToCodexSkillConverter({ removeUnsupported: options.removeUnsupported });
+      const parser = new CodexSkillParser();
+      const skill = fromIRConverter.fromIntermediate(ir);
+      skill.dirPath = skillDir;
+      await parser.writeToDirectory(skill, targetSkillDir);
+    }
+
+    operations.push({
+      type: targetExists ? "M" : "A",
+      filePath: targetSkillDir,
+      description: targetExists ? "Modified" : "Created",
+    });
+  } catch (error) {
+    errors.push(error instanceof Error ? error : new Error(String(error)));
+  }
+
+  return { operations, errors };
+}
+
+/**
+ * Handle sync-delete for skills
+ */
+async function handleSkillSyncDelete(
+  options: CLIOptions,
+  sourceSkills: string[],
+): Promise<{ operations: FileOperation[]; errors: Error[] }> {
+  const operations: FileOperation[] = [];
+  const errors: Error[] = [];
+
+  try {
+    // Get target skills
+    const targetSkills =
+      options.destination === "claude"
+        ? await findClaudeSkills(undefined, options.claudeDir)
+        : options.destination === "gemini"
+          ? await findGeminiSkills(undefined, options.geminiDir)
+          : await findCodexSkills(undefined, options.codexDir);
+
+    // Generate target skill names corresponding to source
+    const directories = getSkillDirectories(options.claudeDir, options.geminiDir, options.codexDir);
+    const sourceDir =
+      options.source === "claude"
+        ? directories.claude.user
+        : options.source === "gemini"
+          ? directories.gemini.user
+          : directories.codex.user;
+    const targetDir =
+      options.destination === "claude"
+        ? directories.claude.user
+        : options.destination === "gemini"
+          ? directories.gemini.user
+          : directories.codex.user;
+
+    const expectedTargetSkills = new Set(
+      sourceSkills.map((sourceSkill) => {
+        const skillName = getSkillNameFromPath(sourceSkill, sourceDir);
+        return getSkillPathFromName(skillName, targetDir);
+      }),
+    );
+
+    // Delete orphaned target skills
+    for (const targetSkill of targetSkills) {
+      if (!expectedTargetSkills.has(targetSkill)) {
+        if (options.noop) {
+          operations.push({
+            type: "D",
+            filePath: targetSkill,
+            description: "Would delete (orphaned)",
+          });
+        } else {
+          await rm(targetSkill, { recursive: true });
+          operations.push({
+            type: "D",
+            filePath: targetSkill,
             description: "Deleted (orphaned)",
           });
         }
