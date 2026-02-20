@@ -11,8 +11,8 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
-    "test": "vitest",
-    "test:coverage": "vitest --coverage",
+    "test": "vitest --run",
+    "test:coverage": "vitest --run --coverage",
     "lint": "biome lint .",
     "lint:fix": "biome check --apply .",
     "lint:tsc": "tsc --noEmit",
