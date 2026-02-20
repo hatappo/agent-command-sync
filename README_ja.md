@@ -41,10 +41,10 @@ acsync -n -s claude -d gemini
 ## スクリーンショット
 
 ### 使用例
-![agent-command-sync usage](docs/acsync-usage.png)
+![agent-command-sync usage](https://raw.githubusercontent.com/hatappo/agent-command-sync/main/docs/acsync-usage.png)
 
 ### 変換例
-![agent-command-sync example](docs/acsync-example.png)
+![agent-command-sync example](https://raw.githubusercontent.com/hatappo/agent-command-sync/main/docs/acsync-example.png)
 
 ## 機能
 
