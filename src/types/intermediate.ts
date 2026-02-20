@@ -1,82 +1,14 @@
 /**
- * Intermediate Representation for command conversion between different AI tools
- * This provides a common format for bidirectional conversion
+ * Intermediate Representation types
+ * Retains ProductType and IntermediateConversionOptions used by CLI
  */
 
-import type { ContentFilter, ContentType, SupportFile } from "./skill.js";
+import type { ContentFilter } from "./skill.js";
 
 /**
  * Supported product types
  */
 export type ProductType = "claude" | "gemini" | "codex";
-
-/**
- * Intermediate representation of a command or skill
- * Used as a common format for conversion between different AI tools
- */
-export interface IntermediateRepresentation {
-  /**
-   * Content type: command (single file) or skill (directory)
-   */
-  contentType: ContentType;
-
-  /**
-   * The main content/prompt body
-   * - Claude: Markdown content
-   * - Gemini: TOML prompt field value
-   */
-  body: string;
-
-  /**
-   * Metadata from the source format
-   * - Claude: Frontmatter fields
-   * - Gemini: TOML fields except 'prompt'
-   */
-  header: Record<string, unknown>;
-
-  /**
-   * Additional metadata for conversion context
-   */
-  meta: {
-    /** Source file path (for commands) or directory path (for skills) */
-    sourcePath?: string;
-    /** Source product type */
-    sourceType?: ProductType;
-    /** Target product type */
-    targetType?: ProductType;
-    /** Support files for skills */
-    supportFiles?: SupportFile[];
-    /** Additional metadata */
-    [key: string]: unknown;
-  };
-}
-
-/**
- * Converter interface from source format to intermediate representation
- */
-export interface ToIntermediateConverter<TSource> {
-  /**
-   * Convert from source format to intermediate representation
-   */
-  toIntermediate(source: TSource): IntermediateRepresentation;
-}
-
-/**
- * Converter interface from intermediate representation to target format
- */
-export interface FromIntermediateConverter<TTarget> {
-  /**
-   * Convert from intermediate representation to target format
-   */
-  fromIntermediate(ir: IntermediateRepresentation): TTarget;
-}
-
-/**
- * Full converter interface supporting bidirectional conversion
- */
-export interface BidirectionalConverter<TFormat>
-  extends ToIntermediateConverter<TFormat>,
-    FromIntermediateConverter<TFormat> {}
 
 /**
  * Options for conversion via intermediate representation
@@ -106,24 +38,4 @@ export interface IntermediateConversionOptions {
   codexDir?: string;
   /** Content type filter: commands, skills, or both (default: both) */
   contentType: ContentFilter;
-}
-
-/**
- * Validate intermediate representation
- */
-export function validateIntermediateRepresentation(ir: unknown): ir is IntermediateRepresentation {
-  if (typeof ir !== "object" || ir === null) {
-    return false;
-  }
-
-  const obj = ir as Record<string, unknown>;
-
-  return (
-    (obj.contentType === "command" || obj.contentType === "skill") &&
-    typeof obj.body === "string" &&
-    typeof obj.header === "object" &&
-    obj.header !== null &&
-    typeof obj.meta === "object" &&
-    obj.meta !== null
-  );
 }

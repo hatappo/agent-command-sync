@@ -6,7 +6,7 @@
 import { mkdir, writeFile as fsWriteFile, copyFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import matter from "gray-matter";
-import type { GeminiSkill, Parser, SupportFile } from "../types/index.js";
+import type { GeminiSkill, Parser } from "../types/index.js";
 import { ParseError } from "../types/index.js";
 import { SKILL_CONSTANTS } from "../utils/constants.js";
 import { readFile, fileExists } from "../utils/file-utils.js";

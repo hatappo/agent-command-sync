@@ -4,13 +4,13 @@ export * from "./parsers/claude-parser.js";
 export * from "./parsers/codex-parser.js";
 export * from "./parsers/gemini-parser.js";
 
-// Intermediate representation converters
-export * from "./converters/claude-to-ir.js";
-export * from "./converters/codex-to-ir.js";
-export * from "./converters/ir-to-claude.js";
-export * from "./converters/ir-to-codex.js";
-export * from "./converters/gemini-to-ir.js";
-export * from "./converters/ir-to-gemini.js";
+// Semantic IR converters
+export * from "./converters/claude-command-converter.js";
+export * from "./converters/codex-command-converter.js";
+export * from "./converters/gemini-command-converter.js";
+export * from "./converters/claude-skill-converter.js";
+export * from "./converters/codex-skill-converter.js";
+export * from "./converters/gemini-skill-converter.js";
 
 export * from "./utils/file-utils.js";
 export * from "./utils/validation.js";

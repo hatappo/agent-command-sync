@@ -1,26 +1,18 @@
 import { rm } from "node:fs/promises";
-import { basename, join } from "node:path";
 import picocolors from "picocolors";
-import { ClaudeToIRConverter } from "../converters/claude-to-ir.js";
-import { CodexToIRConverter } from "../converters/codex-to-ir.js";
-import { GeminiToIRConverter } from "../converters/gemini-to-ir.js";
-import { IRToClaudeConverter } from "../converters/ir-to-claude.js";
-import { IRToCodexConverter } from "../converters/ir-to-codex.js";
-import { IRToGeminiConverter } from "../converters/ir-to-gemini.js";
-import { ClaudeSkillToIRConverter } from "../converters/claude-skill-to-ir.js";
-import { GeminiSkillToIRConverter } from "../converters/gemini-skill-to-ir.js";
-import { CodexSkillToIRConverter } from "../converters/codex-skill-to-ir.js";
-import { IRToClaudeSkillConverter } from "../converters/ir-to-claude-skill.js";
-import { IRToGeminiSkillConverter } from "../converters/ir-to-gemini-skill.js";
-import { IRToCodexSkillConverter } from "../converters/ir-to-codex-skill.js";
+import { ClaudeCommandConverter } from "../converters/claude-command-converter.js";
+import { CodexCommandConverter } from "../converters/codex-command-converter.js";
+import { GeminiCommandConverter } from "../converters/gemini-command-converter.js";
+import { ClaudeSkillConverter } from "../converters/claude-skill-converter.js";
+import { GeminiSkillConverter } from "../converters/gemini-skill-converter.js";
+import { CodexSkillConverter } from "../converters/codex-skill-converter.js";
 import { ClaudeParser } from "../parsers/claude-parser.js";
 import { CodexParser } from "../parsers/codex-parser.js";
 import { GeminiParser } from "../parsers/gemini-parser.js";
 import { ClaudeSkillParser } from "../parsers/claude-skill-parser.js";
 import { GeminiSkillParser } from "../parsers/gemini-skill-parser.js";
 import { CodexSkillParser } from "../parsers/codex-skill-parser.js";
-import type { ConversionResult, FileOperation, IntermediateRepresentation } from "../types/index.js";
-import { CLAUDE_SPECIFIC_FIELDS, CLAUDE_SKILL_SPECIFIC_FIELDS } from "../utils/constants.js";
+import type { ConversionResult, FileOperation, SemanticIR } from "../types/index.js";
 import {
   deleteFile,
   directoryExists,
@@ -39,7 +31,7 @@ import {
   getSkillPathFromName,
   writeFile,
 } from "../utils/file-utils.js";
-import { convertClaudeToGeminiPlaceholders, convertGeminiToClaudePlaceholders } from "../utils/placeholder-utils.js";
+
 import type { CLIOptions } from "./options.js";
 import { cliOptionsToConversionOptions } from "./options.js";
 
@@ -210,68 +202,48 @@ async function convertSingleFile(
   const errors: Error[] = [];
 
   try {
-    // Convert to intermediate representation
-    let ir: IntermediateRepresentation;
+    // Step 1: Parse and convert to SemanticIR
+    let ir: SemanticIR;
 
     if (options.source === "claude") {
       const parser = new ClaudeParser();
-      const toIRConverter = new ClaudeToIRConverter();
-      const claudeCommand = await parser.parse(sourceFile);
-      ir = toIRConverter.toIntermediate(claudeCommand);
+      const converter = new ClaudeCommandConverter();
+      const command = await parser.parse(sourceFile);
+      ir = converter.toIR(command);
     } else if (options.source === "gemini") {
       const parser = new GeminiParser();
-      const toIRConverter = new GeminiToIRConverter();
-      const geminiCommand = await parser.parse(sourceFile);
-      ir = toIRConverter.toIntermediate(geminiCommand);
+      const converter = new GeminiCommandConverter();
+      const command = await parser.parse(sourceFile);
+      ir = converter.toIR(command);
     } else {
       const parser = new CodexParser();
-      const toIRConverter = new CodexToIRConverter();
-      const codexCommand = await parser.parse(sourceFile);
-      ir = toIRConverter.toIntermediate(codexCommand);
+      const converter = new CodexCommandConverter();
+      const command = await parser.parse(sourceFile);
+      ir = converter.toIR(command);
     }
 
-    // Set target type in metadata
-    ir.meta.targetType = options.destination;
-
-    // Placeholder conversion
-    if ((options.source === "claude" || options.source === "codex") && options.destination === "gemini") {
-      // Claude/Codex → Gemini: $ARGUMENTS → {{args}}
-      ir.body = convertClaudeToGeminiPlaceholders(ir.body);
-    } else if (options.source === "gemini" && (options.destination === "claude" || options.destination === "codex")) {
-      // Gemini → Claude/Codex: {{args}} → $ARGUMENTS
-      ir.body = convertGeminiToClaudePlaceholders(ir.body);
-    }
-    // Note: Claude ↔ Codex both use $ARGUMENTS, so no conversion needed
-
-    // Remove Claude-specific fields (if necessary)
-    // When removeUnsupported is specified for conversion to Gemini or Codex
-    if (options.removeUnsupported && (options.destination === "gemini" || options.destination === "codex")) {
-      for (const field of CLAUDE_SPECIFIC_FIELDS) {
-        delete ir.header[field];
-      }
-    }
-
-    // Convert to target format
+    // Step 2: Convert from SemanticIR to target format
+    const converterOptions = { removeUnsupported: options.removeUnsupported };
     let targetContent: string;
     let targetExt: string;
 
     if (options.destination === "claude") {
-      const fromIRConverter = new IRToClaudeConverter();
+      const converter = new ClaudeCommandConverter();
       const claudeParser = new ClaudeParser();
-      const claudeCommand = fromIRConverter.fromIntermediate(ir);
-      targetContent = claudeParser.stringify(claudeCommand);
+      const command = converter.fromIR(ir, converterOptions);
+      targetContent = claudeParser.stringify(command);
       targetExt = ".md";
     } else if (options.destination === "gemini") {
-      const fromIRConverter = new IRToGeminiConverter();
+      const converter = new GeminiCommandConverter();
       const geminiParser = new GeminiParser();
-      const geminiCommand = fromIRConverter.fromIntermediate(ir);
-      targetContent = geminiParser.stringify(geminiCommand);
+      const command = converter.fromIR(ir, converterOptions);
+      targetContent = geminiParser.stringify(command);
       targetExt = ".toml";
     } else {
-      const fromIRConverter = new IRToCodexConverter();
+      const converter = new CodexCommandConverter();
       const codexParser = new CodexParser();
-      const codexCommand = fromIRConverter.fromIntermediate(ir);
-      targetContent = codexParser.stringify(codexCommand);
+      const command = converter.fromIR(ir, converterOptions);
+      targetContent = codexParser.stringify(command);
       targetExt = ".md";
     }
 
@@ -433,41 +405,24 @@ async function convertSingleSkill(
   const errors: Error[] = [];
 
   try {
-    // Convert to intermediate representation
-    let ir: IntermediateRepresentation;
+    // Step 1: Parse and convert to SemanticIR
+    let ir: SemanticIR;
 
     if (options.source === "claude") {
       const parser = new ClaudeSkillParser();
-      const toIRConverter = new ClaudeSkillToIRConverter();
+      const converter = new ClaudeSkillConverter();
       const skill = await parser.parse(skillDir);
-      ir = toIRConverter.toIntermediate(skill);
+      ir = converter.toIR(skill);
     } else if (options.source === "gemini") {
       const parser = new GeminiSkillParser();
-      const toIRConverter = new GeminiSkillToIRConverter();
+      const converter = new GeminiSkillConverter();
       const skill = await parser.parse(skillDir);
-      ir = toIRConverter.toIntermediate(skill);
+      ir = converter.toIR(skill);
     } else {
       const parser = new CodexSkillParser();
-      const toIRConverter = new CodexSkillToIRConverter();
+      const converter = new CodexSkillConverter();
       const skill = await parser.parse(skillDir);
-      ir = toIRConverter.toIntermediate(skill);
-    }
-
-    // Set target type in metadata
-    ir.meta.targetType = options.destination;
-
-    // Placeholder conversion
-    if ((options.source === "claude" || options.source === "codex") && options.destination === "gemini") {
-      ir.body = convertClaudeToGeminiPlaceholders(ir.body);
-    } else if (options.source === "gemini" && (options.destination === "claude" || options.destination === "codex")) {
-      ir.body = convertGeminiToClaudePlaceholders(ir.body);
-    }
-
-    // Remove Claude-specific fields (if necessary)
-    if (options.removeUnsupported && (options.destination === "gemini" || options.destination === "codex")) {
-      for (const field of CLAUDE_SKILL_SPECIFIC_FIELDS) {
-        delete ir.header[field];
-      }
+      ir = converter.toIR(skill);
     }
 
     // Get skill directories
@@ -511,23 +466,25 @@ async function convertSingleSkill(
       return { operations, errors };
     }
 
-    // Convert to target format and write
+    // Step 3: Convert from SemanticIR to target format and write
+    const converterOptions = { removeUnsupported: options.removeUnsupported };
+
     if (options.destination === "claude") {
-      const fromIRConverter = new IRToClaudeSkillConverter({ removeUnsupported: options.removeUnsupported });
+      const converter = new ClaudeSkillConverter();
       const parser = new ClaudeSkillParser();
-      const skill = fromIRConverter.fromIntermediate(ir);
+      const skill = converter.fromIR(ir, converterOptions);
       skill.dirPath = skillDir; // Keep source path for copying support files
       await parser.writeToDirectory(skill, targetSkillDir);
     } else if (options.destination === "gemini") {
-      const fromIRConverter = new IRToGeminiSkillConverter({ removeUnsupported: options.removeUnsupported });
+      const converter = new GeminiSkillConverter();
       const parser = new GeminiSkillParser();
-      const skill = fromIRConverter.fromIntermediate(ir);
+      const skill = converter.fromIR(ir, converterOptions);
       skill.dirPath = skillDir;
       await parser.writeToDirectory(skill, targetSkillDir);
     } else {
-      const fromIRConverter = new IRToCodexSkillConverter({ removeUnsupported: options.removeUnsupported });
+      const converter = new CodexSkillConverter();
       const parser = new CodexSkillParser();
-      const skill = fromIRConverter.fromIntermediate(ir);
+      const skill = converter.fromIR(ir, converterOptions);
       skill.dirPath = skillDir;
       await parser.writeToDirectory(skill, targetSkillDir);
     }

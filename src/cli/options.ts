@@ -1,4 +1,4 @@
-import type { IntermediateConversionOptions, ProductType } from "../types/index.js";
+import type { IntermediateConversionOptions } from "../types/index.js";
 
 /**
  * CLI option type definition

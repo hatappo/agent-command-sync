@@ -1,40 +1,3 @@
-// Common command representation
-export interface Command {
-  name: string;
-  description?: string;
-  prompt: string;
-  metadata?: Record<string, unknown>;
-}
-
-// Claude Code format
-export interface ClaudeCommand {
-  frontmatter: {
-    "allowed-tools"?: string;
-    "argument-hint"?: string;
-    description?: string;
-    model?: string;
-    [key: string]: unknown;
-  };
-  content: string;
-  filePath: string;
-}
-
-// Gemini CLI format
-export interface GeminiCommand {
-  description?: string;
-  prompt: string;
-  filePath: string;
-  // Extended fields to preserve Claude-specific fields
-  [key: string]: unknown;
-}
-
-// Codex CLI format
-export interface CodexCommand {
-  frontmatter?: Record<string, unknown>;
-  content: string;
-  filePath: string;
-}
-
 // Conversion options
 export interface ConversionOptions {
   direction: "c2g" | "g2c";
@@ -142,16 +105,17 @@ export interface CommandDirectories {
   };
 }
 
+// Re-export body segment types
+export type { BodySegment, ContentPlaceholder, PatternDef, PlaceholderSerializers } from "./body-segment.js";
+
+// Re-export command types
+export type { ClaudeCommand, GeminiCommand, CodexCommand } from "./command.js";
+
 // Re-export intermediate representation types
 export type {
-  IntermediateRepresentation,
   ProductType,
-  ToIntermediateConverter,
-  FromIntermediateConverter,
-  BidirectionalConverter,
   IntermediateConversionOptions,
 } from "./intermediate.js";
-export { validateIntermediateRepresentation } from "./intermediate.js";
 
 // Re-export skill types
 export type {
@@ -165,3 +129,12 @@ export type {
   ContentType as IRContentType,
   ContentFilter,
 } from "./skill.js";
+
+// Re-export semantic IR types
+export type {
+  SemanticIR,
+  SemanticProperties,
+  SemanticMeta,
+  ConverterOptions,
+  SemanticConverter,
+} from "./semantic-ir.js";
