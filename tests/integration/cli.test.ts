@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { CLIOptions } from "../../src/cli/options.js";
 import { syncCommands } from "../../src/cli/sync.js";
-import { deleteFile, ensureDirectory, fileExists, writeFile } from "../../src/utils/file-utils.js";
+import { directoryExists, ensureDirectory, fileExists, readFile, writeFile } from "../../src/utils/file-utils.js";
 
 describe("CLI Integration Tests", () => {
   let testDir: string;
@@ -12,6 +12,11 @@ describe("CLI Integration Tests", () => {
   let geminiDir: string;
   let claudeBaseDir: string;
   let geminiBaseDir: string;
+  let codexBaseDir: string;
+  let codexDir: string;
+  let claudeSkillsDir: string;
+  let geminiSkillsDir: string;
+  let codexSkillsDir: string;
 
   let originalCwd: string;
 
@@ -19,16 +24,24 @@ describe("CLI Integration Tests", () => {
     originalCwd = process.cwd();
     testDir = join(tmpdir(), `agent-slash-sync-test-${Date.now()}`);
 
-    // New spec: specify base directory (/commands is added automatically)
+    // Base directories
     claudeBaseDir = join(testDir, ".claude");
     geminiBaseDir = join(testDir, ".gemini");
+    codexBaseDir = join(testDir, ".codex");
 
-    // Actual command directories (for file creation)
+    // Command directories
     claudeDir = join(claudeBaseDir, "commands");
     geminiDir = join(geminiBaseDir, "commands");
+    codexDir = join(codexBaseDir, "prompts");
+
+    // Skill directories
+    claudeSkillsDir = join(claudeBaseDir, "skills");
+    geminiSkillsDir = join(geminiBaseDir, "skills");
+    codexSkillsDir = join(codexBaseDir, "skills");
 
     await ensureDirectory(claudeDir);
     await ensureDirectory(geminiDir);
+    await ensureDirectory(codexDir);
 
     // Move to test working directory
     process.chdir(testDir);
@@ -83,7 +96,7 @@ This is a test command with $ARGUMENTS.`;
       expect(await fileExists(geminiFile)).toBe(true);
 
       // Check file content
-      const { readFile } = await import("../../src/utils/file-utils.js");
+
       const geminiContent = await readFile(geminiFile);
       expect(geminiContent).toContain('description = "Test command"');
       expect(geminiContent).toContain("This is a test command with {{args}}.");
@@ -155,7 +168,7 @@ This is a test command with $ARGUMENTS.`;
       expect(result.summary.skipped).toBe(1);
 
       // Verify existing file was not changed
-      const { readFile } = await import("../../src/utils/file-utils.js");
+
       const geminiContent = await readFile(join(geminiDir, "existing.toml"));
       expect(geminiContent).toContain("Existing content");
     });
@@ -193,7 +206,7 @@ Test content`;
       expect(result.success).toBe(true);
 
       // Check converted file
-      const { readFile } = await import("../../src/utils/file-utils.js");
+
       const geminiContent = await readFile(join(geminiDir, "unsupported.toml"));
       expect(geminiContent).toContain('description = "Test command"');
       expect(geminiContent).not.toContain("_claude_");
@@ -234,7 +247,7 @@ prompt = "This is a test command with {{args}}."`;
       expect(await fileExists(claudeFile)).toBe(true);
 
       // Check file content
-      const { readFile } = await import("../../src/utils/file-utils.js");
+
       const claudeContent = await readFile(claudeFile);
       expect(claudeContent).toContain("description: Test command");
       expect(claudeContent).toContain("This is a test command with $ARGUMENTS.");
@@ -269,7 +282,7 @@ _claude_model = "sonnet"`;
       expect(result.success).toBe(true);
 
       // Check converted file
-      const { readFile } = await import("../../src/utils/file-utils.js");
+
       const claudeContent = await readFile(join(claudeDir, "restore.md"));
       expect(claudeContent).toContain("description: Test command");
       // Verify Claude-specific fields are restored
@@ -326,11 +339,6 @@ Test content with $ARGUMENTS`;
 
       await writeFile(join(claudeDir, "test-codex.md"), claudeContent);
 
-      // Create Codex directory
-      const codexBaseDir = join(testDir, ".codex");
-      const codexDir = join(codexBaseDir, "prompts");
-      await ensureDirectory(codexDir);
-
       // Execute conversion（removeUnsupported = false）
       const options: CLIOptions = {
         source: "claude",
@@ -341,7 +349,7 @@ Test content with $ARGUMENTS`;
         syncDelete: false,
         noop: false,
         verbose: false,
-        claudeDir: claudeBaseDir, // Use existing claudeBaseDir variable
+        claudeDir: claudeBaseDir,
         codexDir: codexBaseDir,
       };
 
@@ -360,7 +368,6 @@ Test content with $ARGUMENTS`;
       expect(await fileExists(codexFile)).toBe(true);
 
       // Check file content
-      const { readFile } = await import("../../src/utils/file-utils.js");
       const codexContent = await readFile(codexFile);
       // Verify frontmatter is preserved
       expect(codexContent).toContain("description: Test command");
@@ -380,11 +387,6 @@ allowed-tools: Bash(git:*)
 Test content with $ARGUMENTS`;
 
       await writeFile(join(claudeDir, "test-codex-remove.md"), claudeContent);
-
-      // Create Codex directory
-      const codexBaseDir = join(testDir, ".codex");
-      const codexDir = join(codexBaseDir, "prompts");
-      await ensureDirectory(codexDir);
 
       // Execute conversion（removeUnsupported = true）
       const options: CLIOptions = {
@@ -410,7 +412,7 @@ Test content with $ARGUMENTS`;
       expect(await fileExists(codexFile)).toBe(true);
 
       // Check file content
-      const { readFile } = await import("../../src/utils/file-utils.js");
+
       const codexContent = await readFile(codexFile);
       // description remains
       expect(codexContent).toContain("description: Test command");
@@ -450,6 +452,303 @@ Content`;
       // Verify errors are logged
       expect(result.success).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("Skill conversion", () => {
+    it("should convert Claude skill to Gemini", async () => {
+      const skillDir = join(claudeSkillsDir, "test-skill");
+      await ensureDirectory(skillDir);
+      await writeFile(
+        join(skillDir, "SKILL.md"),
+        `---
+name: test-skill
+description: Test skill
+---
+
+This is a test skill with $ARGUMENTS.`,
+      );
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "gemini",
+        contentType: "skills",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        claudeDir: claudeBaseDir,
+        geminiDir: geminiBaseDir,
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+      expect(result.summary.created).toBe(1);
+
+      const targetSkillMd = join(geminiSkillsDir, "test-skill", "SKILL.md");
+      expect(await fileExists(targetSkillMd)).toBe(true);
+
+      const content = await readFile(targetSkillMd);
+      expect(content).toContain("name: test-skill");
+      expect(content).toContain("{{args}}");
+    });
+
+    it("should convert Gemini skill to Claude", async () => {
+      const skillDir = join(geminiSkillsDir, "gemini-skill");
+      await ensureDirectory(skillDir);
+      await writeFile(
+        join(skillDir, "SKILL.md"),
+        `---
+name: gemini-skill
+description: A Gemini skill
+---
+
+Use this with {{args}}.`,
+      );
+
+      const options: CLIOptions = {
+        source: "gemini",
+        destination: "claude",
+        contentType: "skills",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        claudeDir: claudeBaseDir,
+        geminiDir: geminiBaseDir,
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+
+      const targetSkillMd = join(claudeSkillsDir, "gemini-skill", "SKILL.md");
+      expect(await fileExists(targetSkillMd)).toBe(true);
+
+      const content = await readFile(targetSkillMd);
+      expect(content).toContain("$ARGUMENTS");
+    });
+
+    it("should convert Claude skill to Codex with openaiConfig generation", async () => {
+      const skillDir = join(claudeSkillsDir, "codex-target");
+      await ensureDirectory(skillDir);
+      await writeFile(
+        join(skillDir, "SKILL.md"),
+        `---
+name: codex-target
+description: Target for Codex
+disable-model-invocation: true
+---
+
+Test content.`,
+      );
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "codex",
+        contentType: "skills",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        claudeDir: claudeBaseDir,
+        codexDir: codexBaseDir,
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+
+      const openaiYaml = join(codexSkillsDir, "codex-target", "agents", "openai.yaml");
+      expect(await fileExists(openaiYaml)).toBe(true);
+
+      const yamlContent = await readFile(openaiYaml);
+      expect(yamlContent).toContain("allow_implicit_invocation: false");
+    });
+
+    it("should convert both commands and skills with contentType 'both'", async () => {
+      // Create a command
+      await writeFile(join(claudeDir, "cmd.md"), "Command content");
+      // Create a skill
+      const skillDir = join(claudeSkillsDir, "both-skill");
+      await ensureDirectory(skillDir);
+      await writeFile(join(skillDir, "SKILL.md"), "---\nname: both-skill\n---\n\nSkill content.");
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "gemini",
+        contentType: "both",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        claudeDir: claudeBaseDir,
+        geminiDir: geminiBaseDir,
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+      expect(result.summary.processed).toBe(2);
+
+      expect(await fileExists(join(geminiDir, "cmd.toml"))).toBe(true);
+      expect(await fileExists(join(geminiSkillsDir, "both-skill", "SKILL.md"))).toBe(true);
+    });
+
+    it("should handle noop mode for skills", async () => {
+      const skillDir = join(claudeSkillsDir, "noop-skill");
+      await ensureDirectory(skillDir);
+      await writeFile(join(skillDir, "SKILL.md"), "---\nname: noop-skill\n---\n\nContent");
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "gemini",
+        contentType: "skills",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: true,
+        verbose: false,
+        claudeDir: claudeBaseDir,
+        geminiDir: geminiBaseDir,
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+      expect(result.operations[0]?.description).toContain("Would create");
+      expect(await fileExists(join(geminiSkillsDir, "noop-skill", "SKILL.md"))).toBe(false);
+    });
+
+    it("should handle noOverwrite mode for skills", async () => {
+      // Source skill
+      const sourceDir = join(claudeSkillsDir, "overwrite-skill");
+      await ensureDirectory(sourceDir);
+      await writeFile(join(sourceDir, "SKILL.md"), "---\nname: overwrite-skill\n---\n\nNew content");
+
+      // Existing target skill
+      const targetDir = join(geminiSkillsDir, "overwrite-skill");
+      await ensureDirectory(targetDir);
+      await writeFile(join(targetDir, "SKILL.md"), "---\nname: overwrite-skill\n---\n\nExisting content");
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "gemini",
+        contentType: "skills",
+        removeUnsupported: false,
+        noOverwrite: true,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        claudeDir: claudeBaseDir,
+        geminiDir: geminiBaseDir,
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+      expect(result.summary.skipped).toBe(1);
+
+      const content = await readFile(join(targetDir, "SKILL.md"));
+      expect(content).toContain("Existing content");
+    });
+  });
+
+  describe("syncDelete", () => {
+    it("should delete orphaned command files in target", async () => {
+      // Source: only cmd-a.md
+      await writeFile(join(claudeDir, "cmd-a.md"), "Source A");
+      // Target: cmd-a.toml (has source) + orphan.toml (no source)
+      await writeFile(join(geminiDir, "cmd-a.toml"), 'prompt = "A"');
+      await writeFile(join(geminiDir, "orphan.toml"), 'prompt = "Orphan"');
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "gemini",
+        contentType: "commands",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: true,
+        noop: false,
+        verbose: false,
+        claudeDir: claudeBaseDir,
+        geminiDir: geminiBaseDir,
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+
+      // orphan.toml should be deleted
+      expect(await fileExists(join(geminiDir, "orphan.toml"))).toBe(false);
+      // cmd-a.toml should still exist (updated)
+      expect(await fileExists(join(geminiDir, "cmd-a.toml"))).toBe(true);
+      expect(result.summary.deleted).toBeGreaterThan(0);
+    });
+
+    it("should report 'Would delete' in noop mode for syncDelete", async () => {
+      await writeFile(join(claudeDir, "keep.md"), "Keep content");
+      await writeFile(join(geminiDir, "keep.toml"), 'prompt = "Keep"');
+      await writeFile(join(geminiDir, "stale.toml"), 'prompt = "Stale"');
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "gemini",
+        contentType: "commands",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: true,
+        noop: true,
+        verbose: false,
+        claudeDir: claudeBaseDir,
+        geminiDir: geminiBaseDir,
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+
+      const deleteOp = result.operations.find((op) => op.filePath.includes("stale.toml"));
+      expect(deleteOp).toBeDefined();
+      expect(deleteOp?.type).toBe("D");
+      expect(deleteOp?.description).toContain("Would delete");
+
+      // File should still exist
+      expect(await fileExists(join(geminiDir, "stale.toml"))).toBe(true);
+    });
+
+    it("should delete orphaned skill directories", async () => {
+      // Source: only skill-a
+      const sourceSkillDir = join(claudeSkillsDir, "skill-a");
+      await ensureDirectory(sourceSkillDir);
+      await writeFile(join(sourceSkillDir, "SKILL.md"), "---\nname: skill-a\n---\n\nContent A");
+
+      // Target: skill-a (has source) + orphan-skill (no source)
+      const targetSkillA = join(geminiSkillsDir, "skill-a");
+      await ensureDirectory(targetSkillA);
+      await writeFile(join(targetSkillA, "SKILL.md"), "---\nname: skill-a\n---\n\nOld A");
+
+      const orphanSkill = join(geminiSkillsDir, "orphan-skill");
+      await ensureDirectory(orphanSkill);
+      await writeFile(join(orphanSkill, "SKILL.md"), "---\nname: orphan-skill\n---\n\nOrphan");
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "gemini",
+        contentType: "skills",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: true,
+        noop: false,
+        verbose: false,
+        claudeDir: claudeBaseDir,
+        geminiDir: geminiBaseDir,
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+
+      // orphan-skill directory should be deleted
+      expect(await directoryExists(orphanSkill)).toBe(false);
+      // skill-a should still exist
+      expect(await directoryExists(targetSkillA)).toBe(true);
     });
   });
 });

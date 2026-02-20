@@ -1,15 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { CodexSkillToIRConverter } from "../../src/converters/codex-skill-to-ir.js";
-import { ClaudeSkillToIRConverter } from "../../src/converters/claude-skill-to-ir.js";
-import { IRToCodexSkillConverter } from "../../src/converters/ir-to-codex-skill.js";
-import { IRToClaudeSkillConverter } from "../../src/converters/ir-to-claude-skill.js";
+import { CodexSkillConverter } from "../../src/converters/codex-skill-converter.js";
+import { ClaudeSkillConverter } from "../../src/converters/claude-skill-converter.js";
 import type { CodexSkill, ClaudeSkill } from "../../src/types/index.js";
 
 describe("Skill Conversion", () => {
   describe("allow_implicit_invocation ↔ disable-model-invocation conversion", () => {
     describe("Codex → Claude (via IR)", () => {
-      const codexToIR = new CodexSkillToIRConverter();
-      const irToClaude = new IRToClaudeSkillConverter();
+      const codexConverter = new CodexSkillConverter();
+      const claudeConverter = new ClaudeSkillConverter();
 
       it("should convert allow_implicit_invocation: false to disable-model-invocation: true", () => {
         const codexSkill: CodexSkill = {
@@ -25,10 +23,10 @@ describe("Skill Conversion", () => {
           },
         };
 
-        const ir = codexToIR.toIntermediate(codexSkill);
-        expect(ir.header["disable-model-invocation"]).toBe(true);
+        const ir = codexConverter.toIR(codexSkill);
+        expect(ir.semantic.modelInvocationEnabled).toBe(false);
 
-        const claudeSkill = irToClaude.fromIntermediate(ir);
+        const claudeSkill = claudeConverter.fromIR(ir);
         expect(claudeSkill.frontmatter["disable-model-invocation"]).toBe(true);
       });
 
@@ -46,10 +44,10 @@ describe("Skill Conversion", () => {
           },
         };
 
-        const ir = codexToIR.toIntermediate(codexSkill);
-        expect(ir.header["disable-model-invocation"]).toBe(false);
+        const ir = codexConverter.toIR(codexSkill);
+        expect(ir.semantic.modelInvocationEnabled).toBe(true);
 
-        const claudeSkill = irToClaude.fromIntermediate(ir);
+        const claudeSkill = claudeConverter.fromIR(ir);
         expect(claudeSkill.frontmatter["disable-model-invocation"]).toBe(false);
       });
 
@@ -62,14 +60,14 @@ describe("Skill Conversion", () => {
           frontmatter: { name: "test-skill" },
         };
 
-        const ir = codexToIR.toIntermediate(codexSkill);
-        expect(ir.header["disable-model-invocation"]).toBeUndefined();
+        const ir = codexConverter.toIR(codexSkill);
+        expect(ir.semantic.modelInvocationEnabled).toBeUndefined();
       });
     });
 
     describe("Claude → Codex (via IR)", () => {
-      const claudeToIR = new ClaudeSkillToIRConverter();
-      const irToCodex = new IRToCodexSkillConverter();
+      const claudeConverter = new ClaudeSkillConverter();
+      const codexConverter = new CodexSkillConverter();
 
       it("should convert disable-model-invocation: true to allow_implicit_invocation: false", () => {
         const claudeSkill: ClaudeSkill = {
@@ -83,8 +81,8 @@ describe("Skill Conversion", () => {
           },
         };
 
-        const ir = claudeToIR.toIntermediate(claudeSkill);
-        const codexSkill = irToCodex.fromIntermediate(ir);
+        const ir = claudeConverter.toIR(claudeSkill);
+        const codexSkill = codexConverter.fromIR(ir);
 
         expect(codexSkill.openaiConfig).toBeDefined();
         expect(codexSkill.openaiConfig?.policy?.allow_implicit_invocation).toBe(false);
@@ -102,8 +100,8 @@ describe("Skill Conversion", () => {
           },
         };
 
-        const ir = claudeToIR.toIntermediate(claudeSkill);
-        const codexSkill = irToCodex.fromIntermediate(ir);
+        const ir = claudeConverter.toIR(claudeSkill);
+        const codexSkill = codexConverter.fromIR(ir);
 
         expect(codexSkill.openaiConfig).toBeDefined();
         expect(codexSkill.openaiConfig?.policy?.allow_implicit_invocation).toBe(true);
@@ -120,8 +118,8 @@ describe("Skill Conversion", () => {
           },
         };
 
-        const ir = claudeToIR.toIntermediate(claudeSkill);
-        const codexSkill = irToCodex.fromIntermediate(ir);
+        const ir = claudeConverter.toIR(claudeSkill);
+        const codexSkill = codexConverter.fromIR(ir);
 
         expect(codexSkill.openaiConfig).toBeUndefined();
       });
@@ -138,15 +136,13 @@ describe("Skill Conversion", () => {
           },
         };
 
-        // Simulate IR with existing codexOpenAIConfig in meta
-        const ir = claudeToIR.toIntermediate(claudeSkill);
-        ir.meta.codexOpenAIConfig = {
-          interface: {
-            display_name: "Test Skill",
-          },
+        // Simulate IR with existing openaiConfig fields in extras
+        const ir = claudeConverter.toIR(claudeSkill);
+        ir.extras.interface = {
+          display_name: "Test Skill",
         };
 
-        const codexSkill = irToCodex.fromIntermediate(ir);
+        const codexSkill = codexConverter.fromIR(ir);
 
         expect(codexSkill.openaiConfig?.interface?.display_name).toBe("Test Skill");
         expect(codexSkill.openaiConfig?.policy?.allow_implicit_invocation).toBe(false);
@@ -154,10 +150,8 @@ describe("Skill Conversion", () => {
     });
 
     describe("Round-trip conversion", () => {
-      const claudeToIR = new ClaudeSkillToIRConverter();
-      const irToCodex = new IRToCodexSkillConverter();
-      const codexToIR = new CodexSkillToIRConverter();
-      const irToClaude = new IRToClaudeSkillConverter();
+      const claudeConverter = new ClaudeSkillConverter();
+      const codexConverter = new CodexSkillConverter();
 
       it("should preserve disable-model-invocation: true through Claude → Codex → Claude", () => {
         const originalClaude: ClaudeSkill = {
@@ -172,12 +166,12 @@ describe("Skill Conversion", () => {
         };
 
         // Claude → Codex
-        const ir1 = claudeToIR.toIntermediate(originalClaude);
-        const codexSkill = irToCodex.fromIntermediate(ir1);
+        const ir1 = claudeConverter.toIR(originalClaude);
+        const codexSkill = codexConverter.fromIR(ir1);
 
         // Codex → Claude
-        const ir2 = codexToIR.toIntermediate(codexSkill);
-        const finalClaude = irToClaude.fromIntermediate(ir2);
+        const ir2 = codexConverter.toIR(codexSkill);
+        const finalClaude = claudeConverter.fromIR(ir2);
 
         expect(finalClaude.frontmatter["disable-model-invocation"]).toBe(true);
       });
@@ -197,12 +191,12 @@ describe("Skill Conversion", () => {
         };
 
         // Codex → Claude
-        const ir1 = codexToIR.toIntermediate(originalCodex);
-        const claudeSkill = irToClaude.fromIntermediate(ir1);
+        const ir1 = codexConverter.toIR(originalCodex);
+        const claudeSkill = claudeConverter.fromIR(ir1);
 
         // Claude → Codex
-        const ir2 = claudeToIR.toIntermediate(claudeSkill);
-        const finalCodex = irToCodex.fromIntermediate(ir2);
+        const ir2 = claudeConverter.toIR(claudeSkill);
+        const finalCodex = codexConverter.fromIR(ir2);
 
         expect(finalCodex.openaiConfig?.policy?.allow_implicit_invocation).toBe(false);
       });

@@ -1,6 +1,7 @@
-import { rm } from "node:fs/promises";
+import { mkdir, rm, writeFile as fsWriteFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { SKILL_CONSTANTS } from "../../src/utils/constants.js";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   autoCompleteExtension,
@@ -8,9 +9,17 @@ import {
   directoryExists,
   ensureDirectory,
   fileExists,
+  findClaudeCommands,
+  findClaudeSkills,
+  findCodexCommands,
+  findCodexSkills,
+  findGeminiCommands,
+  findGeminiSkills,
   getBaseName,
   getCommandName,
   getFilePathFromCommandName,
+  getSkillNameFromPath,
+  getSkillPathFromName,
   readFile,
   writeFile,
 } from "../../src/utils/file-utils.js";
@@ -192,6 +201,161 @@ describe("FileUtils", () => {
 
       const result = getFilePathFromCommandName(commandName, baseDir, extension);
       expect(result).toBe("/base/commands/frontend/react/component.md");
+    });
+  });
+
+  describe("findClaudeCommands", () => {
+    it("should find .md files in custom directory", async () => {
+      const commandsDir = join(testDir, "commands");
+      await mkdir(commandsDir, { recursive: true });
+      await fsWriteFile(join(commandsDir, "test.md"), "# Test", "utf-8");
+      await fsWriteFile(join(commandsDir, "deploy.md"), "# Deploy", "utf-8");
+
+      const result = await findClaudeCommands(undefined, testDir);
+      expect(result).toHaveLength(2);
+      expect(result).toContain(join(commandsDir, "deploy.md"));
+      expect(result).toContain(join(commandsDir, "test.md"));
+    });
+
+    it("should return empty array for non-existent directory", async () => {
+      const result = await findClaudeCommands(undefined, "/non/existent/path");
+      expect(result).toEqual([]);
+    });
+
+    it("should find specific file by name", async () => {
+      const commandsDir = join(testDir, "commands");
+      await mkdir(commandsDir, { recursive: true });
+      await fsWriteFile(join(commandsDir, "target.md"), "# Target", "utf-8");
+      await fsWriteFile(join(commandsDir, "other.md"), "# Other", "utf-8");
+
+      const result = await findClaudeCommands("target", testDir);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe(join(commandsDir, "target.md"));
+    });
+  });
+
+  describe("findGeminiCommands", () => {
+    it("should find .toml files in custom directory", async () => {
+      const commandsDir = join(testDir, "commands");
+      await mkdir(commandsDir, { recursive: true });
+      await fsWriteFile(join(commandsDir, "test.toml"), "[prompt]\ncontent = 'test'", "utf-8");
+
+      const result = await findGeminiCommands(undefined, testDir);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe(join(commandsDir, "test.toml"));
+    });
+
+    it("should return empty array for non-existent directory", async () => {
+      const result = await findGeminiCommands(undefined, "/non/existent/path");
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("findCodexCommands", () => {
+    it("should find .md files in prompts directory", async () => {
+      const promptsDir = join(testDir, "prompts");
+      await mkdir(promptsDir, { recursive: true });
+      await fsWriteFile(join(promptsDir, "review.md"), "# Review", "utf-8");
+
+      const result = await findCodexCommands(undefined, testDir);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe(join(promptsDir, "review.md"));
+    });
+  });
+
+  describe("findClaudeSkills", () => {
+    it("should find directories containing SKILL.md", async () => {
+      const skillsDir = join(testDir, "skills");
+      const skillA = join(skillsDir, "skill-a");
+      const skillB = join(skillsDir, "skill-b");
+      await mkdir(skillA, { recursive: true });
+      await mkdir(skillB, { recursive: true });
+      await fsWriteFile(join(skillA, SKILL_CONSTANTS.SKILL_FILE_NAME), "# Skill A", "utf-8");
+      await fsWriteFile(join(skillB, SKILL_CONSTANTS.SKILL_FILE_NAME), "# Skill B", "utf-8");
+
+      const result = await findClaudeSkills(undefined, testDir);
+      expect(result).toHaveLength(2);
+      expect(result).toContain(skillA);
+      expect(result).toContain(skillB);
+    });
+
+    it("should find specific skill by name", async () => {
+      const skillsDir = join(testDir, "skills");
+      const skillA = join(skillsDir, "skill-a");
+      await mkdir(skillA, { recursive: true });
+      await fsWriteFile(join(skillA, SKILL_CONSTANTS.SKILL_FILE_NAME), "# Skill A", "utf-8");
+
+      const result = await findClaudeSkills("skill-a", testDir);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe(skillA);
+    });
+
+    it("should return empty for non-existent specific skill", async () => {
+      const skillsDir = join(testDir, "skills");
+      await mkdir(skillsDir, { recursive: true });
+
+      const result = await findClaudeSkills("non-existent", testDir);
+      expect(result).toEqual([]);
+    });
+
+    it("should skip directories without SKILL.md", async () => {
+      const skillsDir = join(testDir, "skills");
+      const withSkill = join(skillsDir, "with-skill");
+      const withoutSkill = join(skillsDir, "without-skill");
+      await mkdir(withSkill, { recursive: true });
+      await mkdir(withoutSkill, { recursive: true });
+      await fsWriteFile(join(withSkill, SKILL_CONSTANTS.SKILL_FILE_NAME), "# Skill", "utf-8");
+      await fsWriteFile(join(withoutSkill, "README.md"), "# Not a skill", "utf-8");
+
+      const result = await findClaudeSkills(undefined, testDir);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe(withSkill);
+    });
+  });
+
+  describe("findGeminiSkills", () => {
+    it("should find skill directories in custom directory", async () => {
+      const skillsDir = join(testDir, "skills");
+      const skill = join(skillsDir, "my-skill");
+      await mkdir(skill, { recursive: true });
+      await fsWriteFile(join(skill, SKILL_CONSTANTS.SKILL_FILE_NAME), "# Skill", "utf-8");
+
+      const result = await findGeminiSkills(undefined, testDir);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe(skill);
+    });
+  });
+
+  describe("findCodexSkills", () => {
+    it("should find skill directories in custom directory", async () => {
+      const skillsDir = join(testDir, "skills");
+      const skill = join(skillsDir, "codex-skill");
+      await mkdir(skill, { recursive: true });
+      await fsWriteFile(join(skill, SKILL_CONSTANTS.SKILL_FILE_NAME), "# Skill", "utf-8");
+
+      const result = await findCodexSkills(undefined, testDir);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe(skill);
+    });
+  });
+
+  describe("getSkillNameFromPath", () => {
+    it("should extract skill name from path", () => {
+      expect(getSkillNameFromPath("/base/skills/my-skill", "/base/skills")).toBe("my-skill");
+    });
+
+    it("should handle nested paths", () => {
+      expect(getSkillNameFromPath("/base/skills/category/my-skill", "/base/skills")).toBe("category/my-skill");
+    });
+  });
+
+  describe("getSkillPathFromName", () => {
+    it("should build path from skill name", () => {
+      expect(getSkillPathFromName("my-skill", "/base/skills")).toBe("/base/skills/my-skill");
+    });
+
+    it("should handle skill name with separators", () => {
+      expect(getSkillPathFromName("category/my-skill", "/base/skills")).toBe("/base/skills/category/my-skill");
     });
   });
 });

@@ -1,3 +1,5 @@
+import { mkdir, rm, writeFile as fsWriteFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CodexParser } from "../../src/parsers/codex-parser.js";
@@ -31,6 +33,19 @@ describe("CodexParser", () => {
       const filePath = join(fixturesDir, "non-existent.md");
 
       await expect(parser.parse(filePath)).rejects.toThrow("Failed to parse Codex command file");
+    });
+
+    it("should throw ParseError for invalid YAML frontmatter", async () => {
+      const tmpDir = join(tmpdir(), `codex-parser-test-${Date.now()}`);
+      await mkdir(tmpDir, { recursive: true });
+      const invalidFile = join(tmpDir, "invalid-frontmatter.md");
+      await fsWriteFile(invalidFile, "---\ninvalid yaml: [[[\n---\nContent", "utf-8");
+
+      try {
+        await expect(parser.parse(invalidFile)).rejects.toThrow("Failed to parse Codex command file");
+      } finally {
+        await rm(tmpDir, { recursive: true });
+      }
     });
   });
 
