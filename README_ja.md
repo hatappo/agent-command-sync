@@ -49,8 +49,8 @@ acsync -n -s claude -d gemini
 ## 機能
 
 - **カラフルな出力** - 色分けされたステータスインジケータによる明確なビジュアルフィードバック
-- **高速変換** - Claude Code と Gemini CLI 間でコマンドを効率的に同期
-- **双方向対応** - 両方向への変換に対応（Claude ↔ Gemini）
+- **高速変換** - Claude Code、Gemini CLI、Codex CLI 間でコマンドを効率的に同期
+- **双方向対応** - 任意の方向への変換に対応（Claude ↔ Gemini ↔ Codex）
 - **デフォルトで安全** - ドライランモードで適用前に変更をプレビュー
 - **短縮コマンド** - `agent-command-sync` の代わりに `acsync` を使用可能
 - **選択的同期** - 特定のファイルまたは全コマンドを一括変換
@@ -138,7 +138,7 @@ acsync -s claude -d gemini -v
 | -------------------- | -------------- | -------------- | -------------- | ------------------------------------- |
 | すべての引数          | `$ARGUMENTS`   | `{{args}}`     | `$ARGUMENTS`   | 形式間で変換                           |
 | 個別引数              | `$1` ... `$9`  | -              | `$1` ... `$9`  | そのまま保持（Geminiはサポートなし）      |
-| シェルコマンド        | `!command`     | `!{command}`   | -              | Claude/Gemini間で変換                  |
+| シェルコマンド        | `` !`command` ``| `!{command}`   | -              | Claude/Gemini間で変換                  |
 | ファイル参照          | `@path/to/file`| `@{path/to/file}` | -           | Claude/Gemini間で変換                  |
 
 #### 個別引数
@@ -254,6 +254,8 @@ Commands と同様：
 | ---- | ----------------------- | ---------- |
 | すべての引数 | `$ARGUMENTS` | `{{args}}` |
 | 個別引数 | `$1` ... `$9` | サポートなし |
+| シェルコマンド | `` !`command` `` | `!{command}` |
+| ファイル参照 | `@path/to/file` | `@{path/to/file}` |
 
 ---
 
@@ -279,6 +281,59 @@ Commands と同様：
 
 - Node.js >= 18.0.0
 - npm または互換性のあるパッケージマネージャー
+
+## アーキテクチャ
+
+### セマンティック IR（中間表現）
+
+すべての変換はハブ&スポーク型のセマンティック IR を経由します。これによりエージェント間のペアワイズ変換器が不要になります：
+
+```
+Source Format → Parser → toIR() → SemanticIR → fromIR() → Target Format
+```
+
+各エージェントは `toIR()` と `fromIR()` を実装する単一の双方向コンバーターを持ちます。新しいエージェントの追加には1つのコンバーターだけで済み、既存の N エージェント分の N 個のコンバーターは不要です。
+
+### SemanticIR の構造
+
+```typescript
+interface SemanticIR {
+  contentType: "command" | "skill";
+  body: BodySegment[];                  // トークン化されたボディコンテンツ
+  semantic: SemanticProperties;         // 共有プロパティ（description, name 等）
+  extras: Record<string, unknown>;      // エージェント固有のパススループロパティ
+  meta: SemanticMeta;                   // 変換コンテキスト（ソースパス、タイプ等）
+}
+```
+
+- **`semantic`** — エージェント間で共通の意味を持つプロパティ（例: `description`）。各コンバーターがエージェント固有のフィールド名とセマンティックプロパティ間のマッピングを行います。
+- **`extras`** — その他すべてのプロパティをそのまま通過させます。エージェント固有フィールド（例: Claude の `allowed-tools`）はラウンドトリップの忠実性のために保持され、`--remove-unsupported` で除去可能です。
+- **`body`** — `BodySegment[]`（プレーン文字列とセマンティックプレースホルダーの配列）としてトークン化されるため、プレースホルダー構文の変換（例: `$ARGUMENTS` ↔ `{{args}}`）は各コンバーターの `toIR()`/`fromIR()` 内で自動的に行われます。
+
+### ボディのトークン化
+
+ボディコンテンツは `BodySegment` 要素の配列にパースされます。プレーン文字列と型付きの `ContentPlaceholder` オブジェクトが交互に並びます：
+
+```typescript
+type ContentPlaceholder =
+  | { type: "arguments" }                // $ARGUMENTS / {{args}}
+  | { type: "individual-argument"; index: 1-9 }  // $1-$9
+  | { type: "shell-command"; command: string }    // !`cmd` / !{cmd}
+  | { type: "file-reference"; path: string };     // @path / @{path}
+```
+
+各エージェントはコンバーターと同じ場所にパターンとシリアライザーを定義します（`claude-body.ts`, `codex-body.ts`, `gemini-body.ts`）。Claude と Codex は共通モジュール（`_claude-codex-body.ts`）で同一のプレースホルダー構文を共有し、Codex ではサポート外のプレースホルダータイプ（shell-command, file-reference）をベストエフォートで出力します。型駆動のシリアライザーレジストリ（`PlaceholderSerializers`）によりコンパイル時の網羅性が保証され、新しいプレースホルダータイプを追加すると、すべてのエージェントで実装するまで型エラーが発生します。
+
+### ソースレイアウト
+
+```
+src/
+├── types/              # 型定義（SemanticIR, BodySegment, エージェント固有フォーマット）
+├── parsers/            # ファイルパーサー（Markdown, TOML → エージェント固有型）
+├── converters/         # 双方向コンバーター（toIR/fromIR）+ ボディパーサー/シリアライザー
+├── utils/              # 共有ユーティリティ（ファイル操作、バリデーション、ボディパースエンジン）
+└── cli/                # CLI エントリポイントと同期オーケストレーション
+```
 
 ## 開発
 
