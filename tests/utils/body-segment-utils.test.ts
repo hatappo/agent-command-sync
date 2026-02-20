@@ -14,10 +14,7 @@ describe("Body Segment Utils", () => {
     });
 
     it("should parse $ARGUMENTS", () => {
-      expect(parseClaudeBody("Run with $ARGUMENTS")).toEqual([
-        "Run with ",
-        { type: "arguments" },
-      ]);
+      expect(parseClaudeBody("Run with $ARGUMENTS")).toEqual(["Run with ", { type: "arguments" }]);
     });
 
     it("should parse $1-$9 individual arguments", () => {
@@ -44,29 +41,19 @@ describe("Body Segment Utils", () => {
     });
 
     it("should parse line-start shell commands", () => {
-      expect(parseClaudeBody("! git status")).toEqual([
-        { type: "shell-command", command: "git status" },
-      ]);
+      expect(parseClaudeBody("! git status")).toEqual([{ type: "shell-command", command: "git status" }]);
     });
 
     it("should prefer backtick over line-start when both match", () => {
-      expect(parseClaudeBody("!`git status`")).toEqual([
-        { type: "shell-command", command: "git status" },
-      ]);
+      expect(parseClaudeBody("!`git status`")).toEqual([{ type: "shell-command", command: "git status" }]);
     });
 
     it("should parse file references", () => {
-      expect(parseClaudeBody("Load @config.json")).toEqual([
-        "Load ",
-        { type: "file-reference", path: "config.json" },
-      ]);
+      expect(parseClaudeBody("Load @config.json")).toEqual(["Load ", { type: "file-reference", path: "config.json" }]);
     });
 
     it("should parse file references with paths", () => {
-      expect(parseClaudeBody("See @src/main.ts")).toEqual([
-        "See ",
-        { type: "file-reference", path: "src/main.ts" },
-      ]);
+      expect(parseClaudeBody("See @src/main.ts")).toEqual(["See ", { type: "file-reference", path: "src/main.ts" }]);
     });
 
     it("should handle mixed placeholders", () => {
@@ -115,10 +102,7 @@ describe("Body Segment Utils", () => {
     });
 
     it("should parse {{args}}", () => {
-      expect(parseGeminiBody("Run with {{args}}")).toEqual([
-        "Run with ",
-        { type: "arguments" },
-      ]);
+      expect(parseGeminiBody("Run with {{args}}")).toEqual(["Run with ", { type: "arguments" }]);
     });
 
     it("should parse !{command}", () => {

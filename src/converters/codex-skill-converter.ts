@@ -2,13 +2,7 @@
  * Codex Skill <-> SemanticIR bidirectional converter
  */
 
-import type {
-  CodexSkill,
-  CodexOpenAIConfig,
-  SemanticConverter,
-  SemanticIR,
-  ConverterOptions,
-} from "../types/index.js";
+import type { CodexSkill, CodexOpenAIConfig, SemanticConverter, SemanticIR, ConverterOptions } from "../types/index.js";
 import { parseCodexBody, serializeCodexBody } from "./codex-body.js";
 
 /** Claude-specific skill fields (original names, subject to _claude_ prefix) */

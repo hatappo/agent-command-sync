@@ -140,5 +140,4 @@ describe("Skill Conversion (Safety Net)", () => {
       expect(codex.frontmatter._claude_context).toBeUndefined();
     });
   });
-
 });

@@ -46,4 +46,3 @@ export const BINARY_EXTENSIONS = [
  * Config file names (require special handling)
  */
 export const CONFIG_FILES = ["openai.yaml", "config.yaml", "config.json", "config.toml"] as const;
-
