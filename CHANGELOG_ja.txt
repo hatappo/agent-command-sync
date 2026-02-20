@@ -1,5 +1,29 @@
 # 変更履歴
 
+## [2.2.0] - 2026-02-21
+
+### 追加機能
+- **Skills サポート**: Claude Code、Gemini CLI、Codex CLI 間でスキル（`SKILL.md` + サポートファイルのディレクトリ構造）の双方向変換を追加
+  - サポートファイル処理（テキスト・バイナリファイルをそのままコピー）
+  - Claude の `disable-model-invocation` から Codex の `agents/openai.yaml` を自動生成
+  - `--sync-delete` による孤立スキルディレクトリの削除に対応
+- **コンテンツタイプフィルタリング**: `-t, --type` オプションで `commands`、`skills`、`both`（デフォルト: `both`）を指定可能に
+
+### 変更
+- **SemanticIR ハブ&スポーク型アーキテクチャ**: 12個のペアワイズ変換器を6個の双方向 `SemanticConverter` に統合
+  - ボディコンテンツを `BodySegment[]` としてトークン化し、IR レベルでプレースホルダー変換を実現
+  - 型駆動の `PlaceholderSerializers` レジストリによるコンパイル時網羅性保証
+  - Claude/Codex 共有ボディパターンを共通モジュールに集約
+- **テストスイート拡充**: 182 → 250 テスト
+  - Codex ボディ parse/serialize テスト、skill-utils テスト、writeToDirectory テストを追加
+  - スキル変換・syncDelete 統合テストを追加
+  - ファイル検索関数テストを追加
+  - 無意味なプレースホルダーテストを削除
+
+### 修正
+- ドキュメントのシェルコマンド構文を `` !`command` `` に修正
+- Biome lint が coverage ディレクトリを正しく除外するよう修正
+
 ## [2.1.0] - 2025-01-08
 
 ### 追加機能

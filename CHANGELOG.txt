@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.2.0] - 2026-02-21
+
+### Added
+- **Skills support**: Bidirectional conversion of Skills (directory-based prompts with `SKILL.md` + support files) between Claude Code, Gemini CLI, and Codex CLI
+  - Support file handling (text and binary files copied as-is)
+  - Codex `agents/openai.yaml` generation from Claude's `disable-model-invocation`
+  - `--sync-delete` support for orphaned skill directories
+- **Content type filtering**: New `-t, --type` option to convert `commands`, `skills`, or `both` (default: `both`)
+
+### Changed
+- **SemanticIR hub-and-spoke architecture**: Replaced 12 pairwise converters with 6 bidirectional `SemanticConverter` implementations
+  - Body content tokenized as `BodySegment[]` for IR-level placeholder conversion
+  - Type-driven `PlaceholderSerializers` registry with compile-time exhaustiveness checking
+  - Claude/Codex shared body patterns extracted into common module
+- **Test suite expansion**: 182 → 250 tests
+  - Added Codex body parse/serialize tests, skill-utils tests, writeToDirectory tests
+  - Added skill conversion and syncDelete integration tests
+  - Added file search function tests
+  - Removed meaningless placeholder test
+
+### Fixed
+- Shell command syntax in documentation corrected to `` !`command` ``
+- Biome lint now correctly excludes coverage directory
+
 ## [2.1.0] - 2025-01-08
 
 ### Added
