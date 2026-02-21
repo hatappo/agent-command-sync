@@ -13,10 +13,13 @@ describe("CLI Integration Tests", () => {
   let claudeBaseDir: string;
   let geminiBaseDir: string;
   let codexBaseDir: string;
+  let opencodeBaseDir: string;
   let codexDir: string;
+  let opencodeDir: string;
   let claudeSkillsDir: string;
   let geminiSkillsDir: string;
   let codexSkillsDir: string;
+  let opencodeSkillsDir: string;
 
   let originalCwd: string;
 
@@ -28,20 +31,24 @@ describe("CLI Integration Tests", () => {
     claudeBaseDir = join(testDir, ".claude");
     geminiBaseDir = join(testDir, ".gemini");
     codexBaseDir = join(testDir, ".codex");
+    opencodeBaseDir = join(testDir, ".config", "opencode");
 
     // Command directories
     claudeDir = join(claudeBaseDir, "commands");
     geminiDir = join(geminiBaseDir, "commands");
     codexDir = join(codexBaseDir, "prompts");
+    opencodeDir = join(opencodeBaseDir, "commands");
 
     // Skill directories
     claudeSkillsDir = join(claudeBaseDir, "skills");
     geminiSkillsDir = join(geminiBaseDir, "skills");
     codexSkillsDir = join(codexBaseDir, "skills");
+    opencodeSkillsDir = join(opencodeBaseDir, "skills");
 
     await ensureDirectory(claudeDir);
     await ensureDirectory(geminiDir);
     await ensureDirectory(codexDir);
+    await ensureDirectory(opencodeDir);
 
     // Move to test working directory
     process.chdir(testDir);
@@ -650,6 +657,117 @@ Test content.`,
 
       const content = await readFile(join(targetDir, "SKILL.md"));
       expect(content).toContain("Existing content");
+    });
+  });
+
+  describe("OpenCode conversion", () => {
+    it("should convert Claude command to OpenCode preserving model", async () => {
+      const claudeContent = `---
+description: Test command
+model: sonnet
+allowed-tools: Bash(git:*)
+---
+
+Test content with $ARGUMENTS and !` + "`git status`" + " and @config.json";
+
+      await writeFile(join(claudeDir, "test-opencode.md"), claudeContent);
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "opencode",
+        contentType: "commands",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        claudeDir: claudeBaseDir,
+        opencodeDir: opencodeBaseDir,
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+
+      const opencodeFile = join(opencodeDir, "test-opencode.md");
+      expect(await fileExists(opencodeFile)).toBe(true);
+
+      const content = await readFile(opencodeFile);
+      expect(content).toContain("description: Test command");
+      expect(content).toContain("model: sonnet");
+      expect(content).toContain("$ARGUMENTS");
+    });
+
+    it("should convert OpenCode command to Gemini", async () => {
+      const opencodeContent = `---
+description: OpenCode test
+---
+
+Run with $ARGUMENTS and !` + "`npm test`" + ".";
+
+      await writeFile(join(opencodeDir, "test.md"), opencodeContent);
+
+      const options: CLIOptions = {
+        source: "opencode",
+        destination: "gemini",
+        contentType: "commands",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        opencodeDir: opencodeBaseDir,
+        geminiDir: geminiBaseDir,
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+
+      const geminiFile = join(geminiDir, "test.toml");
+      expect(await fileExists(geminiFile)).toBe(true);
+
+      const content = await readFile(geminiFile);
+      expect(content).toContain("{{args}}");
+      expect(content).toContain("!{npm test}");
+    });
+
+    it("should convert Claude skill to OpenCode", async () => {
+      const skillDir = join(claudeSkillsDir, "opencode-target");
+      await ensureDirectory(skillDir);
+      await writeFile(
+        join(skillDir, "SKILL.md"),
+        `---
+name: opencode-target
+description: Target for OpenCode
+model: sonnet
+---
+
+Test skill with $ARGUMENTS.`,
+      );
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "opencode",
+        contentType: "skills",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        claudeDir: claudeBaseDir,
+        opencodeDir: opencodeBaseDir,
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+      expect(result.summary.created).toBe(1);
+
+      const targetSkillMd = join(opencodeSkillsDir, "opencode-target", "SKILL.md");
+      expect(await fileExists(targetSkillMd)).toBe(true);
+
+      const content = await readFile(targetSkillMd);
+      expect(content).toContain("name: opencode-target");
+      expect(content).toContain("model: sonnet");
+      expect(content).toContain("$ARGUMENTS");
     });
   });
 

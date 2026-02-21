@@ -38,15 +38,15 @@ export function validateCLIOptions(options: Partial<CLIOptions>): string[] {
   // Validate source
   if (!options.source) {
     errors.push("--src option is required");
-  } else if (!["claude", "gemini", "codex"].includes(options.source)) {
-    errors.push('--src must be one of "claude", "gemini", or "codex"');
+  } else if (!["claude", "gemini", "codex", "opencode"].includes(options.source)) {
+    errors.push('--src must be one of "claude", "gemini", "codex", or "opencode"');
   }
 
   // Validate destination
   if (!options.destination) {
     errors.push("--dest option is required");
-  } else if (!["claude", "gemini", "codex"].includes(options.destination)) {
-    errors.push('--dest must be one of "claude", "gemini", or "codex"');
+  } else if (!["claude", "gemini", "codex", "opencode"].includes(options.destination)) {
+    errors.push('--dest must be one of "claude", "gemini", "codex", or "opencode"');
   }
 
   // Check if source and destination are the same
@@ -107,6 +107,7 @@ export function cliOptionsToConversionOptions(cliOptions: CLIOptions): Intermedi
     claudeDir: cliOptions.claudeDir,
     geminiDir: cliOptions.geminiDir,
     codexDir: cliOptions.codexDir,
+    opencodeDir: cliOptions.opencodeDir,
     contentType: cliOptions.contentType,
   };
 }

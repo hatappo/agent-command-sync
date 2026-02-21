@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseClaudeBody, serializeClaudeBody } from "../../src/converters/claude-body.js";
 import { parseCodexBody, serializeCodexBody } from "../../src/converters/codex-body.js";
 import { parseGeminiBody, serializeGeminiBody } from "../../src/converters/gemini-body.js";
+import { parseOpenCodeBody, serializeOpenCodeBody } from "../../src/converters/opencode-body.js";
 
 describe("Body Segment Utils", () => {
   describe("parseClaudeBody", () => {
@@ -326,6 +327,53 @@ describe("Body Segment Utils", () => {
 
       const back = serializeCodexBody(parseGeminiBody(gemini));
       expect(back).toBe(codex);
+    });
+  });
+
+  describe("parseOpenCodeBody", () => {
+    it("should return empty array for empty string", () => {
+      expect(parseOpenCodeBody("")).toEqual([]);
+    });
+
+    it("should parse all placeholder types (same as Claude)", () => {
+      const input = "Run !`git status` with $ARGUMENTS and load @config.json for user $1";
+      expect(parseOpenCodeBody(input)).toEqual(parseClaudeBody(input));
+    });
+
+    it("should parse $ARGUMENTS", () => {
+      expect(parseOpenCodeBody("Run with $ARGUMENTS")).toEqual(["Run with ", { type: "arguments" }]);
+    });
+  });
+
+  describe("serializeOpenCodeBody", () => {
+    it("should serialize empty array to empty string", () => {
+      expect(serializeOpenCodeBody([])).toBe("");
+    });
+
+    it("should serialize all placeholder types without unsupported warnings", () => {
+      const result = serializeOpenCodeBody([
+        "Run ",
+        { type: "shell-command", command: "git status" },
+        " with ",
+        { type: "arguments" },
+        " and ",
+        { type: "file-reference", path: "config.json" },
+      ]);
+      expect(result).toBe("Run !`git status` with $ARGUMENTS and @config.json");
+    });
+
+    it("should produce same output as serializeClaudeBody", () => {
+      const segments = parseClaudeBody("Run !`git status` with $ARGUMENTS and load @config.json for user $1");
+      expect(serializeOpenCodeBody(segments)).toBe(serializeClaudeBody(segments));
+    });
+  });
+
+  describe("OpenCode round-trip", () => {
+    it("should round-trip OpenCode body through parse and serialize", () => {
+      const original = "Run !`git status` with $ARGUMENTS and load @config.json for user $1";
+      const segments = parseOpenCodeBody(original);
+      const result = serializeOpenCodeBody(segments);
+      expect(result).toBe(original);
     });
   });
 });

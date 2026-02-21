@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { CodexSkillConverter } from "../../src/converters/codex-skill-converter.js";
 import { ClaudeSkillConverter } from "../../src/converters/claude-skill-converter.js";
-import type { CodexSkill, ClaudeSkill } from "../../src/types/index.js";
+import { OpenCodeSkillConverter } from "../../src/converters/opencode-skill-converter.js";
+import type { CodexSkill, ClaudeSkill, OpenCodeSkill } from "../../src/types/index.js";
 
 describe("Skill Conversion", () => {
   describe("allow_implicit_invocation ↔ disable-model-invocation conversion", () => {
@@ -199,6 +200,116 @@ describe("Skill Conversion", () => {
         const finalCodex = codexConverter.fromIR(ir2);
 
         expect(finalCodex.openaiConfig?.policy?.allow_implicit_invocation).toBe(false);
+      });
+    });
+  });
+
+  describe("OpenCode Skill Conversion", () => {
+    describe("Claude → OpenCode (via IR)", () => {
+      const claudeConverter = new ClaudeSkillConverter();
+      const opencodeConverter = new OpenCodeSkillConverter();
+
+      it("should convert Claude skill to OpenCode preserving model and agent", () => {
+        const claudeSkill: ClaudeSkill = {
+          name: "test-skill",
+          content: "Test content with $ARGUMENTS",
+          dirPath: "/test",
+          supportFiles: [],
+          frontmatter: {
+            name: "test-skill",
+            description: "Test",
+            model: "sonnet",
+            agent: "task",
+            "allowed-tools": "bash",
+          },
+        };
+
+        const ir = claudeConverter.toIR(claudeSkill);
+        const opencodeSkill = opencodeConverter.fromIR(ir);
+
+        expect(opencodeSkill.frontmatter.name).toBe("test-skill");
+        expect(opencodeSkill.frontmatter.description).toBe("Test");
+        expect(opencodeSkill.frontmatter.model).toBe("sonnet");
+        expect(opencodeSkill.frontmatter.agent).toBe("task");
+        // allowed-tools is Claude-specific, should be prefixed
+        expect(opencodeSkill.frontmatter._claude_allowed_tools).toBe("bash");
+      });
+
+      it("should remove Claude-specific fields with removeUnsupported", () => {
+        const claudeSkill: ClaudeSkill = {
+          name: "test-skill",
+          content: "Test",
+          dirPath: "/test",
+          supportFiles: [],
+          frontmatter: {
+            name: "test-skill",
+            "user-invocable": true,
+            "allowed-tools": "bash",
+            context: "fork",
+          },
+        };
+
+        const ir = claudeConverter.toIR(claudeSkill);
+        const opencodeSkill = opencodeConverter.fromIR(ir, { removeUnsupported: true });
+
+        expect(opencodeSkill.frontmatter._claude_user_invocable).toBeUndefined();
+        expect(opencodeSkill.frontmatter._claude_allowed_tools).toBeUndefined();
+        expect(opencodeSkill.frontmatter._claude_context).toBeUndefined();
+      });
+    });
+
+    describe("OpenCode → Claude (via IR)", () => {
+      const opencodeConverter = new OpenCodeSkillConverter();
+      const claudeConverter = new ClaudeSkillConverter();
+
+      it("should convert OpenCode skill to Claude preserving all fields", () => {
+        const opencodeSkill: OpenCodeSkill = {
+          name: "test-skill",
+          content: "Test content",
+          dirPath: "/test",
+          supportFiles: [],
+          frontmatter: {
+            name: "test-skill",
+            description: "Test",
+            model: "sonnet",
+            subtask: true,
+          },
+        };
+
+        const ir = opencodeConverter.toIR(opencodeSkill);
+        const claudeSkill = claudeConverter.fromIR(ir);
+
+        expect(claudeSkill.frontmatter.name).toBe("test-skill");
+        expect(claudeSkill.frontmatter.description).toBe("Test");
+        expect(claudeSkill.frontmatter.model).toBe("sonnet");
+        expect(claudeSkill.frontmatter.subtask).toBe(true);
+      });
+    });
+
+    describe("Round-trip: Claude → OpenCode → Claude", () => {
+      const claudeConverter = new ClaudeSkillConverter();
+      const opencodeConverter = new OpenCodeSkillConverter();
+
+      it("should preserve disable-model-invocation through round-trip", () => {
+        const original: ClaudeSkill = {
+          name: "test-skill",
+          content: "Test content with !`git status` and @config.json",
+          dirPath: "/test",
+          supportFiles: [],
+          frontmatter: {
+            name: "test-skill",
+            description: "Test",
+            "disable-model-invocation": true,
+          },
+        };
+
+        const ir1 = claudeConverter.toIR(original);
+        const opencode = opencodeConverter.fromIR(ir1);
+        const ir2 = opencodeConverter.toIR(opencode);
+        const result = claudeConverter.fromIR(ir2);
+
+        expect(result.frontmatter["disable-model-invocation"]).toBe(true);
+        expect(result.content).toBe("Test content with !`git status` and @config.json");
       });
     });
   });

@@ -8,7 +8,7 @@ import type { ContentFilter } from "./skill.js";
 /**
  * Supported product types
  */
-export type ProductType = "claude" | "gemini" | "codex";
+export type ProductType = "claude" | "gemini" | "codex" | "opencode";
 
 /**
  * Options for conversion via intermediate representation
@@ -36,6 +36,8 @@ export interface IntermediateConversionOptions {
   geminiDir?: string;
   /** Codex base directory */
   codexDir?: string;
+  /** OpenCode base directory */
+  opencodeDir?: string;
   /** Content type filter: commands, skills, or both (default: both) */
   contentType: ContentFilter;
 }
