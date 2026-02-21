@@ -78,7 +78,8 @@ describe("Agent Slash Sync Tests", () => {
       const geminiDirs = resolveCommandDir(AGENT_REGISTRY.gemini, "~/custom-gemini");
       expect(geminiDirs.user).toBe(join(homedir(), "custom-gemini", "commands"));
     });
-  });
+
+});
 
   describe("TOML Output Format", () => {
     it("should output prompt field last in TOML", async () => {
@@ -117,34 +118,6 @@ describe("Agent Slash Sync Tests", () => {
   });
 
   describe("CLI Options Integration", () => {
-    it("should handle conversion options with custom directories", async () => {
-      const { cliOptionsToConversionOptions } = await import("../../src/cli/options.js");
-
-      const cliOptions = {
-        source: "claude" as const,
-        destination: "gemini" as const,
-        contentType: "commands" as const,
-        removeUnsupported: false,
-        noOverwrite: true,
-        syncDelete: false,
-        noop: true,
-        verbose: true,
-        customDirs: { claude: "~/custom-claude", gemini: "~/custom-gemini" },
-      };
-
-      const conversionOptions = cliOptionsToConversionOptions(cliOptions);
-
-      expect(conversionOptions.source).toBe("claude");
-      expect(conversionOptions.destination).toBe("gemini");
-      expect(conversionOptions.removeUnsupported).toBe(false);
-      expect(conversionOptions.noOverwrite).toBe(true);
-      expect(conversionOptions.syncDelete).toBe(false);
-      expect(conversionOptions.noop).toBe(true);
-      expect(conversionOptions.verbose).toBe(true);
-      expect(conversionOptions.customDirs?.claude).toBe("~/custom-claude");
-      expect(conversionOptions.customDirs?.gemini).toBe("~/custom-gemini");
-    });
-
     it("should validate CLI options with customDirs", async () => {
       const { validateCLIOptions } = await import("../../src/cli/options.js");
 

@@ -59,7 +59,7 @@ describe("CodexParser", () => {
       expect(parser.validate(command)).toBe(true);
     });
 
-    it("should invalidate command without content", () => {
+    it("should accept command with empty content", () => {
       const command = {
         content: "",
         filePath: "test.md",

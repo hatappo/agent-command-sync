@@ -79,10 +79,3 @@ export function validateCLIOptions(options: Partial<CLIOptions>): string[] {
 
   return errors;
 }
-
-/**
- * Convert CLI options to IntermediateConversionOptions
- */
-export function cliOptionsToConversionOptions(cliOptions: CLIOptions): IntermediateConversionOptions {
-  return cliOptions;
-}

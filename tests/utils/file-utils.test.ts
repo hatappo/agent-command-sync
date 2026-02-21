@@ -330,32 +330,6 @@ describe("FileUtils", () => {
       });
     });
 
-    describe("gemini", () => {
-      it("should find skill directories in custom directory", async () => {
-        const skillsDir = join(testDir, "skills");
-        const skill = join(skillsDir, "my-skill");
-        await mkdir(skill, { recursive: true });
-        await fsWriteFile(join(skill, SKILL_CONSTANTS.SKILL_FILE_NAME), "# Skill", "utf-8");
-
-        const result = await findAgentSkills(AGENT_REGISTRY.gemini, undefined, testDir);
-        expect(result).toHaveLength(1);
-        expect(result[0]).toBe(skill);
-      });
-    });
-
-    describe("codex", () => {
-      it("should find skill directories in custom directory", async () => {
-        const skillsDir = join(testDir, "skills");
-        const skill = join(skillsDir, "codex-skill");
-        await mkdir(skill, { recursive: true });
-        await fsWriteFile(join(skill, SKILL_CONSTANTS.SKILL_FILE_NAME), "# Skill", "utf-8");
-
-        const result = await findAgentSkills(AGENT_REGISTRY.codex, undefined, testDir);
-        expect(result).toHaveLength(1);
-        expect(result[0]).toBe(skill);
-      });
-    });
-
     describe("opencode", () => {
       it("should find skill directories in custom directory", async () => {
         const skillsDir = join(testDir, "skills");

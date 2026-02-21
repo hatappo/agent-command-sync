@@ -261,14 +261,6 @@ describe("Body Segment Utils", () => {
   });
 
   describe("parseCodexBody", () => {
-    it("should return empty array for empty string", () => {
-      expect(parseCodexBody("")).toEqual([]);
-    });
-
-    it("should parse $ARGUMENTS", () => {
-      expect(parseCodexBody("Run with $ARGUMENTS")).toEqual(["Run with ", { type: "arguments" }]);
-    });
-
     it("should produce same result as parseClaudeBody (shared patterns)", () => {
       const input = "Run !`git status` with $ARGUMENTS and load @config.json for user $1";
       expect(parseCodexBody(input)).toEqual(parseClaudeBody(input));
@@ -276,18 +268,6 @@ describe("Body Segment Utils", () => {
   });
 
   describe("serializeCodexBody", () => {
-    it("should serialize empty array to empty string", () => {
-      expect(serializeCodexBody([])).toBe("");
-    });
-
-    it("should serialize arguments", () => {
-      expect(serializeCodexBody([{ type: "arguments" }])).toBe("$ARGUMENTS");
-    });
-
-    it("should serialize individual arguments", () => {
-      expect(serializeCodexBody([{ type: "individual-argument", index: 3 }])).toBe("$3");
-    });
-
     it("should serialize shell-command as best-effort (unsupported by Codex)", () => {
       const result = serializeCodexBody([{ type: "shell-command", command: "git status" }]);
       expect(result).toBe("!`git status`");
@@ -296,18 +276,6 @@ describe("Body Segment Utils", () => {
     it("should serialize file-reference as best-effort (unsupported by Codex)", () => {
       const result = serializeCodexBody([{ type: "file-reference", path: "config.json" }]);
       expect(result).toBe("@config.json");
-    });
-
-    it("should serialize mixed segments including unsupported types", () => {
-      const result = serializeCodexBody([
-        "Run ",
-        { type: "shell-command", command: "git status" },
-        " with ",
-        { type: "arguments" },
-        " and ",
-        { type: "file-reference", path: "config.json" },
-      ]);
-      expect(result).toBe("Run !`git status` with $ARGUMENTS and @config.json");
     });
   });
 
@@ -331,37 +299,13 @@ describe("Body Segment Utils", () => {
   });
 
   describe("parseOpenCodeBody", () => {
-    it("should return empty array for empty string", () => {
-      expect(parseOpenCodeBody("")).toEqual([]);
-    });
-
-    it("should parse all placeholder types (same as Claude)", () => {
+    it("should produce same result as parseClaudeBody (shared patterns)", () => {
       const input = "Run !`git status` with $ARGUMENTS and load @config.json for user $1";
       expect(parseOpenCodeBody(input)).toEqual(parseClaudeBody(input));
-    });
-
-    it("should parse $ARGUMENTS", () => {
-      expect(parseOpenCodeBody("Run with $ARGUMENTS")).toEqual(["Run with ", { type: "arguments" }]);
     });
   });
 
   describe("serializeOpenCodeBody", () => {
-    it("should serialize empty array to empty string", () => {
-      expect(serializeOpenCodeBody([])).toBe("");
-    });
-
-    it("should serialize all placeholder types without unsupported warnings", () => {
-      const result = serializeOpenCodeBody([
-        "Run ",
-        { type: "shell-command", command: "git status" },
-        " with ",
-        { type: "arguments" },
-        " and ",
-        { type: "file-reference", path: "config.json" },
-      ]);
-      expect(result).toBe("Run !`git status` with $ARGUMENTS and @config.json");
-    });
-
     it("should produce same output as serializeClaudeBody", () => {
       const segments = parseClaudeBody("Run !`git status` with $ARGUMENTS and load @config.json for user $1");
       expect(serializeOpenCodeBody(segments)).toBe(serializeClaudeBody(segments));

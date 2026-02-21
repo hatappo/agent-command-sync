@@ -1,16 +1,3 @@
-// Conversion options
-export interface ConversionOptions {
-  direction: "c2g" | "g2c";
-  removeUnsupported: boolean;
-  noOverwrite: boolean;
-  syncDelete: boolean;
-  file?: string;
-  noop: boolean;
-  verbose: boolean;
-  claudeDir?: string;
-  geminiDir?: string;
-}
-
 // File operation result
 export interface FileOperation {
   type: "A" | "M" | "D" | "-";
@@ -71,11 +58,6 @@ export interface ConversionResult {
 export interface Parser<T> {
   parse(filePath: string): Promise<T>;
   validate(data: T): boolean;
-}
-
-// Converter interface
-export interface Converter<TSource, TTarget> {
-  convert(source: TSource, options: ConversionOptions): TTarget;
 }
 
 // Validation function type

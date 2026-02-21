@@ -96,37 +96,12 @@ prompt = ""`;
       expect(parser.validate(command)).toBe(true);
     });
 
-    it("should reject command without filePath", () => {
-      const command = {
-        prompt: "Test prompt",
-      } as GeminiCommand;
-
-      expect(parser.validate(command)).toBe(false);
-    });
-
-    it("should reject command without prompt", () => {
+    it("should return false for invalid input", () => {
+      // Detailed validation rules are tested in validation.test.ts
       const command = {
         description: "Test",
         filePath: "/test/path.toml",
       } as GeminiCommand;
-
-      expect(parser.validate(command)).toBe(false);
-    });
-
-    it("should reject command with empty prompt", () => {
-      const command: GeminiCommand = {
-        prompt: "",
-        filePath: "/test/path.toml",
-      };
-
-      expect(parser.validate(command)).toBe(false);
-    });
-
-    it("should reject command with non-string prompt", () => {
-      const command = {
-        prompt: 123,
-        filePath: "/test/path.toml",
-      } as unknown as GeminiCommand;
 
       expect(parser.validate(command)).toBe(false);
     });

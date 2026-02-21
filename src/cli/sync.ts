@@ -19,20 +19,14 @@ import {
 } from "../utils/file-utils.js";
 
 import type { CLIOptions } from "./options.js";
-import { cliOptionsToConversionOptions } from "./options.js";
 
 /**
  * Main function for command synchronization
  */
 export async function syncCommands(options: CLIOptions): Promise<ConversionResult> {
-  const conversionOptions = cliOptionsToConversionOptions(options);
   const operations: FileOperation[] = [];
   const errors: Error[] = [];
-  let processed = 0;
-  let created = 0;
-  let modified = 0;
-  let deleted = 0;
-  let skipped = 0;
+  const stats = { processed: 0, created: 0, modified: 0, deleted: 0, skipped: 0 };
 
   try {
     console.log(picocolors.cyan(`Starting ${options.source} → ${options.destination} conversion...`));
@@ -52,28 +46,8 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
           const result = await convertSingleFile(sourceFile, options);
           operations.push(...result.operations);
           errors.push(...result.errors);
-
-          // Update statistics
-          for (const op of result.operations) {
-            switch (op.type) {
-              case "A":
-                created++;
-                break;
-              case "M":
-                modified++;
-                break;
-              case "D":
-                deleted++;
-                break;
-              case "-":
-                skipped++;
-                break;
-              default:
-                assertNever(op.type);
-            }
-          }
-
-          processed++;
+          countStats(result.operations, stats);
+          stats.processed++;
         } catch (error) {
           errors.push(error instanceof Error ? error : new Error(String(error)));
         }
@@ -84,7 +58,7 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
         const deleteResult = await handleSyncDelete(options, sourceFiles);
         operations.push(...deleteResult.operations);
         errors.push(...deleteResult.errors);
-        deleted += deleteResult.operations.filter((op) => op.type === "D").length;
+        stats.deleted += deleteResult.operations.filter((op) => op.type === "D").length;
       }
     }
 
@@ -99,28 +73,8 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
           const result = await convertSingleSkill(skillDir, options);
           operations.push(...result.operations);
           errors.push(...result.errors);
-
-          // Update statistics
-          for (const op of result.operations) {
-            switch (op.type) {
-              case "A":
-                created++;
-                break;
-              case "M":
-                modified++;
-                break;
-              case "D":
-                deleted++;
-                break;
-              case "-":
-                skipped++;
-                break;
-              default:
-                assertNever(op.type);
-            }
-          }
-
-          processed++;
+          countStats(result.operations, stats);
+          stats.processed++;
         } catch (error) {
           errors.push(error instanceof Error ? error : new Error(String(error)));
         }
@@ -131,7 +85,7 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
         const deleteResult = await handleSkillSyncDelete(options, sourceSkills);
         operations.push(...deleteResult.operations);
         errors.push(...deleteResult.errors);
-        deleted += deleteResult.operations.filter((op) => op.type === "D").length;
+        stats.deleted += deleteResult.operations.filter((op) => op.type === "D").length;
       }
     }
 
@@ -141,7 +95,7 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
         success: true,
         operations,
         errors,
-        summary: { processed, created, modified, deleted, skipped },
+        summary: stats,
       };
     }
 
@@ -152,7 +106,7 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
       success: errors.length === 0,
       operations,
       errors,
-      summary: { processed, created, modified, deleted, skipped },
+      summary: stats,
     };
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
@@ -163,8 +117,35 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
       success: false,
       operations,
       errors,
-      summary: { processed, created, modified, deleted, skipped },
+      summary: stats,
     };
+  }
+}
+
+/**
+ * Count operation statistics
+ */
+function countStats(
+  operations: FileOperation[],
+  stats: { created: number; modified: number; deleted: number; skipped: number },
+): void {
+  for (const op of operations) {
+    switch (op.type) {
+      case "A":
+        stats.created++;
+        break;
+      case "M":
+        stats.modified++;
+        break;
+      case "D":
+        stats.deleted++;
+        break;
+      case "-":
+        stats.skipped++;
+        break;
+      default:
+        assertNever(op.type);
+    }
   }
 }
 

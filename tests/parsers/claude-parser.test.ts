@@ -78,31 +78,12 @@ Execute: !git status`;
       expect(parser.validate(command)).toBe(true);
     });
 
-    it("should reject command without filePath", () => {
+    it("should return false for invalid input", () => {
+      // Detailed validation rules are tested in validation.test.ts
       const command = {
         frontmatter: {},
         content: "Test content",
       } as ClaudeCommand;
-
-      expect(parser.validate(command)).toBe(false);
-    });
-
-    it("should reject command with invalid frontmatter", () => {
-      const command = {
-        frontmatter: null,
-        content: "Test content",
-        filePath: "/test/path.md",
-      } as unknown as ClaudeCommand;
-
-      expect(parser.validate(command)).toBe(false);
-    });
-
-    it("should reject command with non-string content", () => {
-      const command = {
-        frontmatter: {},
-        content: 123,
-        filePath: "/test/path.md",
-      } as unknown as ClaudeCommand;
 
       expect(parser.validate(command)).toBe(false);
     });
