@@ -20,6 +20,10 @@ export interface SkillDirectories {
     project: string;
     user: string;
   };
+  opencode: {
+    project: string;
+    user: string;
+  };
 }
 
 /**
@@ -126,7 +130,12 @@ export function getBaseName(filePath: string): string {
  * Get command directory configuration
  * Specify base directories for claudeDir/geminiDir/codexDir, /commands (/prompts for Codex) will be added automatically
  */
-export function getCommandDirectories(claudeDir?: string, geminiDir?: string, codexDir?: string): CommandDirectories {
+export function getCommandDirectories(
+  claudeDir?: string,
+  geminiDir?: string,
+  codexDir?: string,
+  opencodeDir?: string,
+): CommandDirectories {
   const homeDir = homedir();
   const currentDir = process.cwd();
 
@@ -142,6 +151,12 @@ export function getCommandDirectories(claudeDir?: string, geminiDir?: string, co
     codex: {
       project: join(currentDir, ".codex", "prompts"),
       user: codexDir ? join(resolvePath(codexDir), "prompts") : join(homeDir, ".codex", "prompts"),
+    },
+    opencode: {
+      project: join(currentDir, ".opencode", "commands"),
+      user: opencodeDir
+        ? join(resolvePath(opencodeDir), "commands")
+        : join(homeDir, ".config", "opencode", "commands"),
     },
   };
 }
@@ -194,7 +209,7 @@ export async function findFiles(directory: string, options: FileSearchOptions): 
  * Common function to search for command files
  */
 async function findCommandFiles(
-  format: "claude" | "gemini" | "codex",
+  format: "claude" | "gemini" | "codex" | "opencode",
   specificFile?: string,
   baseDir?: string,
 ): Promise<string[]> {
@@ -202,15 +217,18 @@ async function findCommandFiles(
     format === "claude" ? baseDir : undefined,
     format === "gemini" ? baseDir : undefined,
     format === "codex" ? baseDir : undefined,
+    format === "opencode" ? baseDir : undefined,
   );
 
-  const extension = format === "claude" || format === "codex" ? ".md" : ".toml";
+  const extension = format === "gemini" ? ".toml" : ".md";
   const directory =
     format === "claude"
       ? directories.claude.user
       : format === "gemini"
         ? directories.gemini.user
-        : directories.codex.user;
+        : format === "codex"
+          ? directories.codex.user
+          : directories.opencode.user;
 
   const searchOptions: FileSearchOptions = {
     extensions: [extension],
@@ -278,6 +296,13 @@ export async function findCodexCommands(specificFile?: string, codexDir?: string
 }
 
 /**
+ * Search for OpenCode command files
+ */
+export async function findOpenCodeCommands(specificFile?: string, opencodeDir?: string): Promise<string[]> {
+  return findCommandFiles("opencode", specificFile, opencodeDir);
+}
+
+/**
  * Resolve relative path to absolute path
  */
 export function resolvePath(path: string): string {
@@ -310,7 +335,12 @@ export function getFilePathFromCommandName(commandName: string, baseDirectory: s
 /**
  * Get skill directory configuration
  */
-export function getSkillDirectories(claudeDir?: string, geminiDir?: string, codexDir?: string): SkillDirectories {
+export function getSkillDirectories(
+  claudeDir?: string,
+  geminiDir?: string,
+  codexDir?: string,
+  opencodeDir?: string,
+): SkillDirectories {
   const homeDir = homedir();
   const currentDir = process.cwd();
 
@@ -327,6 +357,12 @@ export function getSkillDirectories(claudeDir?: string, geminiDir?: string, code
       project: join(currentDir, ".codex", "skills"),
       user: codexDir ? join(resolvePath(codexDir), "skills") : join(homeDir, ".codex", "skills"),
     },
+    opencode: {
+      project: join(currentDir, ".opencode", "skills"),
+      user: opencodeDir
+        ? join(resolvePath(opencodeDir), "skills")
+        : join(homeDir, ".config", "opencode", "skills"),
+    },
   };
 }
 
@@ -334,7 +370,7 @@ export function getSkillDirectories(claudeDir?: string, geminiDir?: string, code
  * Find skill directories (directories containing SKILL.md)
  */
 async function findSkillDirs(
-  format: "claude" | "gemini" | "codex",
+  format: "claude" | "gemini" | "codex" | "opencode",
   specificSkill?: string,
   baseDir?: string,
 ): Promise<string[]> {
@@ -342,6 +378,7 @@ async function findSkillDirs(
     format === "claude" ? baseDir : undefined,
     format === "gemini" ? baseDir : undefined,
     format === "codex" ? baseDir : undefined,
+    format === "opencode" ? baseDir : undefined,
   );
 
   const directory =
@@ -349,7 +386,9 @@ async function findSkillDirs(
       ? directories.claude.user
       : format === "gemini"
         ? directories.gemini.user
-        : directories.codex.user;
+        : format === "codex"
+          ? directories.codex.user
+          : directories.opencode.user;
 
   if (!(await directoryExists(directory))) {
     return [];
@@ -406,6 +445,13 @@ export async function findGeminiSkills(specificSkill?: string, geminiDir?: strin
  */
 export async function findCodexSkills(specificSkill?: string, codexDir?: string): Promise<string[]> {
   return findSkillDirs("codex", specificSkill, codexDir);
+}
+
+/**
+ * Search for OpenCode skill directories
+ */
+export async function findOpenCodeSkills(specificSkill?: string, opencodeDir?: string): Promise<string[]> {
+  return findSkillDirs("opencode", specificSkill, opencodeDir);
 }
 
 /**

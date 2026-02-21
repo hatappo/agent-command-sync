@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { ClaudeCommandConverter } from "../../src/converters/claude-command-converter.js";
 import { GeminiCommandConverter } from "../../src/converters/gemini-command-converter.js";
 import { CodexCommandConverter } from "../../src/converters/codex-command-converter.js";
-import type { ClaudeCommand, GeminiCommand, CodexCommand } from "../../src/types/index.js";
+import { OpenCodeCommandConverter } from "../../src/converters/opencode-command-converter.js";
+import type { ClaudeCommand, GeminiCommand, CodexCommand, OpenCodeCommand } from "../../src/types/index.js";
 
 describe("Command Conversion (Safety Net)", () => {
   describe("Claude -> Gemini", () => {
@@ -208,6 +209,108 @@ describe("Command Conversion (Safety Net)", () => {
       expect(result.frontmatter["argument-hint"]).toBe("Enter path");
       expect(result.frontmatter.model).toBe("sonnet");
       expect(result.content).toBe("Full body content");
+    });
+  });
+
+  describe("Claude -> OpenCode", () => {
+    it("should preserve frontmatter including model and agent", () => {
+      const claude: ClaudeCommand = {
+        frontmatter: {
+          description: "Test description",
+          "allowed-tools": "bash",
+          model: "opus",
+          agent: "task",
+        },
+        content: "Test content with !`git status` and @config.json",
+        filePath: "/test/command.md",
+      };
+
+      const claudeConverter = new ClaudeCommandConverter();
+      const opencodeConverter = new OpenCodeCommandConverter();
+      const ir = claudeConverter.toIR(claude);
+      const opencode = opencodeConverter.fromIR(ir);
+
+      expect(opencode.content).toBe("Test content with !`git status` and @config.json");
+      expect(opencode.frontmatter?.description).toBe("Test description");
+      expect(opencode.frontmatter?.["allowed-tools"]).toBe("bash");
+      expect(opencode.frontmatter?.model).toBe("opus");
+      expect(opencode.frontmatter?.agent).toBe("task");
+    });
+
+    it("should remove only allowed-tools and argument-hint with removeUnsupported", () => {
+      const claude: ClaudeCommand = {
+        frontmatter: {
+          description: "Test",
+          "allowed-tools": "bash",
+          "argument-hint": "Enter path",
+          model: "sonnet",
+        },
+        content: "Body",
+        filePath: "/test/command.md",
+      };
+
+      const claudeConverter = new ClaudeCommandConverter();
+      const opencodeConverter = new OpenCodeCommandConverter();
+      const ir = claudeConverter.toIR(claude);
+      const opencode = opencodeConverter.fromIR(ir, { removeUnsupported: true });
+
+      expect(opencode.frontmatter?.description).toBe("Test");
+      expect(opencode.frontmatter?.model).toBe("sonnet");
+      expect(opencode.frontmatter?.["allowed-tools"]).toBeUndefined();
+      expect(opencode.frontmatter?.["argument-hint"]).toBeUndefined();
+    });
+  });
+
+  describe("OpenCode -> Claude", () => {
+    it("should restore all fields", () => {
+      const opencode: OpenCodeCommand = {
+        frontmatter: {
+          description: "OpenCode desc",
+          model: "sonnet",
+          subtask: true,
+        },
+        content: "OpenCode content with $ARGUMENTS",
+        filePath: "/test/command.md",
+      };
+
+      const opencodeConverter = new OpenCodeCommandConverter();
+      const claudeConverter = new ClaudeCommandConverter();
+      const ir = opencodeConverter.toIR(opencode);
+      const claude = claudeConverter.fromIR(ir);
+
+      expect(claude.frontmatter.description).toBe("OpenCode desc");
+      expect(claude.frontmatter.model).toBe("sonnet");
+      expect(claude.frontmatter.subtask).toBe(true);
+      expect(claude.content).toBe("OpenCode content with $ARGUMENTS");
+    });
+  });
+
+  describe("Round-trip: Claude -> OpenCode -> Claude", () => {
+    it("should preserve all fields", () => {
+      const original: ClaudeCommand = {
+        frontmatter: {
+          description: "Full round-trip",
+          "allowed-tools": "bash,read",
+          "argument-hint": "Enter path",
+          model: "sonnet",
+        },
+        content: "Run !`git status` with $ARGUMENTS and @config.json",
+        filePath: "/test/command.md",
+      };
+
+      const claudeConverter = new ClaudeCommandConverter();
+      const opencodeConverter = new OpenCodeCommandConverter();
+
+      const ir1 = claudeConverter.toIR(original);
+      const opencode = opencodeConverter.fromIR(ir1);
+      const ir2 = opencodeConverter.toIR(opencode);
+      const result = claudeConverter.fromIR(ir2);
+
+      expect(result.frontmatter.description).toBe("Full round-trip");
+      expect(result.frontmatter["allowed-tools"]).toBe("bash,read");
+      expect(result.frontmatter["argument-hint"]).toBe("Enter path");
+      expect(result.frontmatter.model).toBe("sonnet");
+      expect(result.content).toBe("Run !`git status` with $ARGUMENTS and @config.json");
     });
   });
 

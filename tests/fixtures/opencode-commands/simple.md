@@ -1,0 +1,1 @@
+This is a simple OpenCode command without frontmatter.

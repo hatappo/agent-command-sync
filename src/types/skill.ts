@@ -115,6 +115,17 @@ export interface CodexOpenAIConfig {
 }
 
 /**
+ * OpenCode skill format
+ */
+export interface OpenCodeSkill extends SkillBase {
+  frontmatter: {
+    name?: string;
+    description?: string;
+    [key: string]: unknown;
+  };
+}
+
+/**
  * Content type for commands and skills
  */
 export type ContentType = "command" | "skill";

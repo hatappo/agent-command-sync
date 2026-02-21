@@ -103,15 +103,20 @@ export interface CommandDirectories {
     project: string;
     user: string;
   };
+  opencode: {
+    project: string;
+    user: string;
+  };
 }
 
 // Re-export body segment types
 export type { BodySegment, ContentPlaceholder, PatternDef, PlaceholderSerializers } from "./body-segment.js";
 
 // Re-export command types
-export type { ClaudeCommand, GeminiCommand, CodexCommand } from "./command.js";
+export type { ClaudeCommand, GeminiCommand, CodexCommand, OpenCodeCommand } from "./command.js";
 
 // Re-export intermediate representation types
+export { PRODUCT_TYPES } from "./intermediate.js";
 export type {
   ProductType,
   IntermediateConversionOptions,
@@ -126,6 +131,7 @@ export type {
   GeminiSkill,
   CodexSkill,
   CodexOpenAIConfig,
+  OpenCodeSkill,
   ContentType as IRContentType,
   ContentFilter,
 } from "./skill.js";

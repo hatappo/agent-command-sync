@@ -14,8 +14,8 @@ program
   .version(version);
 
 program
-  .requiredOption("-s, --src <product>", "Source product: claude, gemini, or codex")
-  .requiredOption("-d, --dest <product>", "Destination product: claude, gemini, or codex")
+  .requiredOption("-s, --src <product>", "Source product: claude, gemini, codex, or opencode")
+  .requiredOption("-d, --dest <product>", "Destination product: claude, gemini, codex, or opencode")
   .option("-t, --type <type>", "Content type: commands, skills, or both", "both")
   .option("--remove-unsupported", "Remove keys that are not supported in the target format", false)
   .option("--no-overwrite", "Skip conversion if a command with the same name exists in the target")
@@ -26,6 +26,7 @@ program
   .option("--claude-dir <path>", "Claude base directory (default: ~/.claude)")
   .option("--gemini-dir <path>", "Gemini base directory (default: ~/.gemini)")
   .option("--codex-dir <path>", "Codex base directory (default: ~/.codex)")
+  .option("--opencode-dir <path>", "OpenCode base directory (default: ~/.config/opencode)")
   .action(async (options) => {
     try {
       // Check if source and destination are the same
@@ -39,8 +40,8 @@ program
 
       // Organize options
       const syncOptions = {
-        source: options.src as "claude" | "gemini" | "codex",
-        destination: options.dest as "claude" | "gemini" | "codex",
+        source: options.src as "claude" | "gemini" | "codex" | "opencode",
+        destination: options.dest as "claude" | "gemini" | "codex" | "opencode",
         contentType: options.type as "commands" | "skills" | "both",
         removeUnsupported: options.removeUnsupported,
         noOverwrite: !options.overwrite, // commander.js no-prefix reverses the value
@@ -51,6 +52,7 @@ program
         claudeDir: options.claudeDir,
         geminiDir: options.geminiDir,
         codexDir: options.codexDir,
+        opencodeDir: options.opencodeDir,
       };
 
       // Display debug information in verbose mode
@@ -103,6 +105,8 @@ program.on("--help", () => {
   console.log("  $ acsync -s claude -d gemini --claude-dir ~/my-claude # Use custom Claude base directory");
   console.log("  $ acsync -s gemini -d claude --gemini-dir ~/my-gemini # Use custom Gemini base directory");
   console.log("  $ acsync -s codex -d gemini --codex-dir ~/my-codex   # Use custom Codex base directory");
+  console.log("  $ acsync -s opencode -d claude                      # Convert OpenCode to Claude");
+  console.log("  $ acsync -s claude -d opencode --opencode-dir ~/my-opencode # Use custom OpenCode base directory");
 });
 
 program.parse();

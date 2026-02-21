@@ -1,3 +1,4 @@
+import { PRODUCT_TYPES } from "../types/intermediate.js";
 import type { IntermediateConversionOptions } from "../types/index.js";
 
 /**
@@ -34,19 +35,20 @@ export const defaultCLIOptions: Partial<CLIOptions> = {
  */
 export function validateCLIOptions(options: Partial<CLIOptions>): string[] {
   const errors: string[] = [];
+  const productList = PRODUCT_TYPES.map((t) => `"${t}"`).join(", ");
 
   // Validate source
   if (!options.source) {
     errors.push("--src option is required");
-  } else if (!["claude", "gemini", "codex"].includes(options.source)) {
-    errors.push('--src must be one of "claude", "gemini", or "codex"');
+  } else if (!(PRODUCT_TYPES as readonly string[]).includes(options.source)) {
+    errors.push(`--src must be one of ${productList}`);
   }
 
   // Validate destination
   if (!options.destination) {
     errors.push("--dest option is required");
-  } else if (!["claude", "gemini", "codex"].includes(options.destination)) {
-    errors.push('--dest must be one of "claude", "gemini", or "codex"');
+  } else if (!(PRODUCT_TYPES as readonly string[]).includes(options.destination)) {
+    errors.push(`--dest must be one of ${productList}`);
   }
 
   // Check if source and destination are the same
@@ -107,6 +109,7 @@ export function cliOptionsToConversionOptions(cliOptions: CLIOptions): Intermedi
     claudeDir: cliOptions.claudeDir,
     geminiDir: cliOptions.geminiDir,
     codexDir: cliOptions.codexDir,
+    opencodeDir: cliOptions.opencodeDir,
     contentType: cliOptions.contentType,
   };
 }

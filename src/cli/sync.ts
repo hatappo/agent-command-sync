@@ -1,17 +1,22 @@
 import { rm } from "node:fs/promises";
 import picocolors from "picocolors";
+import { assertNever } from "../utils/assert-never.js";
 import { ClaudeCommandConverter } from "../converters/claude-command-converter.js";
 import { CodexCommandConverter } from "../converters/codex-command-converter.js";
 import { GeminiCommandConverter } from "../converters/gemini-command-converter.js";
+import { OpenCodeCommandConverter } from "../converters/opencode-command-converter.js";
 import { ClaudeSkillConverter } from "../converters/claude-skill-converter.js";
 import { GeminiSkillConverter } from "../converters/gemini-skill-converter.js";
 import { CodexSkillConverter } from "../converters/codex-skill-converter.js";
+import { OpenCodeSkillConverter } from "../converters/opencode-skill-converter.js";
 import { ClaudeParser } from "../parsers/claude-parser.js";
 import { CodexParser } from "../parsers/codex-parser.js";
 import { GeminiParser } from "../parsers/gemini-parser.js";
+import { OpenCodeParser } from "../parsers/opencode-parser.js";
 import { ClaudeSkillParser } from "../parsers/claude-skill-parser.js";
 import { GeminiSkillParser } from "../parsers/gemini-skill-parser.js";
 import { CodexSkillParser } from "../parsers/codex-skill-parser.js";
+import { OpenCodeSkillParser } from "../parsers/opencode-skill-parser.js";
 import type { ConversionResult, FileOperation, SemanticIR } from "../types/index.js";
 import {
   deleteFile,
@@ -20,9 +25,11 @@ import {
   findClaudeCommands,
   findCodexCommands,
   findGeminiCommands,
+  findOpenCodeCommands,
   findClaudeSkills,
   findGeminiSkills,
   findCodexSkills,
+  findOpenCodeSkills,
   getCommandDirectories,
   getSkillDirectories,
   getCommandName,
@@ -82,6 +89,8 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
               case "-":
                 skipped++;
                 break;
+              default:
+                assertNever(op.type);
             }
           }
 
@@ -127,6 +136,8 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
               case "-":
                 skipped++;
                 break;
+              default:
+                assertNever(op.type);
             }
           }
 
@@ -182,13 +193,18 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
  * Get source files
  */
 async function getSourceFiles(options: CLIOptions): Promise<string[]> {
-  if (options.source === "claude") {
-    return await findClaudeCommands(options.file, options.claudeDir);
+  switch (options.source) {
+    case "claude":
+      return await findClaudeCommands(options.file, options.claudeDir);
+    case "gemini":
+      return await findGeminiCommands(options.file, options.geminiDir);
+    case "opencode":
+      return await findOpenCodeCommands(options.file, options.opencodeDir);
+    case "codex":
+      return await findCodexCommands(options.file, options.codexDir);
+    default:
+      assertNever(options.source);
   }
-  if (options.source === "gemini") {
-    return await findGeminiCommands(options.file, options.geminiDir);
-  }
-  return await findCodexCommands(options.file, options.codexDir);
 }
 
 /**
@@ -205,21 +221,37 @@ async function convertSingleFile(
     // Step 1: Parse and convert to SemanticIR
     let ir: SemanticIR;
 
-    if (options.source === "claude") {
-      const parser = new ClaudeParser();
-      const converter = new ClaudeCommandConverter();
-      const command = await parser.parse(sourceFile);
-      ir = converter.toIR(command);
-    } else if (options.source === "gemini") {
-      const parser = new GeminiParser();
-      const converter = new GeminiCommandConverter();
-      const command = await parser.parse(sourceFile);
-      ir = converter.toIR(command);
-    } else {
-      const parser = new CodexParser();
-      const converter = new CodexCommandConverter();
-      const command = await parser.parse(sourceFile);
-      ir = converter.toIR(command);
+    switch (options.source) {
+      case "claude": {
+        const parser = new ClaudeParser();
+        const converter = new ClaudeCommandConverter();
+        const command = await parser.parse(sourceFile);
+        ir = converter.toIR(command);
+        break;
+      }
+      case "gemini": {
+        const parser = new GeminiParser();
+        const converter = new GeminiCommandConverter();
+        const command = await parser.parse(sourceFile);
+        ir = converter.toIR(command);
+        break;
+      }
+      case "opencode": {
+        const parser = new OpenCodeParser();
+        const converter = new OpenCodeCommandConverter();
+        const command = await parser.parse(sourceFile);
+        ir = converter.toIR(command);
+        break;
+      }
+      case "codex": {
+        const parser = new CodexParser();
+        const converter = new CodexCommandConverter();
+        const command = await parser.parse(sourceFile);
+        ir = converter.toIR(command);
+        break;
+      }
+      default:
+        assertNever(options.source);
     }
 
     // Step 2: Convert from SemanticIR to target format
@@ -227,40 +259,47 @@ async function convertSingleFile(
     let targetContent: string;
     let targetExt: string;
 
-    if (options.destination === "claude") {
-      const converter = new ClaudeCommandConverter();
-      const claudeParser = new ClaudeParser();
-      const command = converter.fromIR(ir, converterOptions);
-      targetContent = claudeParser.stringify(command);
-      targetExt = ".md";
-    } else if (options.destination === "gemini") {
-      const converter = new GeminiCommandConverter();
-      const geminiParser = new GeminiParser();
-      const command = converter.fromIR(ir, converterOptions);
-      targetContent = geminiParser.stringify(command);
-      targetExt = ".toml";
-    } else {
-      const converter = new CodexCommandConverter();
-      const codexParser = new CodexParser();
-      const command = converter.fromIR(ir, converterOptions);
-      targetContent = codexParser.stringify(command);
-      targetExt = ".md";
+    switch (options.destination) {
+      case "claude": {
+        const converter = new ClaudeCommandConverter();
+        const claudeParser = new ClaudeParser();
+        const command = converter.fromIR(ir, converterOptions);
+        targetContent = claudeParser.stringify(command);
+        targetExt = ".md";
+        break;
+      }
+      case "gemini": {
+        const converter = new GeminiCommandConverter();
+        const geminiParser = new GeminiParser();
+        const command = converter.fromIR(ir, converterOptions);
+        targetContent = geminiParser.stringify(command);
+        targetExt = ".toml";
+        break;
+      }
+      case "opencode": {
+        const converter = new OpenCodeCommandConverter();
+        const opencodeParser = new OpenCodeParser();
+        const command = converter.fromIR(ir, converterOptions);
+        targetContent = opencodeParser.stringify(command);
+        targetExt = ".md";
+        break;
+      }
+      case "codex": {
+        const converter = new CodexCommandConverter();
+        const codexParser = new CodexParser();
+        const command = converter.fromIR(ir, converterOptions);
+        targetContent = codexParser.stringify(command);
+        targetExt = ".md";
+        break;
+      }
+      default:
+        assertNever(options.destination);
     }
 
     // Determine target file path (user directory only)
-    const directories = getCommandDirectories(options.claudeDir, options.geminiDir, options.codexDir);
-    const sourceDir =
-      options.source === "claude"
-        ? directories.claude.user
-        : options.source === "gemini"
-          ? directories.gemini.user
-          : directories.codex.user;
-    const targetDir =
-      options.destination === "claude"
-        ? directories.claude.user
-        : options.destination === "gemini"
-          ? directories.gemini.user
-          : directories.codex.user;
+    const directories = getCommandDirectories(options.claudeDir, options.geminiDir, options.codexDir, options.opencodeDir);
+    const sourceDir = directories[options.source].user;
+    const targetDir = directories[options.destination].user;
 
     if (!sourceFile.startsWith(sourceDir)) {
       throw new Error(`Source file ${sourceFile} is not in the ${options.source} user commands directory`);
@@ -325,28 +364,29 @@ async function handleSyncDelete(
 
   try {
     // Get target files
-    const targetFiles =
-      options.destination === "claude"
-        ? await findClaudeCommands(undefined, options.claudeDir)
-        : options.destination === "gemini"
-          ? await findGeminiCommands(undefined, options.geminiDir)
-          : await findCodexCommands(undefined, options.codexDir);
+    let targetFiles: string[];
+    switch (options.destination) {
+      case "claude":
+        targetFiles = await findClaudeCommands(undefined, options.claudeDir);
+        break;
+      case "gemini":
+        targetFiles = await findGeminiCommands(undefined, options.geminiDir);
+        break;
+      case "opencode":
+        targetFiles = await findOpenCodeCommands(undefined, options.opencodeDir);
+        break;
+      case "codex":
+        targetFiles = await findCodexCommands(undefined, options.codexDir);
+        break;
+      default:
+        assertNever(options.destination);
+    }
 
     // Generate target file names corresponding to source (user directory only)
-    const directories = getCommandDirectories(options.claudeDir, options.geminiDir, options.codexDir);
-    const sourceDir =
-      options.source === "claude"
-        ? directories.claude.user
-        : options.source === "gemini"
-          ? directories.gemini.user
-          : directories.codex.user;
-    const targetDir =
-      options.destination === "claude"
-        ? directories.claude.user
-        : options.destination === "gemini"
-          ? directories.gemini.user
-          : directories.codex.user;
-    const targetExt = options.destination === "claude" || options.destination === "codex" ? ".md" : ".toml";
+    const directories = getCommandDirectories(options.claudeDir, options.geminiDir, options.codexDir, options.opencodeDir);
+    const sourceDir = directories[options.source].user;
+    const targetDir = directories[options.destination].user;
+    const targetExt = options.destination === "gemini" ? ".toml" : ".md";
 
     const expectedTargetFiles = new Set(
       sourceFiles.map((sourceFile) => {
@@ -385,13 +425,18 @@ async function handleSyncDelete(
  * Get source skill directories
  */
 async function getSourceSkills(options: CLIOptions): Promise<string[]> {
-  if (options.source === "claude") {
-    return await findClaudeSkills(options.file, options.claudeDir);
+  switch (options.source) {
+    case "claude":
+      return await findClaudeSkills(options.file, options.claudeDir);
+    case "gemini":
+      return await findGeminiSkills(options.file, options.geminiDir);
+    case "opencode":
+      return await findOpenCodeSkills(options.file, options.opencodeDir);
+    case "codex":
+      return await findCodexSkills(options.file, options.codexDir);
+    default:
+      assertNever(options.source);
   }
-  if (options.source === "gemini") {
-    return await findGeminiSkills(options.file, options.geminiDir);
-  }
-  return await findCodexSkills(options.file, options.codexDir);
 }
 
 /**
@@ -408,37 +453,43 @@ async function convertSingleSkill(
     // Step 1: Parse and convert to SemanticIR
     let ir: SemanticIR;
 
-    if (options.source === "claude") {
-      const parser = new ClaudeSkillParser();
-      const converter = new ClaudeSkillConverter();
-      const skill = await parser.parse(skillDir);
-      ir = converter.toIR(skill);
-    } else if (options.source === "gemini") {
-      const parser = new GeminiSkillParser();
-      const converter = new GeminiSkillConverter();
-      const skill = await parser.parse(skillDir);
-      ir = converter.toIR(skill);
-    } else {
-      const parser = new CodexSkillParser();
-      const converter = new CodexSkillConverter();
-      const skill = await parser.parse(skillDir);
-      ir = converter.toIR(skill);
+    switch (options.source) {
+      case "claude": {
+        const parser = new ClaudeSkillParser();
+        const converter = new ClaudeSkillConverter();
+        const skill = await parser.parse(skillDir);
+        ir = converter.toIR(skill);
+        break;
+      }
+      case "gemini": {
+        const parser = new GeminiSkillParser();
+        const converter = new GeminiSkillConverter();
+        const skill = await parser.parse(skillDir);
+        ir = converter.toIR(skill);
+        break;
+      }
+      case "opencode": {
+        const parser = new OpenCodeSkillParser();
+        const converter = new OpenCodeSkillConverter();
+        const skill = await parser.parse(skillDir);
+        ir = converter.toIR(skill);
+        break;
+      }
+      case "codex": {
+        const parser = new CodexSkillParser();
+        const converter = new CodexSkillConverter();
+        const skill = await parser.parse(skillDir);
+        ir = converter.toIR(skill);
+        break;
+      }
+      default:
+        assertNever(options.source);
     }
 
     // Get skill directories
-    const directories = getSkillDirectories(options.claudeDir, options.geminiDir, options.codexDir);
-    const sourceDir =
-      options.source === "claude"
-        ? directories.claude.user
-        : options.source === "gemini"
-          ? directories.gemini.user
-          : directories.codex.user;
-    const targetDir =
-      options.destination === "claude"
-        ? directories.claude.user
-        : options.destination === "gemini"
-          ? directories.gemini.user
-          : directories.codex.user;
+    const directories = getSkillDirectories(options.claudeDir, options.geminiDir, options.codexDir, options.opencodeDir);
+    const sourceDir = directories[options.source].user;
+    const targetDir = directories[options.destination].user;
 
     const skillName = getSkillNameFromPath(skillDir, sourceDir);
     const targetSkillDir = getSkillPathFromName(skillName, targetDir);
@@ -469,24 +520,41 @@ async function convertSingleSkill(
     // Step 3: Convert from SemanticIR to target format and write
     const converterOptions = { removeUnsupported: options.removeUnsupported };
 
-    if (options.destination === "claude") {
-      const converter = new ClaudeSkillConverter();
-      const parser = new ClaudeSkillParser();
-      const skill = converter.fromIR(ir, converterOptions);
-      skill.dirPath = skillDir; // Keep source path for copying support files
-      await parser.writeToDirectory(skill, targetSkillDir);
-    } else if (options.destination === "gemini") {
-      const converter = new GeminiSkillConverter();
-      const parser = new GeminiSkillParser();
-      const skill = converter.fromIR(ir, converterOptions);
-      skill.dirPath = skillDir;
-      await parser.writeToDirectory(skill, targetSkillDir);
-    } else {
-      const converter = new CodexSkillConverter();
-      const parser = new CodexSkillParser();
-      const skill = converter.fromIR(ir, converterOptions);
-      skill.dirPath = skillDir;
-      await parser.writeToDirectory(skill, targetSkillDir);
+    switch (options.destination) {
+      case "claude": {
+        const converter = new ClaudeSkillConverter();
+        const parser = new ClaudeSkillParser();
+        const skill = converter.fromIR(ir, converterOptions);
+        skill.dirPath = skillDir; // Keep source path for copying support files
+        await parser.writeToDirectory(skill, targetSkillDir);
+        break;
+      }
+      case "gemini": {
+        const converter = new GeminiSkillConverter();
+        const parser = new GeminiSkillParser();
+        const skill = converter.fromIR(ir, converterOptions);
+        skill.dirPath = skillDir;
+        await parser.writeToDirectory(skill, targetSkillDir);
+        break;
+      }
+      case "opencode": {
+        const converter = new OpenCodeSkillConverter();
+        const parser = new OpenCodeSkillParser();
+        const skill = converter.fromIR(ir, converterOptions);
+        skill.dirPath = skillDir;
+        await parser.writeToDirectory(skill, targetSkillDir);
+        break;
+      }
+      case "codex": {
+        const converter = new CodexSkillConverter();
+        const parser = new CodexSkillParser();
+        const skill = converter.fromIR(ir, converterOptions);
+        skill.dirPath = skillDir;
+        await parser.writeToDirectory(skill, targetSkillDir);
+        break;
+      }
+      default:
+        assertNever(options.destination);
     }
 
     operations.push({
@@ -513,27 +581,28 @@ async function handleSkillSyncDelete(
 
   try {
     // Get target skills
-    const targetSkills =
-      options.destination === "claude"
-        ? await findClaudeSkills(undefined, options.claudeDir)
-        : options.destination === "gemini"
-          ? await findGeminiSkills(undefined, options.geminiDir)
-          : await findCodexSkills(undefined, options.codexDir);
+    let targetSkills: string[];
+    switch (options.destination) {
+      case "claude":
+        targetSkills = await findClaudeSkills(undefined, options.claudeDir);
+        break;
+      case "gemini":
+        targetSkills = await findGeminiSkills(undefined, options.geminiDir);
+        break;
+      case "opencode":
+        targetSkills = await findOpenCodeSkills(undefined, options.opencodeDir);
+        break;
+      case "codex":
+        targetSkills = await findCodexSkills(undefined, options.codexDir);
+        break;
+      default:
+        assertNever(options.destination);
+    }
 
     // Generate target skill names corresponding to source
-    const directories = getSkillDirectories(options.claudeDir, options.geminiDir, options.codexDir);
-    const sourceDir =
-      options.source === "claude"
-        ? directories.claude.user
-        : options.source === "gemini"
-          ? directories.gemini.user
-          : directories.codex.user;
-    const targetDir =
-      options.destination === "claude"
-        ? directories.claude.user
-        : options.destination === "gemini"
-          ? directories.gemini.user
-          : directories.codex.user;
+    const directories = getSkillDirectories(options.claudeDir, options.geminiDir, options.codexDir, options.opencodeDir);
+    const sourceDir = directories[options.source].user;
+    const targetDir = directories[options.destination].user;
 
     const expectedTargetSkills = new Set(
       sourceSkills.map((sourceSkill) => {

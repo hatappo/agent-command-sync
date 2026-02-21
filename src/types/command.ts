@@ -36,3 +36,12 @@ export interface CodexCommand {
   content: string;
   filePath: string;
 }
+
+/**
+ * OpenCode command format
+ */
+export interface OpenCodeCommand {
+  frontmatter?: Record<string, unknown>;
+  content: string;
+  filePath: string;
+}
