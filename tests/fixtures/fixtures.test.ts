@@ -45,44 +45,38 @@ describe("Agent Slash Sync Tests", () => {
 
   describe("Custom Directory Support", () => {
     it("should use custom directories when specified", async () => {
-      const { getCommandDirectories } = await import("../../src/utils/file-utils.js");
+      const { resolveCommandDir } = await import("../../src/utils/file-utils.js");
+      const { AGENT_REGISTRY } = await import("../../src/agents/registry.js");
 
-      const customClaudeDir = "/custom/claude";
-      const customGeminiDir = "/custom/gemini";
+      const claudeDirs = resolveCommandDir(AGENT_REGISTRY.claude, "/custom/claude");
+      expect(claudeDirs.user).toBe("/custom/claude/commands");
 
-      const directories = getCommandDirectories(customClaudeDir, customGeminiDir);
-
-      expect(directories.claude.user).toBe("/custom/claude/commands");
-      expect(directories.gemini.user).toBe("/custom/gemini/commands");
+      const geminiDirs = resolveCommandDir(AGENT_REGISTRY.gemini, "/custom/gemini");
+      expect(geminiDirs.user).toBe("/custom/gemini/commands");
     });
 
     it("should use default directories when custom directories not specified", async () => {
-      const { getCommandDirectories } = await import("../../src/utils/file-utils.js");
+      const { resolveCommandDir } = await import("../../src/utils/file-utils.js");
+      const { AGENT_REGISTRY } = await import("../../src/agents/registry.js");
       const { homedir } = await import("node:os");
 
-      const directories = getCommandDirectories();
+      const claudeDirs = resolveCommandDir(AGENT_REGISTRY.claude);
+      expect(claudeDirs.user).toBe(join(homedir(), ".claude", "commands"));
 
-      expect(directories.claude.user).toBe(join(homedir(), ".claude", "commands"));
-      expect(directories.gemini.user).toBe(join(homedir(), ".gemini", "commands"));
+      const geminiDirs = resolveCommandDir(AGENT_REGISTRY.gemini);
+      expect(geminiDirs.user).toBe(join(homedir(), ".gemini", "commands"));
     });
 
     it("should handle tilde expansion in custom directories", async () => {
-      const { getCommandDirectories } = await import("../../src/utils/file-utils.js");
+      const { resolveCommandDir } = await import("../../src/utils/file-utils.js");
+      const { AGENT_REGISTRY } = await import("../../src/agents/registry.js");
       const { homedir } = await import("node:os");
 
-      const directories = getCommandDirectories("~/custom-claude", "~/custom-gemini");
+      const claudeDirs = resolveCommandDir(AGENT_REGISTRY.claude, "~/custom-claude");
+      expect(claudeDirs.user).toBe(join(homedir(), "custom-claude", "commands"));
 
-      expect(directories.claude.user).toBe(join(homedir(), "custom-claude", "commands"));
-      expect(directories.gemini.user).toBe(join(homedir(), "custom-gemini", "commands"));
-    });
-
-    it("should pass custom directories to file search functions", async () => {
-      const { findClaudeCommands, findGeminiCommands } = await import("../../src/utils/file-utils.js");
-
-      // This test is just to ensure the custom directories are used
-      // The actual functionality is tested in integration tests
-      await expect(findClaudeCommands(undefined, "/non-existent-claude")).resolves.toEqual([]);
-      await expect(findGeminiCommands(undefined, "/non-existent-gemini")).resolves.toEqual([]);
+      const geminiDirs = resolveCommandDir(AGENT_REGISTRY.gemini, "~/custom-gemini");
+      expect(geminiDirs.user).toBe(join(homedir(), "custom-gemini", "commands"));
     });
   });
 
@@ -135,8 +129,7 @@ describe("Agent Slash Sync Tests", () => {
         syncDelete: false,
         noop: true,
         verbose: true,
-        claudeDir: "~/custom-claude",
-        geminiDir: "~/custom-gemini",
+        customDirs: { claude: "~/custom-claude", gemini: "~/custom-gemini" },
       };
 
       const conversionOptions = cliOptionsToConversionOptions(cliOptions);
@@ -148,8 +141,27 @@ describe("Agent Slash Sync Tests", () => {
       expect(conversionOptions.syncDelete).toBe(false);
       expect(conversionOptions.noop).toBe(true);
       expect(conversionOptions.verbose).toBe(true);
-      expect(conversionOptions.claudeDir).toBe("~/custom-claude");
-      expect(conversionOptions.geminiDir).toBe("~/custom-gemini");
+      expect(conversionOptions.customDirs?.claude).toBe("~/custom-claude");
+      expect(conversionOptions.customDirs?.gemini).toBe("~/custom-gemini");
+    });
+
+    it("should validate CLI options with customDirs", async () => {
+      const { validateCLIOptions } = await import("../../src/cli/options.js");
+
+      const options = {
+        source: "claude" as const,
+        destination: "gemini" as const,
+        contentType: "commands" as const,
+        removeUnsupported: false,
+        noOverwrite: true,
+        syncDelete: false,
+        noop: true,
+        verbose: true,
+        customDirs: { claude: "~/custom-claude", gemini: "~/custom-gemini" },
+      };
+
+      const errors = validateCLIOptions(options);
+      expect(errors).toHaveLength(0);
     });
 
     it("should validate CLI options correctly", async () => {
@@ -163,8 +175,7 @@ describe("Agent Slash Sync Tests", () => {
         syncDelete: false,
         noop: false,
         verbose: false,
-        claudeDir: "~/claude-commands",
-        geminiDir: "~/gemini-commands",
+        customDirs: { claude: "~/claude-commands", gemini: "~/gemini-commands" },
       };
 
       const errors = validateCLIOptions(validOptions);

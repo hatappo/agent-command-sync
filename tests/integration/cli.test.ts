@@ -87,8 +87,7 @@ This is a test command with $ARGUMENTS.`;
         syncDelete: false,
         noop: false,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        geminiDir: geminiBaseDir,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -124,8 +123,7 @@ This is a test command with $ARGUMENTS.`;
         syncDelete: false,
         noop: true,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        geminiDir: geminiBaseDir,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -164,8 +162,7 @@ This is a test command with $ARGUMENTS.`;
         syncDelete: false,
         noop: false,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        geminiDir: geminiBaseDir,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -203,8 +200,7 @@ Test content`;
         syncDelete: false,
         noop: false,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        geminiDir: geminiBaseDir,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -238,8 +234,7 @@ prompt = "This is a test command with {{args}}."`;
         syncDelete: false,
         noop: false,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        geminiDir: geminiBaseDir,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -279,8 +274,7 @@ _claude_model = "sonnet"`;
         syncDelete: false,
         noop: false,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        geminiDir: geminiBaseDir,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -317,8 +311,7 @@ _claude_model = "sonnet"`;
         syncDelete: false,
         noop: false,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        geminiDir: geminiBaseDir,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -356,8 +349,7 @@ Test content with $ARGUMENTS`;
         syncDelete: false,
         noop: false,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        codexDir: codexBaseDir,
+        customDirs: { claude: claudeBaseDir, codex: codexBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -405,8 +397,7 @@ Test content with $ARGUMENTS`;
         syncDelete: false,
         noop: false,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        codexDir: codexBaseDir,
+        customDirs: { claude: claudeBaseDir, codex: codexBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -450,8 +441,7 @@ Content`;
         syncDelete: false,
         noop: false,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        geminiDir: geminiBaseDir,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -485,8 +475,7 @@ This is a test skill with $ARGUMENTS.`,
         syncDelete: false,
         noop: false,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        geminiDir: geminiBaseDir,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -523,8 +512,7 @@ Use this with {{args}}.`,
         syncDelete: false,
         noop: false,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        geminiDir: geminiBaseDir,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -560,8 +548,7 @@ Test content.`,
         syncDelete: false,
         noop: false,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        codexDir: codexBaseDir,
+        customDirs: { claude: claudeBaseDir, codex: codexBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -591,8 +578,7 @@ Test content.`,
         syncDelete: false,
         noop: false,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        geminiDir: geminiBaseDir,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -617,8 +603,7 @@ Test content.`,
         syncDelete: false,
         noop: true,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        geminiDir: geminiBaseDir,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -647,8 +632,7 @@ Test content.`,
         syncDelete: false,
         noop: false,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        geminiDir: geminiBaseDir,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -662,13 +646,16 @@ Test content.`,
 
   describe("OpenCode conversion", () => {
     it("should convert Claude command to OpenCode preserving model", async () => {
-      const claudeContent = `---
+      const claudeContent =
+        `---
 description: Test command
 model: sonnet
 allowed-tools: Bash(git:*)
 ---
 
-Test content with $ARGUMENTS and !` + "`git status`" + " and @config.json";
+Test content with $ARGUMENTS and !` +
+        "`git status`" +
+        " and @config.json";
 
       await writeFile(join(claudeDir, "test-opencode.md"), claudeContent);
 
@@ -681,8 +668,7 @@ Test content with $ARGUMENTS and !` + "`git status`" + " and @config.json";
         syncDelete: false,
         noop: false,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        opencodeDir: opencodeBaseDir,
+        customDirs: { claude: claudeBaseDir, opencode: opencodeBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -698,11 +684,14 @@ Test content with $ARGUMENTS and !` + "`git status`" + " and @config.json";
     });
 
     it("should convert OpenCode command to Gemini", async () => {
-      const opencodeContent = `---
+      const opencodeContent =
+        `---
 description: OpenCode test
 ---
 
-Run with $ARGUMENTS and !` + "`npm test`" + ".";
+Run with $ARGUMENTS and !` +
+        "`npm test`" +
+        ".";
 
       await writeFile(join(opencodeDir, "test.md"), opencodeContent);
 
@@ -715,8 +704,7 @@ Run with $ARGUMENTS and !` + "`npm test`" + ".";
         syncDelete: false,
         noop: false,
         verbose: false,
-        opencodeDir: opencodeBaseDir,
-        geminiDir: geminiBaseDir,
+        customDirs: { opencode: opencodeBaseDir, gemini: geminiBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -753,8 +741,7 @@ Test skill with $ARGUMENTS.`,
         syncDelete: false,
         noop: false,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        opencodeDir: opencodeBaseDir,
+        customDirs: { claude: claudeBaseDir, opencode: opencodeBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -788,8 +775,7 @@ Test skill with $ARGUMENTS.`,
         syncDelete: true,
         noop: false,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        geminiDir: geminiBaseDir,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -816,8 +802,7 @@ Test skill with $ARGUMENTS.`,
         syncDelete: true,
         noop: true,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        geminiDir: geminiBaseDir,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
       const result = await syncCommands(options);
@@ -856,8 +841,7 @@ Test skill with $ARGUMENTS.`,
         syncDelete: true,
         noop: false,
         verbose: false,
-        claudeDir: claudeBaseDir,
-        geminiDir: geminiBaseDir,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
       const result = await syncCommands(options);

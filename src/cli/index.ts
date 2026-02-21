@@ -3,6 +3,7 @@
 import { Command } from "commander";
 import picocolors from "picocolors";
 import { version } from "../../package.json" assert { type: "json" };
+import type { ProductType } from "../types/intermediate.js";
 import { validateCLIOptions } from "./options.js";
 import { syncCommands } from "./sync.js";
 
@@ -10,7 +11,7 @@ const program = new Command();
 
 program
   .name("agent-command-sync")
-  .description("Convert Custom Slash Commands between Claude Code and Gemini CLI")
+  .description("Convert Custom Slash Commands and Skills between Claude Code, Gemini CLI, Codex CLI, and OpenCode")
   .version(version);
 
 program
@@ -40,8 +41,8 @@ program
 
       // Organize options
       const syncOptions = {
-        source: options.src as "claude" | "gemini" | "codex" | "opencode",
-        destination: options.dest as "claude" | "gemini" | "codex" | "opencode",
+        source: options.src as ProductType,
+        destination: options.dest as ProductType,
         contentType: options.type as "commands" | "skills" | "both",
         removeUnsupported: options.removeUnsupported,
         noOverwrite: !options.overwrite, // commander.js no-prefix reverses the value
@@ -49,10 +50,12 @@ program
         file: options.file,
         noop: options.noop,
         verbose: options.verbose,
-        claudeDir: options.claudeDir,
-        geminiDir: options.geminiDir,
-        codexDir: options.codexDir,
-        opencodeDir: options.opencodeDir,
+        customDirs: {
+          ...(options.claudeDir && { claude: options.claudeDir }),
+          ...(options.geminiDir && { gemini: options.geminiDir }),
+          ...(options.codexDir && { codex: options.codexDir }),
+          ...(options.opencodeDir && { opencode: options.opencodeDir }),
+        },
       };
 
       // Display debug information in verbose mode

@@ -89,26 +89,6 @@ export interface FileSearchOptions {
   excludePatterns?: string[];
 }
 
-// Command directory configuration
-export interface CommandDirectories {
-  claude: {
-    project: string;
-    user: string;
-  };
-  gemini: {
-    project: string;
-    user: string;
-  };
-  codex: {
-    project: string;
-    user: string;
-  };
-  opencode: {
-    project: string;
-    user: string;
-  };
-}
-
 // Re-export body segment types
 export type { BodySegment, ContentPlaceholder, PatternDef, PlaceholderSerializers } from "./body-segment.js";
 

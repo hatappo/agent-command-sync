@@ -1,4 +1,5 @@
 // Main entry point for the agent-slash-sync library
+export * from "./agents/index.js";
 export * from "./types/index.js";
 export * from "./parsers/claude-parser.js";
 export * from "./parsers/codex-parser.js";
