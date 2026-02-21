@@ -116,6 +116,7 @@ export type { BodySegment, ContentPlaceholder, PatternDef, PlaceholderSerializer
 export type { ClaudeCommand, GeminiCommand, CodexCommand, OpenCodeCommand } from "./command.js";
 
 // Re-export intermediate representation types
+export { PRODUCT_TYPES } from "./intermediate.js";
 export type {
   ProductType,
   IntermediateConversionOptions,

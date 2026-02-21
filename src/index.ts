@@ -15,5 +15,6 @@ export * from "./converters/gemini-skill-converter.js";
 export * from "./converters/opencode-command-converter.js";
 export * from "./converters/opencode-skill-converter.js";
 
+export * from "./utils/assert-never.js";
 export * from "./utils/file-utils.js";
 export * from "./utils/validation.js";
