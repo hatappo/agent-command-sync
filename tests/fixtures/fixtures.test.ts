@@ -78,8 +78,7 @@ describe("Agent Slash Sync Tests", () => {
       const geminiDirs = resolveCommandDir(AGENT_REGISTRY.gemini, "~/custom-gemini");
       expect(geminiDirs.user).toBe(join(homedir(), "custom-gemini", "commands"));
     });
-
-});
+  });
 
   describe("TOML Output Format", () => {
     it("should output prompt field last in TOML", async () => {

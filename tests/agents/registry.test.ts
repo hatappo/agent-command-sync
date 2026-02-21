@@ -9,6 +9,14 @@ describe("Agent Registry", () => {
     }
   });
 
+  it("should have a displayName for every agent", () => {
+    for (const product of PRODUCT_TYPES) {
+      const agent = AGENT_REGISTRY[product];
+      expect(typeof agent.displayName).toBe("string");
+      expect(agent.displayName.length).toBeGreaterThan(0);
+    }
+  });
+
   it("should have correct directory configuration for each agent", () => {
     expect(AGENT_REGISTRY.claude.dirs.projectBase).toBe(".claude");
     expect(AGENT_REGISTRY.claude.dirs.commandSubdir).toBe("commands");

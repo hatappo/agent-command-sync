@@ -12,6 +12,7 @@ export function createClaudeAgent(): AgentDefinition {
   const skillConverter = new ClaudeSkillConverter();
 
   return {
+    displayName: "Claude Code",
     dirs: {
       commandSubdir: "commands",
       skillSubdir: "skills",

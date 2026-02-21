@@ -12,6 +12,7 @@ export function createCodexAgent(): AgentDefinition {
   const skillConverter = new CodexSkillConverter();
 
   return {
+    displayName: "Codex CLI",
     dirs: {
       commandSubdir: "prompts",
       skillSubdir: "skills",

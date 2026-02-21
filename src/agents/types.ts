@@ -6,6 +6,8 @@ import type { ConverterOptions, SemanticIR } from "../types/semantic-ir.js";
  * Adding a new ProductType without a registry entry causes a compile error.
  */
 export interface AgentDefinition {
+  /** Human-readable display name: "Claude Code", "Gemini CLI", etc. */
+  readonly displayName: string;
   readonly dirs: {
     /** Subdirectory for commands: "commands" or "prompts" */
     readonly commandSubdir: string;

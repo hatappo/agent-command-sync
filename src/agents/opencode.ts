@@ -12,6 +12,7 @@ export function createOpenCodeAgent(): AgentDefinition {
   const skillConverter = new OpenCodeSkillConverter();
 
   return {
+    displayName: "OpenCode",
     dirs: {
       commandSubdir: "commands",
       skillSubdir: "skills",

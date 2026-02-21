@@ -12,6 +12,7 @@ export function createGeminiAgent(): AgentDefinition {
   const skillConverter = new GeminiSkillConverter();
 
   return {
+    displayName: "Gemini CLI",
     dirs: {
       commandSubdir: "commands",
       skillSubdir: "skills",
