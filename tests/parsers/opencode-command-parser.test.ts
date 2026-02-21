@@ -2,17 +2,17 @@ import { mkdir, rm, writeFile as fsWriteFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { OpenCodeParser } from "../../src/parsers/opencode-parser.js";
+import { OpenCodeAgent } from "../../src/agents/opencode.js";
 
 const fixturesDir = join(__dirname, "..", "fixtures", "opencode-commands");
 
-describe("OpenCodeParser", () => {
-  const parser = new OpenCodeParser();
+describe("OpenCodeAgent (Command)", () => {
+  const agent = new OpenCodeAgent();
 
-  describe("parse", () => {
+  describe("parseCommand", () => {
     it("should parse OpenCode command with frontmatter", async () => {
       const filePath = join(fixturesDir, "basic.md");
-      const result = await parser.parse(filePath);
+      const result = await agent.parseCommand(filePath);
 
       expect(result).toBeDefined();
       expect(result.frontmatter?.description).toBe("Basic OpenCode command");
@@ -22,7 +22,7 @@ describe("OpenCodeParser", () => {
 
     it("should parse OpenCode command with arguments", async () => {
       const filePath = join(fixturesDir, "with-args.md");
-      const result = await parser.parse(filePath);
+      const result = await agent.parseCommand(filePath);
 
       expect(result).toBeDefined();
       expect(result.content).toContain("$ARGUMENTS");
@@ -32,7 +32,7 @@ describe("OpenCodeParser", () => {
 
     it("should parse simple command without frontmatter", async () => {
       const filePath = join(fixturesDir, "simple.md");
-      const result = await parser.parse(filePath);
+      const result = await agent.parseCommand(filePath);
 
       expect(result).toBeDefined();
       expect(result.frontmatter).toBeUndefined();
@@ -42,7 +42,7 @@ describe("OpenCodeParser", () => {
     it("should throw ParseError for non-existent file", async () => {
       const filePath = join(fixturesDir, "non-existent.md");
 
-      await expect(parser.parse(filePath)).rejects.toThrow("Failed to parse OpenCode command file");
+      await expect(agent.parseCommand(filePath)).rejects.toThrow("Failed to parse OpenCode command file");
     });
 
     it("should throw ParseError for invalid YAML frontmatter", async () => {
@@ -52,21 +52,21 @@ describe("OpenCodeParser", () => {
       await fsWriteFile(invalidFile, "---\ninvalid yaml: [[[\n---\nContent", "utf-8");
 
       try {
-        await expect(parser.parse(invalidFile)).rejects.toThrow("Failed to parse OpenCode command file");
+        await expect(agent.parseCommand(invalidFile)).rejects.toThrow("Failed to parse OpenCode command file");
       } finally {
         await rm(tmpDir, { recursive: true });
       }
     });
   });
 
-  describe("validate", () => {
+  describe("validateCommand", () => {
     it("should validate valid OpenCode command", () => {
       const command = {
         content: "Test content",
         filePath: "test.md",
       };
 
-      expect(parser.validate(command)).toBe(true);
+      expect(agent.validateCommand(command)).toBe(true);
     });
 
     it("should invalidate command with non-string content", () => {
@@ -75,18 +75,18 @@ describe("OpenCodeParser", () => {
         filePath: "test.md",
       };
 
-      expect(parser.validate(command)).toBe(false);
+      expect(agent.validateCommand(command)).toBe(false);
     });
   });
 
-  describe("stringify", () => {
+  describe("stringifyCommand", () => {
     it("should convert OpenCode command to string without frontmatter", () => {
       const command = {
         content: "This is the content of the command",
         filePath: "test.md",
       };
 
-      const result = parser.stringify(command);
+      const result = agent.stringifyCommand(command);
       expect(result).toBe("This is the content of the command");
     });
 
@@ -97,7 +97,7 @@ describe("OpenCodeParser", () => {
         filePath: "test.md",
       };
 
-      const result = parser.stringify(command);
+      const result = agent.stringifyCommand(command);
       expect(result).toContain("---");
       expect(result).toContain("description: Test");
       expect(result).toContain("model: sonnet");

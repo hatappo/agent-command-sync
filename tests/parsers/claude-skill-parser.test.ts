@@ -2,19 +2,19 @@ import { mkdir, readFile as fsReadFile, rm, writeFile as fsWriteFile } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { ClaudeSkillParser } from "../../src/parsers/claude-skill-parser.js";
+import { ClaudeAgent } from "../../src/agents/claude.js";
 import type { ClaudeSkill } from "../../src/types/index.js";
 import { fileExists } from "../../src/utils/file-utils.js";
 
 const fixturesPath = join(process.cwd(), "tests/fixtures/claude-skills");
 
-describe("ClaudeSkillParser", () => {
-  const parser = new ClaudeSkillParser();
+describe("ClaudeAgent (Skill)", () => {
+  const agent = new ClaudeAgent();
 
-  describe("parse", () => {
+  describe("parseSkill", () => {
     it("should parse a basic skill directory", async () => {
       const skillDir = join(fixturesPath, "basic-skill");
-      const result = await parser.parse(skillDir);
+      const result = await agent.parseSkill(skillDir);
 
       expect(result.name).toBe("basic-skill");
       expect(result.description).toBe("A basic test skill for Claude");
@@ -27,16 +27,16 @@ describe("ClaudeSkillParser", () => {
     it("should throw error for invalid skill directory", async () => {
       const invalidDir = join(fixturesPath, "non-existent-skill");
 
-      await expect(parser.parse(invalidDir)).rejects.toThrow("Failed to parse Claude skill");
+      await expect(agent.parseSkill(invalidDir)).rejects.toThrow("Failed to parse Claude skill");
     });
   });
 
-  describe("validate", () => {
+  describe("validateSkill", () => {
     it("should validate a valid skill", async () => {
       const skillDir = join(fixturesPath, "basic-skill");
-      const skill = await parser.parse(skillDir);
+      const skill = await agent.parseSkill(skillDir);
 
-      expect(parser.validate(skill)).toBe(true);
+      expect(agent.validateSkill(skill)).toBe(true);
     });
 
     it("should reject skill without content", () => {
@@ -48,15 +48,15 @@ describe("ClaudeSkillParser", () => {
         frontmatter: {},
       };
 
-      expect(parser.validate(invalidSkill as never)).toBe(false);
+      expect(agent.validateSkill(invalidSkill as never)).toBe(false);
     });
   });
 
-  describe("stringify", () => {
+  describe("stringifySkill", () => {
     it("should stringify a skill to SKILL.md format", async () => {
       const skillDir = join(fixturesPath, "basic-skill");
-      const skill = await parser.parse(skillDir);
-      const result = parser.stringify(skill);
+      const skill = await agent.parseSkill(skillDir);
+      const result = agent.stringifySkill(skill);
 
       expect(result).toContain("---");
       expect(result).toContain("name: basic-skill");
@@ -65,7 +65,7 @@ describe("ClaudeSkillParser", () => {
     });
   });
 
-  describe("writeToDirectory", () => {
+  describe("writeSkillToDirectory", () => {
     let tmpDir: string;
 
     beforeEach(async () => {
@@ -82,10 +82,10 @@ describe("ClaudeSkillParser", () => {
 
     it("should write SKILL.md correctly", async () => {
       const skillDir = join(fixturesPath, "basic-skill");
-      const skill = await parser.parse(skillDir);
+      const skill = await agent.parseSkill(skillDir);
 
       const targetDir = join(tmpDir, "output");
-      await parser.writeToDirectory(skill, targetDir);
+      await agent.writeSkillToDirectory(skill, skillDir, targetDir);
 
       const written = await fsReadFile(join(targetDir, "SKILL.md"), "utf-8");
       expect(written).toContain("name: basic-skill");
@@ -102,7 +102,7 @@ describe("ClaudeSkillParser", () => {
       };
 
       const targetDir = join(tmpDir, "output");
-      await parser.writeToDirectory(skill, targetDir);
+      await agent.writeSkillToDirectory(skill, tmpDir, targetDir);
 
       const content = await fsReadFile(join(targetDir, "helpers", "util.ts"), "utf-8");
       expect(content).toBe("export const x = 1;");
@@ -122,7 +122,7 @@ describe("ClaudeSkillParser", () => {
       };
 
       const targetDir = join(tmpDir, "target");
-      await parser.writeToDirectory(skill, targetDir);
+      await agent.writeSkillToDirectory(skill, sourceDir, targetDir);
 
       expect(await fileExists(join(targetDir, "images", "icon.png"))).toBe(true);
     });
@@ -137,7 +137,7 @@ describe("ClaudeSkillParser", () => {
       };
 
       const targetDir = join(tmpDir, "output");
-      await parser.writeToDirectory(skill, targetDir);
+      await agent.writeSkillToDirectory(skill, tmpDir, targetDir);
 
       const content = await fsReadFile(join(targetDir, "a", "b", "c", "deep.ts"), "utf-8");
       expect(content).toBe("deep");

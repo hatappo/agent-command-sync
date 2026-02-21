@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { ClaudeSkillConverter } from "../../src/converters/claude-skill-converter.js";
-import { GeminiSkillConverter } from "../../src/converters/gemini-skill-converter.js";
-import { CodexSkillConverter } from "../../src/converters/codex-skill-converter.js";
+import { CodexAgent } from "../../src/agents/codex.js";
+import { ClaudeAgent } from "../../src/agents/claude.js";
+import { GeminiAgent } from "../../src/agents/gemini.js";
 import type { ClaudeSkill } from "../../src/types/index.js";
 
 describe("Skill Conversion (Safety Net)", () => {
@@ -26,10 +26,10 @@ describe("Skill Conversion (Safety Net)", () => {
         },
       };
 
-      const claudeConverter = new ClaudeSkillConverter();
-      const geminiConverter = new GeminiSkillConverter();
-      const ir = claudeConverter.toIR(claude);
-      const gemini = geminiConverter.fromIR(ir, { removeUnsupported: false });
+      const claudeAgent = new ClaudeAgent();
+      const geminiAgent = new GeminiAgent();
+      const ir = claudeAgent.skillToIR(claude);
+      const gemini = geminiAgent.skillFromIR(ir, { removeUnsupported: false });
 
       expect(gemini.frontmatter.name).toBe("test-skill");
       expect(gemini.frontmatter.description).toBe("Test description");
@@ -63,10 +63,10 @@ describe("Skill Conversion (Safety Net)", () => {
         },
       };
 
-      const claudeConverter = new ClaudeSkillConverter();
-      const geminiConverter = new GeminiSkillConverter();
-      const ir = claudeConverter.toIR(claude);
-      const gemini = geminiConverter.fromIR(ir, { removeUnsupported: true });
+      const claudeAgent = new ClaudeAgent();
+      const geminiAgent = new GeminiAgent();
+      const ir = claudeAgent.skillToIR(claude);
+      const gemini = geminiAgent.skillFromIR(ir, { removeUnsupported: true });
 
       expect(gemini.frontmatter.name).toBe("test-skill");
       expect(gemini.frontmatter.description).toBe("Test description");
@@ -96,10 +96,10 @@ describe("Skill Conversion (Safety Net)", () => {
         },
       };
 
-      const claudeConverter = new ClaudeSkillConverter();
-      const codexConverter = new CodexSkillConverter();
-      const ir = claudeConverter.toIR(claude);
-      const codex = codexConverter.fromIR(ir, { removeUnsupported: false });
+      const claudeAgent = new ClaudeAgent();
+      const codexAgent = new CodexAgent();
+      const ir = claudeAgent.skillToIR(claude);
+      const codex = codexAgent.skillFromIR(ir, { removeUnsupported: false });
 
       expect(codex.openaiConfig?.policy?.allow_implicit_invocation).toBe(false);
       expect(codex.frontmatter._claude_disable_model_invocation).toBe(true);
@@ -126,10 +126,10 @@ describe("Skill Conversion (Safety Net)", () => {
         },
       };
 
-      const claudeConverter = new ClaudeSkillConverter();
-      const codexConverter = new CodexSkillConverter();
-      const ir = claudeConverter.toIR(claude);
-      const codex = codexConverter.fromIR(ir, { removeUnsupported: true });
+      const claudeAgent = new ClaudeAgent();
+      const codexAgent = new CodexAgent();
+      const ir = claudeAgent.skillToIR(claude);
+      const codex = codexAgent.skillFromIR(ir, { removeUnsupported: true });
 
       // model invocation conversion should always work
       expect(codex.openaiConfig?.policy?.allow_implicit_invocation).toBe(false);

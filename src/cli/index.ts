@@ -3,90 +3,106 @@
 import { Command } from "commander";
 import picocolors from "picocolors";
 import { version } from "../../package.json" assert { type: "json" };
+import { AGENT_REGISTRY } from "../agents/registry.js";
+import { PRODUCT_TYPES } from "../types/intermediate.js";
+import type { ProductType } from "../types/intermediate.js";
 import { validateCLIOptions } from "./options.js";
 import { syncCommands } from "./sync.js";
+
+// Dynamically generated from PRODUCT_TYPES / AGENT_REGISTRY
+const displayNames = PRODUCT_TYPES.map((p) => AGENT_REGISTRY[p].displayName).join(", ");
+const productList = PRODUCT_TYPES.join(", ");
 
 const program = new Command();
 
 program
   .name("agent-command-sync")
-  .description("Convert Custom Slash Commands between Claude Code and Gemini CLI")
+  .description(`Convert Custom Slash Commands and Skills between ${displayNames}`)
   .version(version);
 
 program
-  .requiredOption("-s, --src <product>", "Source product: claude, gemini, codex, or opencode")
-  .requiredOption("-d, --dest <product>", "Destination product: claude, gemini, codex, or opencode")
+  .requiredOption("-s, --src <product>", `Source product: ${productList}`)
+  .requiredOption("-d, --dest <product>", `Destination product: ${productList}`)
   .option("-t, --type <type>", "Content type: commands, skills, or both", "both")
   .option("--remove-unsupported", "Remove keys that are not supported in the target format", false)
   .option("--no-overwrite", "Skip conversion if a command with the same name exists in the target")
   .option("--sync-delete", "Delete commands in the target that don't exist in the source", false)
   .option("-f, --file <filename>", "Convert only the specified command/skill (without extension)")
   .option("-n, --noop", "Display a list of changes without applying them", false)
-  .option("-v, --verbose", "Show detailed debug information", false)
-  .option("--claude-dir <path>", "Claude base directory (default: ~/.claude)")
-  .option("--gemini-dir <path>", "Gemini base directory (default: ~/.gemini)")
-  .option("--codex-dir <path>", "Codex base directory (default: ~/.codex)")
-  .option("--opencode-dir <path>", "OpenCode base directory (default: ~/.config/opencode)")
-  .action(async (options) => {
-    try {
-      // Check if source and destination are the same
-      if (options.src === options.dest) {
-        console.error(
-          picocolors.red(picocolors.bold("Error:")),
-          picocolors.red("Source and destination must be different"),
-        );
-        process.exit(1);
-      }
+  .option("-v, --verbose", "Show detailed debug information", false);
 
-      // Organize options
-      const syncOptions = {
-        source: options.src as "claude" | "gemini" | "codex" | "opencode",
-        destination: options.dest as "claude" | "gemini" | "codex" | "opencode",
-        contentType: options.type as "commands" | "skills" | "both",
-        removeUnsupported: options.removeUnsupported,
-        noOverwrite: !options.overwrite, // commander.js no-prefix reverses the value
-        syncDelete: options.syncDelete,
-        file: options.file,
-        noop: options.noop,
-        verbose: options.verbose,
-        claudeDir: options.claudeDir,
-        geminiDir: options.geminiDir,
-        codexDir: options.codexDir,
-        opencodeDir: options.opencodeDir,
-      };
+// Register --xxx-dir options dynamically
+for (const name of PRODUCT_TYPES) {
+  const agent = AGENT_REGISTRY[name];
+  program.option(`--${name}-dir <path>`, `${agent.displayName} base directory (default: ~/${agent.dirs.userDefault})`);
+}
 
-      // Display debug information in verbose mode
-      if (options.verbose) {
-        console.log("DEBUG: Raw options:", options);
-        console.log("DEBUG: Processed options:", syncOptions);
-      }
-
-      // Validate options
-      const validationErrors = validateCLIOptions(syncOptions);
-      if (validationErrors.length > 0) {
-        console.error(picocolors.red(picocolors.bold("Validation errors:")));
-        for (const error of validationErrors) {
-          console.error(picocolors.red(`  ✗ ${error}`));
-        }
-        console.error(picocolors.dim("\nUse --help for usage information."));
-        process.exit(1);
-      }
-
-      await syncCommands(syncOptions);
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error(picocolors.red(picocolors.bold("Error:")), picocolors.red(error.message));
-
-        // Display debug information (during development)
-        if (process.env.NODE_ENV === "development") {
-          console.error(picocolors.gray("Stack trace:"), error.stack);
-        }
-      } else {
-        console.error(picocolors.red(picocolors.bold("Unknown error:")), picocolors.red(String(error)));
-      }
+program.action(async (options) => {
+  try {
+    // Check if source and destination are the same
+    if (options.src === options.dest) {
+      console.error(
+        picocolors.red(picocolors.bold("Error:")),
+        picocolors.red("Source and destination must be different"),
+      );
       process.exit(1);
     }
-  });
+
+    // Build customDirs dynamically
+    const customDirs: Partial<Record<ProductType, string>> = {};
+    for (const name of PRODUCT_TYPES) {
+      const dirKey = `${name}Dir`;
+      if (options[dirKey]) {
+        customDirs[name] = options[dirKey];
+      }
+    }
+
+    // Organize options
+    const syncOptions = {
+      source: options.src as ProductType,
+      destination: options.dest as ProductType,
+      contentType: options.type as "commands" | "skills" | "both",
+      removeUnsupported: options.removeUnsupported,
+      noOverwrite: !options.overwrite, // commander.js no-prefix reverses the value
+      syncDelete: options.syncDelete,
+      file: options.file,
+      noop: options.noop,
+      verbose: options.verbose,
+      customDirs,
+    };
+
+    // Display debug information in verbose mode
+    if (options.verbose) {
+      console.log("DEBUG: Raw options:", options);
+      console.log("DEBUG: Processed options:", syncOptions);
+    }
+
+    // Validate options
+    const validationErrors = validateCLIOptions(syncOptions);
+    if (validationErrors.length > 0) {
+      console.error(picocolors.red(picocolors.bold("Validation errors:")));
+      for (const error of validationErrors) {
+        console.error(picocolors.red(`  ✗ ${error}`));
+      }
+      console.error(picocolors.dim("\nUse --help for usage information."));
+      process.exit(1);
+    }
+
+    await syncCommands(syncOptions);
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(picocolors.red(picocolors.bold("Error:")), picocolors.red(error.message));
+
+      // Display debug information (during development)
+      if (process.env.NODE_ENV === "development") {
+        console.error(picocolors.gray("Stack trace:"), error.stack);
+      }
+    } else {
+      console.error(picocolors.red(picocolors.bold("Unknown error:")), picocolors.red(String(error)));
+    }
+    process.exit(1);
+  }
+});
 
 // Improve help display
 program.on("--help", () => {

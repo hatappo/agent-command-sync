@@ -1,16 +1,3 @@
-// Conversion options
-export interface ConversionOptions {
-  direction: "c2g" | "g2c";
-  removeUnsupported: boolean;
-  noOverwrite: boolean;
-  syncDelete: boolean;
-  file?: string;
-  noop: boolean;
-  verbose: boolean;
-  claudeDir?: string;
-  geminiDir?: string;
-}
-
 // File operation result
 export interface FileOperation {
   type: "A" | "M" | "D" | "-";
@@ -73,11 +60,6 @@ export interface Parser<T> {
   validate(data: T): boolean;
 }
 
-// Converter interface
-export interface Converter<TSource, TTarget> {
-  convert(source: TSource, options: ConversionOptions): TTarget;
-}
-
 // Validation function type
 export type ValidationFunction<T> = (data: T) => ValidationError[];
 
@@ -89,58 +71,12 @@ export interface FileSearchOptions {
   excludePatterns?: string[];
 }
 
-// Command directory configuration
-export interface CommandDirectories {
-  claude: {
-    project: string;
-    user: string;
-  };
-  gemini: {
-    project: string;
-    user: string;
-  };
-  codex: {
-    project: string;
-    user: string;
-  };
-  opencode: {
-    project: string;
-    user: string;
-  };
-}
+// Wildcard re-exports (new types are automatically included)
+export * from "./body-segment.js";
+export * from "./command.js";
+export * from "./intermediate.js";
+export * from "./skill.js";
+export * from "./semantic-ir.js";
 
-// Re-export body segment types
-export type { BodySegment, ContentPlaceholder, PatternDef, PlaceholderSerializers } from "./body-segment.js";
-
-// Re-export command types
-export type { ClaudeCommand, GeminiCommand, CodexCommand, OpenCodeCommand } from "./command.js";
-
-// Re-export intermediate representation types
-export { PRODUCT_TYPES } from "./intermediate.js";
-export type {
-  ProductType,
-  IntermediateConversionOptions,
-} from "./intermediate.js";
-
-// Re-export skill types
-export type {
-  SkillBase,
-  SupportFile,
-  ClaudeSkill,
-  ClaudeSkillHooks,
-  GeminiSkill,
-  CodexSkill,
-  CodexOpenAIConfig,
-  OpenCodeSkill,
-  ContentType as IRContentType,
-  ContentFilter,
-} from "./skill.js";
-
-// Re-export semantic IR types
-export type {
-  SemanticIR,
-  SemanticProperties,
-  SemanticMeta,
-  ConverterOptions,
-  SemanticConverter,
-} from "./semantic-ir.js";
+// Backward-compatible alias
+export type { ContentType as IRContentType } from "./skill.js";

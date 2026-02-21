@@ -227,14 +227,15 @@ describe("Validation", () => {
 
     it("should format multiple errors", () => {
       const command = {
-        filePath: "/test/command.toml",
-      } as GeminiCommand;
+        frontmatter: null,
+        content: 123,
+      } as unknown as ClaudeCommand;
 
-      const errors = validateGeminiCommand(command);
+      const errors = validateClaudeCommand(command);
       const formatted = formatValidationErrors(errors);
 
-      expect(formatted).toContain("Validation failed with 1 error(s)");
-      expect(formatted).toContain("prompt: prompt is required");
+      expect(errors.length).toBeGreaterThanOrEqual(2);
+      expect(formatted).toContain(`Validation failed with ${errors.length} error(s)`);
     });
 
     it("should handle no errors", () => {

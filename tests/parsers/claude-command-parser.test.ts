@@ -1,16 +1,16 @@
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { ClaudeParser } from "../../src/parsers/claude-parser.js";
+import { ClaudeAgent } from "../../src/agents/claude.js";
 import type { ClaudeCommand } from "../../src/types/index.js";
 import { deleteFile, writeFile } from "../../src/utils/file-utils.js";
 
-describe("ClaudeParser", () => {
-  let parser: ClaudeParser;
+describe("ClaudeAgent (Command)", () => {
+  let agent: ClaudeAgent;
   let testFilePath: string;
 
   beforeEach(() => {
-    parser = new ClaudeParser();
+    agent = new ClaudeAgent();
     testFilePath = join(tmpdir(), `test-claude-${Date.now()}.md`);
   });
 
@@ -22,7 +22,7 @@ describe("ClaudeParser", () => {
     }
   });
 
-  describe("parse", () => {
+  describe("parseCommand", () => {
     it("should parse markdown file with frontmatter", async () => {
       const content = `---
 description: Test command
@@ -36,7 +36,7 @@ This is a test command with $ARGUMENTS placeholder.
 Execute: !git status`;
 
       await writeFile(testFilePath, content);
-      const result = await parser.parse(testFilePath);
+      const result = await agent.parseCommand(testFilePath);
 
       expect(result.frontmatter.description).toBe("Test command");
       expect(result.frontmatter.model).toBe("sonnet");
@@ -50,7 +50,7 @@ Execute: !git status`;
       const content = "Simple command without frontmatter.";
 
       await writeFile(testFilePath, content);
-      const result = await parser.parse(testFilePath);
+      const result = await agent.parseCommand(testFilePath);
 
       expect(result).toEqual({
         frontmatter: {},
@@ -60,11 +60,11 @@ Execute: !git status`;
     });
 
     it("should throw ParseError for non-existent file", async () => {
-      await expect(parser.parse("/non/existent/file.md")).rejects.toThrow("Failed to parse Claude command file");
+      await expect(agent.parseCommand("/non/existent/file.md")).rejects.toThrow("Failed to parse Claude command file");
     });
   });
 
-  describe("validate", () => {
+  describe("validateCommand", () => {
     it("should validate correct ClaudeCommand", () => {
       const command: ClaudeCommand = {
         frontmatter: {
@@ -75,40 +75,21 @@ Execute: !git status`;
         filePath: "/test/path.md",
       };
 
-      expect(parser.validate(command)).toBe(true);
+      expect(agent.validateCommand(command)).toBe(true);
     });
 
-    it("should reject command without filePath", () => {
+    it("should return false for invalid input", () => {
+      // Detailed validation rules are tested in validation.test.ts
       const command = {
         frontmatter: {},
         content: "Test content",
       } as ClaudeCommand;
 
-      expect(parser.validate(command)).toBe(false);
-    });
-
-    it("should reject command with invalid frontmatter", () => {
-      const command = {
-        frontmatter: null,
-        content: "Test content",
-        filePath: "/test/path.md",
-      } as unknown as ClaudeCommand;
-
-      expect(parser.validate(command)).toBe(false);
-    });
-
-    it("should reject command with non-string content", () => {
-      const command = {
-        frontmatter: {},
-        content: 123,
-        filePath: "/test/path.md",
-      } as unknown as ClaudeCommand;
-
-      expect(parser.validate(command)).toBe(false);
+      expect(agent.validateCommand(command)).toBe(false);
     });
   });
 
-  describe("stringify", () => {
+  describe("stringifyCommand", () => {
     it("should convert ClaudeCommand to markdown with frontmatter", () => {
       const command: ClaudeCommand = {
         frontmatter: {
@@ -119,7 +100,7 @@ Execute: !git status`;
         filePath: "/test/path.md",
       };
 
-      const result = parser.stringify(command);
+      const result = agent.stringifyCommand(command);
 
       expect(result).toContain("---");
       expect(result).toContain("description: Test command");
@@ -134,7 +115,7 @@ Execute: !git status`;
         filePath: "/test/path.md",
       };
 
-      const result = parser.stringify(command);
+      const result = agent.stringifyCommand(command);
       expect(result).toBe("Simple content");
     });
 
@@ -149,7 +130,7 @@ Execute: !git status`;
         filePath: "/test/path.md",
       };
 
-      const result = parser.stringify(command);
+      const result = agent.stringifyCommand(command);
 
       expect(result).toContain("description: Test command");
       expect(result).not.toContain("model:");

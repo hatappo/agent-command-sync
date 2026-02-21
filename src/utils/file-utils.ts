@@ -1,30 +1,9 @@
 import { promises as fs } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, extname, join, relative, resolve } from "node:path";
-import type { CommandDirectories, FileSearchOptions } from "../types/index.js";
+import type { AgentDefinition } from "../agents/agent-definition.js";
+import type { FileSearchOptions } from "../types/index.js";
 import { SKILL_CONSTANTS } from "./constants.js";
-
-/**
- * Skill directory configuration
- */
-export interface SkillDirectories {
-  claude: {
-    project: string;
-    user: string;
-  };
-  gemini: {
-    project: string;
-    user: string;
-  };
-  codex: {
-    project: string;
-    user: string;
-  };
-  opencode: {
-    project: string;
-    user: string;
-  };
-}
 
 /**
  * Check if a file exists
@@ -127,37 +106,36 @@ export function getBaseName(filePath: string): string {
 }
 
 /**
- * Get command directory configuration
- * Specify base directories for claudeDir/geminiDir/codexDir, /commands (/prompts for Codex) will be added automatically
+ * Resolve relative path to absolute path
  */
-export function getCommandDirectories(
-  claudeDir?: string,
-  geminiDir?: string,
-  codexDir?: string,
-  opencodeDir?: string,
-): CommandDirectories {
-  const homeDir = homedir();
-  const currentDir = process.cwd();
+export function resolvePath(path: string): string {
+  if (path.startsWith("~")) {
+    return join(homedir(), path.slice(1));
+  }
+  return resolve(path);
+}
 
+/**
+ * Resolve command directory paths for an agent
+ */
+export function resolveCommandDir(agent: AgentDefinition, customDir?: string): { project: string; user: string } {
   return {
-    claude: {
-      project: join(currentDir, ".claude", "commands"),
-      user: claudeDir ? join(resolvePath(claudeDir), "commands") : join(homeDir, ".claude", "commands"),
-    },
-    gemini: {
-      project: join(currentDir, ".gemini", "commands"),
-      user: geminiDir ? join(resolvePath(geminiDir), "commands") : join(homeDir, ".gemini", "commands"),
-    },
-    codex: {
-      project: join(currentDir, ".codex", "prompts"),
-      user: codexDir ? join(resolvePath(codexDir), "prompts") : join(homeDir, ".codex", "prompts"),
-    },
-    opencode: {
-      project: join(currentDir, ".opencode", "commands"),
-      user: opencodeDir
-        ? join(resolvePath(opencodeDir), "commands")
-        : join(homeDir, ".config", "opencode", "commands"),
-    },
+    project: join(process.cwd(), agent.dirs.projectBase, agent.dirs.commandSubdir),
+    user: customDir
+      ? join(resolvePath(customDir), agent.dirs.commandSubdir)
+      : join(homedir(), agent.dirs.userDefault, agent.dirs.commandSubdir),
+  };
+}
+
+/**
+ * Resolve skill directory paths for an agent
+ */
+export function resolveSkillDir(agent: AgentDefinition, customDir?: string): { project: string; user: string } {
+  return {
+    project: join(process.cwd(), agent.dirs.projectBase, agent.dirs.skillSubdir),
+    user: customDir
+      ? join(resolvePath(customDir), agent.dirs.skillSubdir)
+      : join(homedir(), agent.dirs.userDefault, agent.dirs.skillSubdir),
   };
 }
 
@@ -206,29 +184,16 @@ export async function findFiles(directory: string, options: FileSearchOptions): 
 }
 
 /**
- * Common function to search for command files
+ * Find command files for an agent
  */
-async function findCommandFiles(
-  format: "claude" | "gemini" | "codex" | "opencode",
+export async function findAgentCommands(
+  agent: AgentDefinition,
   specificFile?: string,
-  baseDir?: string,
+  customDir?: string,
 ): Promise<string[]> {
-  const directories = getCommandDirectories(
-    format === "claude" ? baseDir : undefined,
-    format === "gemini" ? baseDir : undefined,
-    format === "codex" ? baseDir : undefined,
-    format === "opencode" ? baseDir : undefined,
-  );
-
-  const extension = format === "gemini" ? ".toml" : ".md";
-  const directory =
-    format === "claude"
-      ? directories.claude.user
-      : format === "gemini"
-        ? directories.gemini.user
-        : format === "codex"
-          ? directories.codex.user
-          : directories.opencode.user;
+  const dirs = resolveCommandDir(agent, customDir);
+  const extension = agent.fileExtension;
+  const directory = dirs.user;
 
   const searchOptions: FileSearchOptions = {
     extensions: [extension],
@@ -275,120 +240,15 @@ async function findCommandFiles(
 }
 
 /**
- * Search for Claude Code command files
+ * Find skill directories for an agent
  */
-export async function findClaudeCommands(specificFile?: string, claudeDir?: string): Promise<string[]> {
-  return findCommandFiles("claude", specificFile, claudeDir);
-}
-
-/**
- * Search for Gemini CLI command files
- */
-export async function findGeminiCommands(specificFile?: string, geminiDir?: string): Promise<string[]> {
-  return findCommandFiles("gemini", specificFile, geminiDir);
-}
-
-/**
- * Search for Codex CLI command files
- */
-export async function findCodexCommands(specificFile?: string, codexDir?: string): Promise<string[]> {
-  return findCommandFiles("codex", specificFile, codexDir);
-}
-
-/**
- * Search for OpenCode command files
- */
-export async function findOpenCodeCommands(specificFile?: string, opencodeDir?: string): Promise<string[]> {
-  return findCommandFiles("opencode", specificFile, opencodeDir);
-}
-
-/**
- * Resolve relative path to absolute path
- */
-export function resolvePath(path: string): string {
-  if (path.startsWith("~")) {
-    return join(homedir(), path.slice(1));
-  }
-  return resolve(path);
-}
-
-/**
- * Generate command name from file path
- */
-export function getCommandName(filePath: string, baseDirectory: string): string {
-  const relativePath = relative(baseDirectory, filePath);
-  const pathWithoutExt = relativePath.replace(/\.[^/.]+$/, "");
-
-  // Convert directory structure to colon (namespacing)
-  return pathWithoutExt.replace(/\//g, ":");
-}
-
-/**
- * Generate file path from command name
- */
-export function getFilePathFromCommandName(commandName: string, baseDirectory: string, extension: string): string {
-  // Convert colon to directory separator
-  const relativePath = commandName.replace(/:/g, "/");
-  return join(baseDirectory, `${relativePath}${extension}`);
-}
-
-/**
- * Get skill directory configuration
- */
-export function getSkillDirectories(
-  claudeDir?: string,
-  geminiDir?: string,
-  codexDir?: string,
-  opencodeDir?: string,
-): SkillDirectories {
-  const homeDir = homedir();
-  const currentDir = process.cwd();
-
-  return {
-    claude: {
-      project: join(currentDir, ".claude", "skills"),
-      user: claudeDir ? join(resolvePath(claudeDir), "skills") : join(homeDir, ".claude", "skills"),
-    },
-    gemini: {
-      project: join(currentDir, ".gemini", "skills"),
-      user: geminiDir ? join(resolvePath(geminiDir), "skills") : join(homeDir, ".gemini", "skills"),
-    },
-    codex: {
-      project: join(currentDir, ".codex", "skills"),
-      user: codexDir ? join(resolvePath(codexDir), "skills") : join(homeDir, ".codex", "skills"),
-    },
-    opencode: {
-      project: join(currentDir, ".opencode", "skills"),
-      user: opencodeDir
-        ? join(resolvePath(opencodeDir), "skills")
-        : join(homeDir, ".config", "opencode", "skills"),
-    },
-  };
-}
-
-/**
- * Find skill directories (directories containing SKILL.md)
- */
-async function findSkillDirs(
-  format: "claude" | "gemini" | "codex" | "opencode",
+export async function findAgentSkills(
+  agent: AgentDefinition,
   specificSkill?: string,
-  baseDir?: string,
+  customDir?: string,
 ): Promise<string[]> {
-  const directories = getSkillDirectories(
-    format === "claude" ? baseDir : undefined,
-    format === "gemini" ? baseDir : undefined,
-    format === "codex" ? baseDir : undefined,
-    format === "opencode" ? baseDir : undefined,
-  );
-
-  const directory =
-    format === "claude"
-      ? directories.claude.user
-      : format === "gemini"
-        ? directories.gemini.user
-        : format === "codex"
-          ? directories.codex.user
-          : directories.opencode.user;
+  const dirs = resolveSkillDir(agent, customDir);
+  const directory = dirs.user;
 
   if (!(await directoryExists(directory))) {
     return [];
@@ -427,31 +287,23 @@ async function findSkillDirs(
 }
 
 /**
- * Search for Claude Code skill directories
+ * Generate command name from file path
  */
-export async function findClaudeSkills(specificSkill?: string, claudeDir?: string): Promise<string[]> {
-  return findSkillDirs("claude", specificSkill, claudeDir);
+export function getCommandName(filePath: string, baseDirectory: string): string {
+  const relativePath = relative(baseDirectory, filePath);
+  const pathWithoutExt = relativePath.replace(/\.[^/.]+$/, "");
+
+  // Convert directory structure to colon (namespacing)
+  return pathWithoutExt.replace(/\//g, ":");
 }
 
 /**
- * Search for Gemini CLI skill directories
+ * Generate file path from command name
  */
-export async function findGeminiSkills(specificSkill?: string, geminiDir?: string): Promise<string[]> {
-  return findSkillDirs("gemini", specificSkill, geminiDir);
-}
-
-/**
- * Search for Codex CLI skill directories
- */
-export async function findCodexSkills(specificSkill?: string, codexDir?: string): Promise<string[]> {
-  return findSkillDirs("codex", specificSkill, codexDir);
-}
-
-/**
- * Search for OpenCode skill directories
- */
-export async function findOpenCodeSkills(specificSkill?: string, opencodeDir?: string): Promise<string[]> {
-  return findSkillDirs("opencode", specificSkill, opencodeDir);
+export function getFilePathFromCommandName(commandName: string, baseDirectory: string, extension: string): string {
+  // Convert colon to directory separator
+  const relativePath = commandName.replace(/:/g, "/");
+  return join(baseDirectory, `${relativePath}${extension}`);
 }
 
 /**

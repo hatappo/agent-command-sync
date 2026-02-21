@@ -31,14 +31,8 @@ export interface IntermediateConversionOptions {
   noop: boolean;
   /** Show detailed debug information */
   verbose: boolean;
-  /** Claude base directory */
-  claudeDir?: string;
-  /** Gemini base directory */
-  geminiDir?: string;
-  /** Codex base directory */
-  codexDir?: string;
-  /** OpenCode base directory */
-  opencodeDir?: string;
+  /** Custom base directories per product type */
+  customDirs?: Partial<Record<ProductType, string>>;
   /** Content type filter: commands, skills, or both (default: both) */
   contentType: ContentFilter;
 }

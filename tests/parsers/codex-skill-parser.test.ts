@@ -2,19 +2,19 @@ import { mkdir, readFile as fsReadFile, rm, writeFile as fsWriteFile } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { CodexSkillParser } from "../../src/parsers/codex-skill-parser.js";
+import { CodexAgent } from "../../src/agents/codex.js";
 import type { CodexSkill } from "../../src/types/index.js";
 import { directoryExists, fileExists } from "../../src/utils/file-utils.js";
 
 const fixturesPath = join(process.cwd(), "tests/fixtures/codex-skills");
 
-describe("CodexSkillParser", () => {
-  const parser = new CodexSkillParser();
+describe("CodexAgent (Skill)", () => {
+  const agent = new CodexAgent();
 
-  describe("parse", () => {
+  describe("parseSkill", () => {
     it("should parse a skill directory with openai.yaml", async () => {
       const skillDir = join(fixturesPath, "with-config");
-      const result = await parser.parse(skillDir);
+      const result = await agent.parseSkill(skillDir);
 
       expect(result.name).toBe("with-config");
       expect(result.description).toBe("A Codex skill with openai.yaml configuration");
@@ -30,24 +30,24 @@ describe("CodexSkillParser", () => {
     it("should throw error for invalid skill directory", async () => {
       const invalidDir = join(fixturesPath, "non-existent-skill");
 
-      await expect(parser.parse(invalidDir)).rejects.toThrow("Failed to parse Codex skill");
+      await expect(agent.parseSkill(invalidDir)).rejects.toThrow("Failed to parse Codex skill");
     });
   });
 
-  describe("validate", () => {
+  describe("validateSkill", () => {
     it("should validate a valid skill", async () => {
       const skillDir = join(fixturesPath, "with-config");
-      const skill = await parser.parse(skillDir);
+      const skill = await agent.parseSkill(skillDir);
 
-      expect(parser.validate(skill)).toBe(true);
+      expect(agent.validateSkill(skill)).toBe(true);
     });
   });
 
-  describe("stringify", () => {
+  describe("stringifySkill", () => {
     it("should stringify a skill to SKILL.md format", async () => {
       const skillDir = join(fixturesPath, "with-config");
-      const skill = await parser.parse(skillDir);
-      const result = parser.stringify(skill);
+      const skill = await agent.parseSkill(skillDir);
+      const result = agent.stringifySkill(skill);
 
       expect(result).toContain("---");
       expect(result).toContain("name: with-config");
@@ -55,20 +55,7 @@ describe("CodexSkillParser", () => {
     });
   });
 
-  describe("stringifyOpenAIConfig", () => {
-    it("should stringify openai.yaml config", async () => {
-      const skillDir = join(fixturesPath, "with-config");
-      const skill = await parser.parse(skillDir);
-
-      if (skill.openaiConfig) {
-        const result = parser.stringifyOpenAIConfig(skill.openaiConfig);
-        expect(result).toContain("display_name: With Config Skill");
-        expect(result).toContain("allow_implicit_invocation: true");
-      }
-    });
-  });
-
-  describe("writeToDirectory", () => {
+  describe("writeSkillToDirectory", () => {
     let tmpDir: string;
 
     beforeEach(async () => {
@@ -97,7 +84,7 @@ describe("CodexSkillParser", () => {
       };
 
       const targetDir = join(tmpDir, "output");
-      await parser.writeToDirectory(skill, targetDir);
+      await agent.writeSkillToDirectory(skill, tmpDir, targetDir);
 
       const skillContent = await fsReadFile(join(targetDir, "SKILL.md"), "utf-8");
       expect(skillContent).toContain("name: test-skill");
@@ -117,7 +104,7 @@ describe("CodexSkillParser", () => {
       };
 
       const targetDir = join(tmpDir, "output");
-      await parser.writeToDirectory(skill, targetDir);
+      await agent.writeSkillToDirectory(skill, tmpDir, targetDir);
 
       expect(await fileExists(join(targetDir, "SKILL.md"))).toBe(true);
       expect(await directoryExists(join(targetDir, "agents"))).toBe(false);
@@ -133,7 +120,7 @@ describe("CodexSkillParser", () => {
       };
 
       const targetDir = join(tmpDir, "output");
-      await parser.writeToDirectory(skill, targetDir);
+      await agent.writeSkillToDirectory(skill, tmpDir, targetDir);
 
       const content = await fsReadFile(join(targetDir, "lib", "utils.py"), "utf-8");
       expect(content).toBe("def hello(): pass");
@@ -153,7 +140,7 @@ describe("CodexSkillParser", () => {
       };
 
       const targetDir = join(tmpDir, "target");
-      await parser.writeToDirectory(skill, targetDir);
+      await agent.writeSkillToDirectory(skill, sourceDir, targetDir);
 
       expect(await fileExists(join(targetDir, "model.bin"))).toBe(true);
     });

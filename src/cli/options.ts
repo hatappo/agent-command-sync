@@ -5,17 +5,7 @@ import type { IntermediateConversionOptions } from "../types/index.js";
  * CLI option type definition
  */
 export interface CLIOptions extends IntermediateConversionOptions {
-  // Fields inherited from IntermediateConversionOptions:
-  // source: ProductType;
-  // destination: ProductType;
-  // removeUnsupported: boolean;
-  // noOverwrite: boolean;
-  // syncDelete: boolean;
-  // file?: string;
-  // noop: boolean;
-  // verbose: boolean;
-  // claudeDir?: string;
-  // geminiDir?: string;
+  // All fields inherited from IntermediateConversionOptions
 }
 
 /**
@@ -71,18 +61,15 @@ export function validateCLIOptions(options: Partial<CLIOptions>): string[] {
     }
   }
 
-  // Validate claudeDir option
-  if (options.claudeDir?.endsWith("/commands")) {
-    errors.push(
-      "--claude-dir should point to the base Claude directory (e.g., ~/.claude), not the commands subdirectory. The '/commands' suffix will be added automatically. (Changed in v1.2.0)",
-    );
-  }
-
-  // Validate geminiDir option
-  if (options.geminiDir?.endsWith("/commands")) {
-    errors.push(
-      "--gemini-dir should point to the base Gemini directory (e.g., ~/.gemini), not the commands subdirectory. The '/commands' suffix will be added automatically. (Changed in v1.2.0)",
-    );
+  // Validate custom directory options
+  if (options.customDirs) {
+    for (const [product, dir] of Object.entries(options.customDirs)) {
+      if (dir?.endsWith("/commands") || dir?.endsWith("/prompts") || dir?.endsWith("/skills")) {
+        errors.push(
+          `--${product}-dir should point to the base directory, not the commands/prompts/skills subdirectory. The subdirectory suffix will be added automatically.`,
+        );
+      }
+    }
   }
 
   // Validate contentType option
@@ -91,25 +78,4 @@ export function validateCLIOptions(options: Partial<CLIOptions>): string[] {
   }
 
   return errors;
-}
-
-/**
- * Convert CLI options to IntermediateConversionOptions
- */
-export function cliOptionsToConversionOptions(cliOptions: CLIOptions): IntermediateConversionOptions {
-  return {
-    source: cliOptions.source,
-    destination: cliOptions.destination,
-    removeUnsupported: cliOptions.removeUnsupported,
-    noOverwrite: cliOptions.noOverwrite,
-    syncDelete: cliOptions.syncDelete,
-    file: cliOptions.file,
-    noop: cliOptions.noop,
-    verbose: cliOptions.verbose,
-    claudeDir: cliOptions.claudeDir,
-    geminiDir: cliOptions.geminiDir,
-    codexDir: cliOptions.codexDir,
-    opencodeDir: cliOptions.opencodeDir,
-    contentType: cliOptions.contentType,
-  };
 }

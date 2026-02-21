@@ -7,7 +7,7 @@
 [![npm version](https://badge.fury.io/js/agent-command-sync.svg)](https://www.npmjs.com/package/agent-command-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Claude Code、Gemini CLI、Codex CLI 間でカスタムスラッシュコマンドとスキル（Skills）を双方向に変換・同期する、直感的なビジュアルフィードバック付きのツールです。
+Claude Code、Gemini CLI、Codex CLI、OpenCode 間でカスタムスラッシュコマンドとスキル（Skills）を双方向に変換・同期する、直感的なビジュアルフィードバック付きのツールです。
 
 ## CHANGELOG
 
@@ -49,8 +49,8 @@ acsync -n -s claude -d gemini
 ## 機能
 
 - **カラフルな出力** - 色分けされたステータスインジケータによる明確なビジュアルフィードバック
-- **高速変換** - Claude Code、Gemini CLI、Codex CLI 間でコマンドを効率的に同期
-- **双方向対応** - 任意の方向への変換に対応（Claude ↔ Gemini ↔ Codex）
+- **高速変換** - Claude Code、Gemini CLI、Codex CLI、OpenCode 間でコマンドを効率的に同期
+- **双方向対応** - 任意の方向への変換に対応（Claude ↔ Gemini ↔ Codex ↔ OpenCode）
 - **デフォルトで安全** - ドライランモードで適用前に変更をプレビュー
 - **短縮コマンド** - `agent-command-sync` の代わりに `acsync` を使用可能
 - **選択的同期** - 特定のファイルまたは全コマンドを一括変換
@@ -59,8 +59,8 @@ acsync -n -s claude -d gemini
 
 | オプション                    | 説明                                                                     |
 | --------------------------- | ----------------------------------------------------------------------- |
-| `-s, --src <product>`       | **必須。** ソース製品: `claude`、`gemini`、または `codex`                   |
-| `-d, --dest <product>`      | **必須。** 宛先製品: `claude`、`gemini`、または `codex`                     |
+| `-s, --src <product>`       | **必須。** ソース製品: `claude`、`gemini`、`codex`、または `opencode`       |
+| `-d, --dest <product>`      | **必須。** 宛先製品: `claude`、`gemini`、`codex`、または `opencode`         |
 | `-t, --type <type>`         | コンテンツタイプ: `commands`、`skills`、または `both`（デフォルト: `both`）  |
 | `-f, --file <filename>`     | 特定のファイルのみ変換（`.md`, `.toml` 拡張子をサポート）                    |
 | `-n, --noop`                | 変更を適用せずにプレビュー                                                 |
@@ -68,6 +68,7 @@ acsync -n -s claude -d gemini
 | `--claude-dir <path>`       | Claude ベースディレクトリ（デフォルト: ~/.claude）                          |
 | `--gemini-dir <path>`       | Gemini ベースディレクトリ（デフォルト: ~/.gemini）                          |
 | `--codex-dir <path>`        | Codex ベースディレクトリ（デフォルト: ~/.codex）                           |
+| `--opencode-dir <path>`     | OpenCode ベースディレクトリ（デフォルト: ~/.config/opencode）               |
 | `--no-overwrite`            | ターゲットディレクトリの既存ファイルをスキップ                                |
 | `--sync-delete`             | ターゲットディレクトリの孤立ファイルを削除                                   |
 | `--remove-unsupported`      | ターゲット形式でサポートされていないフィールドを削除                           |
@@ -103,11 +104,13 @@ acsync -s claude -d gemini -v
 - **Claude Code**: `~/.claude/commands/*.md`
 - **Gemini CLI**: `~/.gemini/commands/*.toml`
 - **Codex CLI**: `~/.codex/prompts/*.md`
+- **OpenCode**: `~/.config/opencode/commands/*.md`
 
 ### Skills
 - **Claude Code**: `~/.claude/skills/<skill-name>/SKILL.md`
 - **Gemini CLI**: `~/.gemini/skills/<skill-name>/SKILL.md`
 - **Codex CLI**: `~/.codex/skills/<skill-name>/SKILL.md`
+- **OpenCode**: `~/.config/opencode/skills/<skill-name>/SKILL.md`
 
 ## 形式比較と変換仕様
 
@@ -125,38 +128,39 @@ acsync -s claude -d gemini -v
 
 ### ファイル構造とメタデータ
 
-| 機能                                      | Claude Code   | Gemini CLI    | Codex CLI     | 変換メモ                                      |
-| ----------------------------------------- | ------------- | ------------- | ------------- | -------------------------------------------- |
-| ファイル形式                               | Markdown      | TOML          | Markdown      | 自動変換                                     |
-| コンテンツフィールド                        | 本文コンテンツ  | `prompt`      | 本文コンテンツ  | メインコマンドの内容                           |
-| 説明メタデータ                            | `description` | `description` | `description` | 形式間で保持                                  |
-| `allowed-tools`, `argument-hint`, `model` | サポート       | -             | -             | Claude固有（`--remove-unsupported`を使用して削除）|
+| 機能                                      | Claude Code   | Gemini CLI    | Codex CLI     | OpenCode      | 変換メモ                                      |
+| ----------------------------------------- | ------------- | ------------- | ------------- | ------------- | -------------------------------------------- |
+| ファイル形式                               | Markdown      | TOML          | Markdown      | Markdown      | 自動変換                                     |
+| コンテンツフィールド                        | 本文コンテンツ  | `prompt`      | 本文コンテンツ  | 本文コンテンツ  | メインコマンドの内容                           |
+| 説明メタデータ                            | `description` | `description` | `description` | `description` | 形式間で保持                                  |
+| `model`                                   | サポート       | -             | -             | サポート       | Claude/OpenCode間で保持                       |
+| `allowed-tools`, `argument-hint`          | サポート       | -             | -             | -             | Claude固有（`--remove-unsupported`を使用して削除）|
 
 ### コンテンツプレースホルダーと構文
 
-| 機能                  | Claude Code    | Gemini CLI     | Codex CLI      | 変換動作                               |
-| -------------------- | -------------- | -------------- | -------------- | ------------------------------------- |
-| すべての引数          | `$ARGUMENTS`   | `{{args}}`     | `$ARGUMENTS`   | 形式間で変換                           |
-| 個別引数              | `$1` ... `$9`  | -              | `$1` ... `$9`  | そのまま保持（Geminiはサポートなし）      |
-| シェルコマンド        | `` !`command` ``| `!{command}`   | -              | Claude/Gemini間で変換                  |
-| ファイル参照          | `@path/to/file`| `@{path/to/file}` | -           | Claude/Gemini間で変換                  |
+| 機能                  | Claude Code    | Gemini CLI     | Codex CLI      | OpenCode       | 変換動作                               |
+| -------------------- | -------------- | -------------- | -------------- | -------------- | ------------------------------------- |
+| すべての引数          | `$ARGUMENTS`   | `{{args}}`     | `$ARGUMENTS`   | `$ARGUMENTS`   | 形式間で変換                           |
+| 個別引数              | `$1` ... `$9`  | -              | `$1` ... `$9`  | `$1` ... `$9`  | そのまま保持（Geminiはサポートなし）      |
+| シェルコマンド        | `` !`command` ``| `!{command}`  | -              | `` !`command` ``| 形式間で変換                           |
+| ファイル参照          | `@path/to/file`| `@{path/to/file}` | -           | `@path/to/file`| 形式間で変換                           |
 
 #### 個別引数
-プレースホルダー `$1` から `$9` は、個々のコマンド引数を参照できます。例えば、`$1` は最初の引数、`$2` は2番目の引数を参照します。この機能はClaude CodeとCodex CLIでサポートされていますが、Gemini CLIではサポートされていません。変換時、これらのプレースホルダーはそのまま保持されます。
+プレースホルダー `$1` から `$9` は、個々のコマンド引数を参照できます。例えば、`$1` は最初の引数、`$2` は2番目の引数を参照します。この機能はClaude Code、Codex CLI、OpenCodeでサポートされていますが、Gemini CLIではサポートされていません。変換時、これらのプレースホルダーはそのまま保持されます。
 
 #### ファイル参照
 ファイル参照を使用すると、コマンド内にファイルの内容をインラインで埋め込むことができます。ツール間で構文が異なります：
-- Claude Codeは `@path/to/file.txt` を使用
+- Claude Code / OpenCodeは `@path/to/file.txt` を使用
 - Gemini CLIは `@{path/to/file.txt}` を使用
 - Codex CLIはこの機能をサポートしていません
 
-ClaudeとGemini間の変換では、構文が自動的に変換されます。Codexとの変換では、ファイル参照構文はそのまま保持されます。
+変換時、構文は形式間で自動的に変換されます。Codexとの変換では、ファイル参照構文はそのまま保持されます。
 
 ---
 
 ## Skills 形式
 
-Skills は Claude Code、Gemini CLI、Codex CLI が採用している [Agent Skills](https://agentskills.io/) オープンスタンダードに従います。
+Skills は Claude Code、Gemini CLI、Codex CLI、OpenCode が採用している [Agent Skills](https://agentskills.io/) オープンスタンダードに従います。
 
 ### ディレクトリ構造
 
@@ -187,20 +191,21 @@ description: スキルの説明
 
 ### スキルメタデータの比較
 
-| フィールド | Claude Code | Gemini CLI | Codex CLI | 変換メモ |
-| --------- | ----------- | ---------- | --------- | -------- |
-| `name` | ✓ | ✓ | ✓ | 必須 |
-| `description` | ✓ | ✓ | ✓ | 保持 |
-| `argument-hint` | ✓ | - | - | Claude 固有 |
-| `allowed-tools` | ✓ | - | - | Claude 固有 |
-| `model` | ✓ | - | - | Claude 固有 |
-| `context` | ✓ | - | - | Claude 固有（例: `"fork"`） |
-| `agent` | ✓ | - | - | Claude 固有 |
-| `hooks` | ✓ | - | - | Claude 固有（before/after/on_error） |
-| `disable-model-invocation` | ✓ | - | ✓* | 変換あり（下記参照） |
-| `user-invocable` | ✓ | - | - | Claude 固有 |
+| フィールド | Claude Code | Gemini CLI | Codex CLI | OpenCode | 変換メモ |
+| --------- | ----------- | ---------- | --------- | -------- | -------- |
+| `name` | ✓ | ✓ | ✓ | ✓ | 必須 |
+| `description` | ✓ | ✓ | ✓ | ✓ | 保持 |
+| `argument-hint` | ✓ | - | - | - | Claude 固有 |
+| `allowed-tools` | ✓ | - | - | - | Claude 固有 |
+| `model` | ✓ | - | - | - | Claude 固有 |
+| `context` | ✓ | - | - | - | Claude 固有（例: `"fork"`） |
+| `agent` | ✓ | - | - | - | Claude 固有 |
+| `hooks` | ✓ | - | - | - | Claude 固有（before/after/on_error） |
+| `disable-model-invocation` | ✓ | - | ✓* | ✓** | 変換あり（下記参照） |
+| `user-invocable` | ✓ | - | - | - | Claude 固有 |
 
 \* Codex は `agents/openai.yaml` 内の `policy.allow_implicit_invocation` を使用（論理反転）
+\*\* OpenCode は SKILL.md の frontmatter 内で `disable-model-invocation` を直接使用
 
 ### Codex 固有: agents/openai.yaml
 
@@ -250,8 +255,8 @@ Claude → Codex 変換時に `disable-model-invocation` が設定されてい�
 
 Commands と同様：
 
-| 機能 | Claude Code / Codex CLI | Gemini CLI |
-| ---- | ----------------------- | ---------- |
+| 機能 | Claude Code / Codex CLI / OpenCode | Gemini CLI |
+| ---- | ---------------------------------- | ---------- |
 | すべての引数 | `$ARGUMENTS` | `{{args}}` |
 | 個別引数 | `$1` ... `$9` | サポートなし |
 | シェルコマンド | `` !`command` `` | `!{command}` |
@@ -265,6 +270,7 @@ Commands と同様：
 - [Slash commands - Claude Docs](https://docs.claude.com/en/docs/claude-code/slash-commands)
 - [gemini-cli/docs/cli/custom-commands.md at main · google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/custom-commands.md)
 - [codex/docs/prompts.md at main · openai/codex](https://github.com/openai/codex/blob/main/docs/prompts.md)
+- [OpenCode](https://opencode.ai/)
 
 ### Skills
 - [Agent Skills Standard](https://agentskills.io/)
@@ -292,7 +298,7 @@ Commands と同様：
 Source Format → Parser → toIR() → SemanticIR → fromIR() → Target Format
 ```
 
-各エージェントは `toIR()` と `fromIR()` を実装する単一の双方向コンバーターを持ちます。新しいエージェントの追加には1つのコンバーターだけで済み、既存の N エージェント分の N 個のコンバーターは不要です。
+各エージェントはすべてのインターフェース（`AgentConfig`, `BodyParser`, `CommandParser`, `CommandConverter`, `SkillParser`, `SkillConverter`）を実装する単一のクラスを持ちます。新しいエージェントの追加には1つのエージェントクラスだけで済み、既存の N エージェント分の N 個のコンバーターは不要です。
 
 ### SemanticIR の構造
 
@@ -306,9 +312,9 @@ interface SemanticIR {
 }
 ```
 
-- **`semantic`** — エージェント間で共通の意味を持つプロパティ（例: `description`）。各コンバーターがエージェント固有のフィールド名とセマンティックプロパティ間のマッピングを行います。
+- **`semantic`** — エージェント間で共通の意味を持つプロパティ（例: `description`）。各エージェントクラスがエージェント固有のフィールド名とセマンティックプロパティ間のマッピングを行います。
 - **`extras`** — その他すべてのプロパティをそのまま通過させます。エージェント固有フィールド（例: Claude の `allowed-tools`）はラウンドトリップの忠実性のために保持され、`--remove-unsupported` で除去可能です。
-- **`body`** — `BodySegment[]`（プレーン文字列とセマンティックプレースホルダーの配列）としてトークン化されるため、プレースホルダー構文の変換（例: `$ARGUMENTS` ↔ `{{args}}`）は各コンバーターの `toIR()`/`fromIR()` 内で自動的に行われます。
+- **`body`** — `BodySegment[]`（プレーン文字列とセマンティックプレースホルダーの配列）としてトークン化されるため、プレースホルダー構文の変換（例: `$ARGUMENTS` ↔ `{{args}}`）は各エージェントの `commandToIR()`/`commandFromIR()` 内で自動的に行われます。
 
 ### ボディのトークン化
 
@@ -322,15 +328,14 @@ type ContentPlaceholder =
   | { type: "file-reference"; path: string };     // @path / @{path}
 ```
 
-各エージェントはコンバーターと同じ場所にパターンとシリアライザーを定義します（`claude-body.ts`, `codex-body.ts`, `gemini-body.ts`）。Claude と Codex は共通モジュール（`_claude-codex-body.ts`）で同一のプレースホルダー構文を共有し、Codex ではサポート外のプレースホルダータイプ（shell-command, file-reference）をベストエフォートで出力します。型駆動のシリアライザーレジストリ（`PlaceholderSerializers`）によりコンパイル時の網羅性が保証され、新しいプレースホルダータイプを追加すると、すべてのエージェントで実装するまで型エラーが発生します。
+各エージェントはエージェントクラスファイル内にボディパターンとシリアライザーを定義します（`src/agents/claude.ts`, `src/agents/gemini.ts` 等）。Claude、Codex、OpenCode は共通モジュール（`src/agents/_claude-syntax-body-patterns.ts`）で同一のプレースホルダー構文を共有し、Codex ではサポート外のプレースホルダータイプ（shell-command, file-reference）をベストエフォートで出力します。型駆動のシリアライザーレジストリ（`PlaceholderSerializers`）によりコンパイル時の網羅性が保証され、新しいプレースホルダータイプを追加すると、すべてのエージェントで実装するまで型エラーが発生します。
 
 ### ソースレイアウト
 
 ```
 src/
+├── agents/             # エージェントクラス（エージェント別1ファイル: パース、変換、ボディ処理）
 ├── types/              # 型定義（SemanticIR, BodySegment, エージェント固有フォーマット）
-├── parsers/            # ファイルパーサー（Markdown, TOML → エージェント固有型）
-├── converters/         # 双方向コンバーター（toIR/fromIR）+ ボディパーサー/シリアライザー
 ├── utils/              # 共有ユーティリティ（ファイル操作、バリデーション、ボディパースエンジン）
 └── cli/                # CLI エントリポイントと同期オーケストレーション
 ```

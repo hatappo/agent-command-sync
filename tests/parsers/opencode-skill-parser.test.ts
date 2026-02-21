@@ -2,19 +2,19 @@ import { mkdir, readFile as fsReadFile, rm, writeFile as fsWriteFile } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { OpenCodeSkillParser } from "../../src/parsers/opencode-skill-parser.js";
+import { OpenCodeAgent } from "../../src/agents/opencode.js";
 import type { OpenCodeSkill } from "../../src/types/index.js";
 import { fileExists } from "../../src/utils/file-utils.js";
 
 const fixturesPath = join(process.cwd(), "tests/fixtures/opencode-skills");
 
-describe("OpenCodeSkillParser", () => {
-  const parser = new OpenCodeSkillParser();
+describe("OpenCodeAgent (Skill)", () => {
+  const agent = new OpenCodeAgent();
 
-  describe("parse", () => {
+  describe("parseSkill", () => {
     it("should parse a skill directory", async () => {
       const skillDir = join(fixturesPath, "test-skill");
-      const result = await parser.parse(skillDir);
+      const result = await agent.parseSkill(skillDir);
 
       expect(result.name).toBe("test-skill");
       expect(result.description).toBe("A test OpenCode skill");
@@ -25,24 +25,24 @@ describe("OpenCodeSkillParser", () => {
     it("should throw error for invalid skill directory", async () => {
       const invalidDir = join(fixturesPath, "non-existent-skill");
 
-      await expect(parser.parse(invalidDir)).rejects.toThrow("Failed to parse OpenCode skill");
+      await expect(agent.parseSkill(invalidDir)).rejects.toThrow("Failed to parse OpenCode skill");
     });
   });
 
-  describe("validate", () => {
+  describe("validateSkill", () => {
     it("should validate a valid skill", async () => {
       const skillDir = join(fixturesPath, "test-skill");
-      const skill = await parser.parse(skillDir);
+      const skill = await agent.parseSkill(skillDir);
 
-      expect(parser.validate(skill)).toBe(true);
+      expect(agent.validateSkill(skill)).toBe(true);
     });
   });
 
-  describe("stringify", () => {
+  describe("stringifySkill", () => {
     it("should stringify a skill to SKILL.md format", async () => {
       const skillDir = join(fixturesPath, "test-skill");
-      const skill = await parser.parse(skillDir);
-      const result = parser.stringify(skill);
+      const skill = await agent.parseSkill(skillDir);
+      const result = agent.stringifySkill(skill);
 
       expect(result).toContain("---");
       expect(result).toContain("name: test-skill");
@@ -50,7 +50,7 @@ describe("OpenCodeSkillParser", () => {
     });
   });
 
-  describe("writeToDirectory", () => {
+  describe("writeSkillToDirectory", () => {
     let tmpDir: string;
 
     beforeEach(async () => {
@@ -75,7 +75,7 @@ describe("OpenCodeSkillParser", () => {
       };
 
       const targetDir = join(tmpDir, "output");
-      await parser.writeToDirectory(skill, targetDir);
+      await agent.writeSkillToDirectory(skill, tmpDir, targetDir);
 
       const skillContent = await fsReadFile(join(targetDir, "SKILL.md"), "utf-8");
       expect(skillContent).toContain("name: test-skill");
@@ -91,7 +91,7 @@ describe("OpenCodeSkillParser", () => {
       };
 
       const targetDir = join(tmpDir, "output");
-      await parser.writeToDirectory(skill, targetDir);
+      await agent.writeSkillToDirectory(skill, tmpDir, targetDir);
 
       const content = await fsReadFile(join(targetDir, "lib", "utils.py"), "utf-8");
       expect(content).toBe("def hello(): pass");
@@ -111,7 +111,7 @@ describe("OpenCodeSkillParser", () => {
       };
 
       const targetDir = join(tmpDir, "target");
-      await parser.writeToDirectory(skill, targetDir);
+      await agent.writeSkillToDirectory(skill, sourceDir, targetDir);
 
       expect(await fileExists(join(targetDir, "model.bin"))).toBe(true);
     });
