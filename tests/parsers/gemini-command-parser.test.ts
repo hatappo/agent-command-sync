@@ -1,16 +1,16 @@
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { GeminiParser } from "../../src/parsers/gemini-parser.js";
+import { GeminiAgent } from "../../src/agents/gemini.js";
 import type { GeminiCommand } from "../../src/types/index.js";
 import { deleteFile, writeFile } from "../../src/utils/file-utils.js";
 
-describe("GeminiParser", () => {
-  let parser: GeminiParser;
+describe("GeminiAgent (Command)", () => {
+  let agent: GeminiAgent;
   let testFilePath: string;
 
   beforeEach(() => {
-    parser = new GeminiParser();
+    agent = new GeminiAgent();
     testFilePath = join(tmpdir(), `test-gemini-${Date.now()}.toml`);
   });
 
@@ -22,7 +22,7 @@ describe("GeminiParser", () => {
     }
   });
 
-  describe("parse", () => {
+  describe("parseCommand", () => {
     it("should parse TOML file with description and prompt", async () => {
       const content = `description = "Test command"
 prompt = """
@@ -32,7 +32,7 @@ Execute: !{git status}
 """`;
 
       await writeFile(testFilePath, content);
-      const result = await parser.parse(testFilePath);
+      const result = await agent.parseCommand(testFilePath);
 
       expect(result).toEqual({
         description: "Test command",
@@ -45,7 +45,7 @@ Execute: !{git status}
       const content = `prompt = "Simple command without description."`;
 
       await writeFile(testFilePath, content);
-      const result = await parser.parse(testFilePath);
+      const result = await agent.parseCommand(testFilePath);
 
       expect(result).toEqual({
         description: undefined,
@@ -59,7 +59,7 @@ Execute: !{git status}
 prompt = ""`;
 
       await writeFile(testFilePath, content);
-      const result = await parser.parse(testFilePath);
+      const result = await agent.parseCommand(testFilePath);
 
       expect(result.prompt).toBe("");
     });
@@ -68,15 +68,17 @@ prompt = ""`;
       const content = "invalid toml content [[[";
 
       await writeFile(testFilePath, content);
-      await expect(parser.parse(testFilePath)).rejects.toThrow("Failed to parse Gemini command file");
+      await expect(agent.parseCommand(testFilePath)).rejects.toThrow("Failed to parse Gemini command file");
     });
 
     it("should throw ParseError for non-existent file", async () => {
-      await expect(parser.parse("/non/existent/file.toml")).rejects.toThrow("Failed to parse Gemini command file");
+      await expect(agent.parseCommand("/non/existent/file.toml")).rejects.toThrow(
+        "Failed to parse Gemini command file",
+      );
     });
   });
 
-  describe("validate", () => {
+  describe("validateCommand", () => {
     it("should validate correct GeminiCommand", () => {
       const command: GeminiCommand = {
         description: "Test command",
@@ -84,7 +86,7 @@ prompt = ""`;
         filePath: "/test/path.toml",
       };
 
-      expect(parser.validate(command)).toBe(true);
+      expect(agent.validateCommand(command)).toBe(true);
     });
 
     it("should validate GeminiCommand without description", () => {
@@ -93,7 +95,7 @@ prompt = ""`;
         filePath: "/test/path.toml",
       };
 
-      expect(parser.validate(command)).toBe(true);
+      expect(agent.validateCommand(command)).toBe(true);
     });
 
     it("should return false for invalid input", () => {
@@ -103,11 +105,11 @@ prompt = ""`;
         filePath: "/test/path.toml",
       } as GeminiCommand;
 
-      expect(parser.validate(command)).toBe(false);
+      expect(agent.validateCommand(command)).toBe(false);
     });
   });
 
-  describe("stringify", () => {
+  describe("stringifyCommand", () => {
     it("should convert GeminiCommand to TOML with description", () => {
       const command: GeminiCommand = {
         description: "Test command",
@@ -115,7 +117,7 @@ prompt = ""`;
         filePath: "/test/path.toml",
       };
 
-      const result = parser.stringify(command);
+      const result = agent.stringifyCommand(command);
 
       expect(result).toContain('description = "Test command"');
       expect(result).toContain('prompt = "Test prompt content"');
@@ -127,7 +129,7 @@ prompt = ""`;
         filePath: "/test/path.toml",
       };
 
-      const result = parser.stringify(command);
+      const result = agent.stringifyCommand(command);
 
       expect(result).toContain('prompt = "Simple prompt"');
       expect(result).not.toContain("description =");
@@ -139,7 +141,7 @@ prompt = ""`;
         filePath: "/test/path.toml",
       };
 
-      const result = parser.stringify(command);
+      const result = agent.stringifyCommand(command);
       // TOML library outputs multiline strings with triple quotes
       expect(result).toContain('prompt = """');
     });
@@ -151,7 +153,7 @@ prompt = ""`;
         filePath: "/test/path.toml",
       };
 
-      const result = parser.stringify(command);
+      const result = agent.stringifyCommand(command);
 
       expect(result).toContain('prompt = "Test prompt"');
       expect(result).not.toContain("description =");

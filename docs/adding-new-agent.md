@@ -14,7 +14,7 @@ When adding a new agent, **no pairwise converters are needed** — implementing 
 
 ### Agent Registry Pattern
 
-Agent-specific logic is colocated in the `AgentDefinition` interface and centrally managed via `AGENT_REGISTRY: Record<ProductType, AgentDefinition>`. Adding a value to `PRODUCT_TYPES` will trigger a compile error if the registry is missing a corresponding entry.
+Agent-specific logic is colocated in a single agent class that implements the `AgentDefinition` interface and is centrally managed via `AGENT_REGISTRY: Record<ProductType, AgentDefinition>`. Adding a value to `PRODUCT_TYPES` will trigger a compile error if the registry is missing a corresponding entry.
 
 ---
 
@@ -65,99 +65,140 @@ export interface NewAgentSkill extends SkillBase {
 
 ---
 
-## Step 2: Body Parser
+## Step 2: Agent Class
 
-### `src/converters/newagent-body.ts` (new file)
+### `src/agents/newagent.ts` (new file)
 
-Define placeholder syntax.
-
-- If the syntax is **the same** as Claude/Codex/OpenCode: import from `_claude-codex-body.ts` and create a thin wrapper
-- If the syntax is **unique**: define custom `PatternDef[]` and `PlaceholderSerializers`
+Create a single agent class that implements all interfaces: `AgentConfig`, `BodyParser`, `CommandParser`, `CommandConverter`, `SkillParser`, and `SkillConverter`. Each agent has one file (e.g., `claude.ts`, `gemini.ts`, `codex.ts`, `opencode.ts`).
 
 ```typescript
 import type { BodySegment } from "../types/body-segment.js";
+import type { NewAgentCommand, NewAgentSkill } from "../types/index.js";
+import type { ConverterOptions, SemanticIR } from "../types/semantic-ir.js";
 import { parseBody, serializeBody } from "../utils/body-segment-utils.js";
-import { CLAUDE_CODEX_PATTERNS, CLAUDE_CODEX_SERIALIZERS } from "./_claude-codex-body.js";
+import type {
+  AgentDefinition,
+  BodyParser,
+  CommandConverter,
+  CommandParser,
+  SkillConverter,
+  SkillParser,
+} from "./types.js";
 
-// Define unsupported placeholder types as a Set
-const UNSUPPORTED: ReadonlySet<ContentPlaceholder["type"]> = new Set([/* ... */]);
+export class NewAgentAgent
+  implements
+    AgentDefinition,
+    BodyParser,
+    CommandParser<NewAgentCommand>,
+    CommandConverter<NewAgentCommand>,
+    SkillParser<NewAgentSkill>,
+    SkillConverter<NewAgentSkill>
+{
+  // ── AgentConfig ───────────────────────────────────────────────────
 
-export function parseNewAgentBody(body: string): BodySegment[] {
-  return parseBody(body, CLAUDE_CODEX_PATTERNS);
+  readonly displayName = "NewAgent";       // human-readable name (used in CLI help)
+  readonly dirs = {
+    commandSubdir: "commands",             // or "prompts" etc.
+    skillSubdir: "skills",
+    projectBase: ".newagent",              // project root relative
+    userDefault: ".newagent",              // homedir relative (e.g. ".config/newagent")
+  };
+  readonly fileExtension = ".md";          // or ".toml"
+
+  // ── BodyParser ────────────────────────────────────────────────────
+
+  parseBody(body: string): BodySegment[] {
+    // If using Claude-syntax placeholders, import from _claude-syntax-body-patterns.ts:
+    //   import { CLAUDE_SYNTAX_PATTERNS } from "./_claude-syntax-body-patterns.js";
+    //   return parseBody(body, CLAUDE_SYNTAX_PATTERNS);
+    // If using unique syntax, define custom PatternDef[] in this file.
+    return parseBody(body, /* patterns */);
+  }
+
+  serializeBody(segments: BodySegment[]): string {
+    // If using Claude-syntax placeholders:
+    //   import { CLAUDE_SYNTAX_SERIALIZERS } from "./_claude-syntax-body-patterns.js";
+    //   return serializeBody(segments, CLAUDE_SYNTAX_SERIALIZERS);
+    // Optionally pass an UNSUPPORTED set as the third argument.
+    return serializeBody(segments, /* serializers */);
+  }
+
+  // ── CommandParser ─────────────────────────────────────────────────
+
+  async parseCommand(filePath: string): Promise<NewAgentCommand> {
+    // Read and parse a command file into the agent-specific type
+  }
+
+  validateCommand(data: NewAgentCommand): boolean {
+    // Validate the data
+  }
+
+  stringifyCommand(command: NewAgentCommand): string {
+    // Convert the agent-specific type to file content string
+  }
+
+  // ── CommandConverter ──────────────────────────────────────────────
+
+  commandToIR(source: NewAgentCommand): SemanticIR {
+    // description → ir.semantic.description
+    // body → this.parseBody(...)
+    // other fields → ir.extras
+  }
+
+  commandFromIR(ir: SemanticIR, options?: ConverterOptions): NewAgentCommand {
+    // ir.semantic.description → agent-specific field
+    // ir.body → this.serializeBody(...)
+    // ir.extras → pass through (or skip with removeUnsupported)
+  }
+
+  // ── SkillParser ───────────────────────────────────────────────────
+
+  async parseSkill(dirPath: string): Promise<NewAgentSkill> {
+    // Read from a skill directory (SKILL.md + support files)
+  }
+
+  validateSkill(data: NewAgentSkill): boolean {
+    // Validate the data
+  }
+
+  stringifySkill(skill: NewAgentSkill): string {
+    // Convert to SKILL.md format
+  }
+
+  async writeSkillToDirectory(
+    skill: NewAgentSkill,
+    sourceDirPath: string,
+    targetDir: string,
+  ): Promise<void> {
+    // Write a skill to a directory (SKILL.md + support files)
+  }
+
+  // ── SkillConverter ────────────────────────────────────────────────
+
+  skillToIR(source: NewAgentSkill): SemanticIR {
+    // Similar to commandToIR, with additional handling for:
+    // - modelInvocationEnabled semantic property
+    // - _claude_ prefixed fields for round-trip fidelity
+  }
+
+  skillFromIR(ir: SemanticIR, options?: ConverterOptions): NewAgentSkill {
+    // Similar to commandFromIR, with:
+    // - CLAUDE_SKILL_FIELDS for removeUnsupported
+    // - _claude_ prefix handling
+  }
 }
 
-export function serializeNewAgentBody(segments: BodySegment[]): string {
-  return serializeBody(segments, CLAUDE_CODEX_SERIALIZERS, UNSUPPORTED);
+export function createNewAgentAgent(): AgentDefinition {
+  return new NewAgentAgent();
 }
 ```
 
-**Notes:**
-- Placeholders in the unsupported set will emit warnings in `serializeBody` when `NODE_DEBUG=acsync` is set
-- If no unsupported set is specified, all placeholders are treated as supported
+**Body patterns:**
 
----
+- If the syntax is **the same** as Claude/Codex/OpenCode: import `CLAUDE_SYNTAX_PATTERNS` and `CLAUDE_SYNTAX_SERIALIZERS` from `_claude-syntax-body-patterns.ts`
+- If the syntax is **unique**: define custom `PatternDef[]` and `PlaceholderSerializers` in the agent file (see `gemini.ts` for an example)
 
-## Step 3: Parser
-
-### `src/parsers/newagent-parser.ts` (new file)
-
-Implement the `Parser<T>` interface with the following methods.
-
-| Method | Description |
-|--------|-------------|
-| `parse(filePath)` | Read and parse a file into the agent-specific type |
-| `validate(data)` | Validate the data |
-| `stringify(command)` | Convert the agent-specific type to file content string |
-
-For Markdown + YAML frontmatter formats, use `gray-matter` (refer to the Codex/OpenCode parser).
-For TOML formats, use `@iarna/toml` (refer to the Gemini parser).
-
-### `src/parsers/newagent-skill-parser.ts` (new file)
-
-In addition to `Parser<T>`, implement the `writeToDirectory()` method.
-
-| Method | Description |
-|--------|-------------|
-| `parse(dirPath)` | Read from a skill directory |
-| `validate(data)` | Validate the data |
-| `stringify(skill)` | Convert to SKILL.md format |
-| `writeToDirectory(skill, targetDir)` | Write a skill to a directory |
-
-**Checklist:**
-- [ ] Verify SKILL.md existence with `isSkillDirectory()`
-- [ ] Collect support files with `collectSupportFiles()`
-- [ ] If agent-specific config files exist, parse/write them individually (e.g., Codex's `agents/openai.yaml`)
-
----
-
-## Step 4: Converter
-
-### `src/converters/newagent-command-converter.ts` (new file)
-
-Implement `SemanticConverter<NewAgentCommand>`.
-
-```typescript
-export class NewAgentCommandConverter implements SemanticConverter<NewAgentCommand> {
-  toIR(source: NewAgentCommand): SemanticIR { /* ... */ }
-  fromIR(ir: SemanticIR, options?: ConverterOptions): NewAgentCommand { /* ... */ }
-}
-```
-
-**`toIR()` implementation:**
-1. `description` → `ir.semantic.description`
-2. Body → parse with `parseNewAgentBody()` into `ir.body`
-3. Other fields → `ir.extras`
-4. Set `ir.meta.sourceType`
-
-**`fromIR()` implementation:**
-1. `ir.semantic.description` → agent-specific field
-2. `ir.body` → serialize with `serializeNewAgentBody()`
-3. Process other agent-specific fields from `ir.extras`:
-   - When `removeUnsupported` option is set, skip keys included in `CLAUDE_COMMAND_FIELDS`
-   - Otherwise, pass through to frontmatter etc.
-
-**Defining `CLAUDE_COMMAND_FIELDS`:**
-Define the list of fields not supported by the target.
+**`CLAUDE_COMMAND_FIELDS`:** Define the list of fields not supported by the target.
 
 ```typescript
 // Example: OpenCode supports model, so only allowed-tools and argument-hint
@@ -167,64 +208,19 @@ const CLAUDE_COMMAND_FIELDS = ["allowed-tools", "argument-hint"] as const;
 const CLAUDE_COMMAND_FIELDS = ["allowed-tools", "argument-hint", "model"] as const;
 ```
 
-### `src/converters/newagent-skill-converter.ts` (new file)
-
-Implement `SemanticConverter<NewAgentSkill>`. Similar structure to commands, with these additional considerations:
+**`CLAUDE_SKILL_FIELDS`:** List of Claude-specific skill fields not supported by the target. Additional considerations:
 
 - **`_claude_` prefix**: Claude-specific fields are stored in frontmatter with `_claude_*` prefix (for round-trip fidelity)
 - **`modelInvocationEnabled`**: A semantic property. Bidirectionally converted with Claude's `disable-model-invocation` (inverted) and Codex's `allow_implicit_invocation`
-- **`CLAUDE_SKILL_FIELDS`**: List of Claude-specific skill fields not supported by the target
+
+**Skill parser checklist:**
+- [ ] Verify SKILL.md existence with `isSkillDirectory()`
+- [ ] Collect support files with `collectSupportFiles()`
+- [ ] If agent-specific config files exist, parse/write them individually (e.g., Codex's `agents/openai.yaml`)
 
 ---
 
-## Step 5: Agent Registry Registration
-
-### `src/agents/newagent.ts` (new file)
-
-Create a factory function for the agent. Colocate parsers, converters, and directory configuration as an `AgentDefinition`.
-
-```typescript
-import { NewAgentCommandConverter } from "../converters/newagent-command-converter.js";
-import { NewAgentSkillConverter } from "../converters/newagent-skill-converter.js";
-import { NewAgentParser } from "../parsers/newagent-parser.js";
-import { NewAgentSkillParser } from "../parsers/newagent-skill-parser.js";
-import type { NewAgentCommand, NewAgentSkill } from "../types/index.js";
-import type { AgentDefinition } from "./types.js";
-
-export function createNewAgentAgent(): AgentDefinition {
-  const parser = new NewAgentParser();
-  const skillParser = new NewAgentSkillParser();
-  const cmdConverter = new NewAgentCommandConverter();
-  const skillConverter = new NewAgentSkillConverter();
-
-  return {
-    displayName: "NewAgent",       // human-readable name (used in CLI help)
-    dirs: {
-      commandSubdir: "commands",   // or "prompts" etc.
-      skillSubdir: "skills",
-      projectBase: ".newagent",    // project root relative
-      userDefault: ".newagent",    // homedir relative (e.g. ".config/newagent")
-    },
-    fileExtension: ".md",          // or ".toml"
-    commands: {
-      parse: (f) => parser.parse(f),
-      toIR: (cmd) => cmdConverter.toIR(cmd as NewAgentCommand),
-      fromIR: (ir, opts) => cmdConverter.fromIR(ir, opts),
-      stringify: (cmd) => parser.stringify(cmd as NewAgentCommand),
-    },
-    skills: {
-      parse: (d) => skillParser.parse(d),
-      toIR: (s) => skillConverter.toIR(s as NewAgentSkill),
-      fromIR: (ir, opts) => skillConverter.fromIR(ir, opts),
-      writeToDirectory: async (skill, srcDir, tgtDir) => {
-        const s = skill as NewAgentSkill;
-        s.dirPath = srcDir;
-        await skillParser.writeToDirectory(s, tgtDir);
-      },
-    },
-  };
-}
-```
+## Step 3: Agent Registry Registration
 
 ### `src/agents/registry.ts`
 
@@ -246,7 +242,7 @@ export const AGENT_REGISTRY: Record<ProductType, AgentDefinition> = {
 
 ---
 
-## Step 6: CLI Integration
+## Step 4: CLI Integration
 
 `src/cli/index.ts` dynamically generates CLI options (`--xxx-dir`), description, and customDirs mapping from `PRODUCT_TYPES` and `AGENT_REGISTRY`. **No changes needed.**
 
@@ -254,23 +250,21 @@ Optionally, you can add usage examples for the new agent in the help examples se
 
 ---
 
-## Step 7: Exports
+## Step 5: Exports
 
-### `src/index.ts`
+### `src/agents/index.ts`
 
-Add re-exports for the new parsers and converters.
+Add re-export for the new agent.
 
 ```typescript
-export * from "./parsers/newagent-parser.js";
-export * from "./converters/newagent-command-converter.js";
-export * from "./converters/newagent-skill-converter.js";
+export * from "./newagent.js";
 ```
 
-> `src/agents/` is automatically exported via `src/agents/index.ts`, so no additional work is needed.
+> `src/index.ts` re-exports `src/agents/index.ts` via `export * from "./agents/index.js"`, so no additional changes needed there.
 
 ---
 
-## Step 8: Tests
+## Step 6: Tests
 
 ### Test Fixtures (`tests/fixtures/`)
 
@@ -281,14 +275,14 @@ export * from "./converters/newagent-skill-converter.js";
 
 | File | Test Coverage |
 |------|---------------|
-| `tests/parsers/newagent-parser.test.ts` | parse, validate, stringify |
-| `tests/parsers/newagent-skill-parser.test.ts` | parse, validate, stringify, writeToDirectory |
+| `tests/parsers/newagent-command-parser.test.ts` | parseCommand, validateCommand, stringifyCommand |
+| `tests/parsers/newagent-skill-parser.test.ts` | parseSkill, validateSkill, stringifySkill, writeSkillToDirectory |
 
 ### Additions to Existing Tests
 
 | File | Tests to Add |
 |------|--------------|
-| `tests/utils/body-segment-utils.test.ts` | `parseNewAgentBody` / `serializeNewAgentBody` |
+| `tests/utils/body-segment-utils.test.ts` | `parseBody` / `serializeBody` with new agent's patterns |
 | `tests/converters/command-conversion.test.ts` | Other agents ↔ NewAgent conversion |
 | `tests/converters/skill-conversion.test.ts` | Other agents ↔ NewAgent skill conversion |
 | `tests/integration/cli.test.ts` | End-to-end conversion tests |
@@ -297,7 +291,7 @@ export * from "./converters/newagent-skill-converter.js";
 
 ---
 
-## Step 9: Documentation
+## Step 7: Documentation
 
 ### `CLAUDE.md`
 
@@ -328,28 +322,31 @@ Update the following sections:
 
 ### New Files
 
-- [ ] `src/agents/newagent.ts` — AgentDefinition factory
-- [ ] `src/converters/newagent-body.ts`
-- [ ] `src/converters/newagent-command-converter.ts`
-- [ ] `src/converters/newagent-skill-converter.ts`
-- [ ] `src/parsers/newagent-parser.ts`
-- [ ] `src/parsers/newagent-skill-parser.ts`
-- [ ] `tests/parsers/newagent-parser.test.ts`
+**Source:**
+- [ ] `src/agents/newagent.ts` — Agent class (body + command + skill parsing/conversion)
+
+**Tests:**
+- [ ] `tests/parsers/newagent-command-parser.test.ts`
 - [ ] `tests/parsers/newagent-skill-parser.test.ts`
 - [ ] `tests/fixtures/newagent-commands/*.md` (or `.toml`)
 - [ ] `tests/fixtures/newagent-skills/test-skill/SKILL.md`
 
 ### Modified Files
 
+**Source:**
 - [ ] `src/types/intermediate.ts` — Add to PRODUCT_TYPES
-- [ ] `src/types/command.ts` — New command type
-- [ ] `src/types/skill.ts` — New skill type
+- [ ] `src/types/command.ts` — New command type (optional: existing types may suffice)
+- [ ] `src/types/skill.ts` — New skill type (optional: existing types may suffice)
 - [ ] `src/agents/registry.ts` — Add registry entry
-- [ ] `src/index.ts` — Add exports
+- [ ] `src/agents/index.ts` — Add re-export
+
+**Tests:**
 - [ ] `tests/utils/body-segment-utils.test.ts`
 - [ ] `tests/converters/command-conversion.test.ts`
 - [ ] `tests/converters/skill-conversion.test.ts`
 - [ ] `tests/integration/cli.test.ts`
+
+**Documentation:**
 - [ ] `CLAUDE.md`
 - [ ] `README.md`
 - [ ] `README_ja.md`
@@ -357,6 +354,7 @@ Update the following sections:
 ### No Changes Needed (Automatically Handled by Registry Pattern)
 
 - `src/types/index.ts` — Wildcard exports automatically re-export new types
+- `src/index.ts` — Re-exports `src/agents/index.ts` via wildcard
 - `src/cli/index.ts` — CLI options dynamically generated from PRODUCT_TYPES / AGENT_REGISTRY
 - `src/cli/sync.ts`
 - `src/utils/file-utils.ts`

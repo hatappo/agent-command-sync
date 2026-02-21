@@ -1,2 +1,14 @@
-export type { AgentDefinition } from "./types.js";
+export type {
+  AgentDefinition,
+  AgentConfig,
+  BodyParser,
+  CommandParser,
+  CommandConverter,
+  SkillParser,
+  SkillConverter,
+} from "./agent-definition.js";
 export { AGENT_REGISTRY } from "./registry.js";
+export * from "./claude.js";
+export * from "./gemini.js";
+export * from "./codex.js";
+export * from "./opencode.js";

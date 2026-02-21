@@ -298,7 +298,7 @@ Commands と同様：
 Source Format → Parser → toIR() → SemanticIR → fromIR() → Target Format
 ```
 
-各エージェントは `toIR()` と `fromIR()` を実装する単一の双方向コンバーターを持ちます。新しいエージェントの追加には1つのコンバーターだけで済み、既存の N エージェント分の N 個のコンバーターは不要です。
+各エージェントはすべてのインターフェース（`AgentConfig`, `BodyParser`, `CommandParser`, `CommandConverter`, `SkillParser`, `SkillConverter`）を実装する単一のクラスを持ちます。新しいエージェントの追加には1つのエージェントクラスだけで済み、既存の N エージェント分の N 個のコンバーターは不要です。
 
 ### SemanticIR の構造
 
@@ -312,9 +312,9 @@ interface SemanticIR {
 }
 ```
 
-- **`semantic`** — エージェント間で共通の意味を持つプロパティ（例: `description`）。各コンバーターがエージェント固有のフィールド名とセマンティックプロパティ間のマッピングを行います。
+- **`semantic`** — エージェント間で共通の意味を持つプロパティ（例: `description`）。各エージェントクラスがエージェント固有のフィールド名とセマンティックプロパティ間のマッピングを行います。
 - **`extras`** — その他すべてのプロパティをそのまま通過させます。エージェント固有フィールド（例: Claude の `allowed-tools`）はラウンドトリップの忠実性のために保持され、`--remove-unsupported` で除去可能です。
-- **`body`** — `BodySegment[]`（プレーン文字列とセマンティックプレースホルダーの配列）としてトークン化されるため、プレースホルダー構文の変換（例: `$ARGUMENTS` ↔ `{{args}}`）は各コンバーターの `toIR()`/`fromIR()` 内で自動的に行われます。
+- **`body`** — `BodySegment[]`（プレーン文字列とセマンティックプレースホルダーの配列）としてトークン化されるため、プレースホルダー構文の変換（例: `$ARGUMENTS` ↔ `{{args}}`）は各エージェントの `commandToIR()`/`commandFromIR()` 内で自動的に行われます。
 
 ### ボディのトークン化
 
@@ -328,16 +328,14 @@ type ContentPlaceholder =
   | { type: "file-reference"; path: string };     // @path / @{path}
 ```
 
-各エージェントはコンバーターと同じ場所にパターンとシリアライザーを定義します（`claude-body.ts`, `codex-body.ts`, `gemini-body.ts`）。Claude と Codex は共通モジュール（`_claude-codex-body.ts`）で同一のプレースホルダー構文を共有し、Codex ではサポート外のプレースホルダータイプ（shell-command, file-reference）をベストエフォートで出力します。型駆動のシリアライザーレジストリ（`PlaceholderSerializers`）によりコンパイル時の網羅性が保証され、新しいプレースホルダータイプを追加すると、すべてのエージェントで実装するまで型エラーが発生します。
+各エージェントはエージェントクラスファイル内にボディパターンとシリアライザーを定義します（`src/agents/claude.ts`, `src/agents/gemini.ts` 等）。Claude、Codex、OpenCode は共通モジュール（`src/agents/_claude-syntax-body-patterns.ts`）で同一のプレースホルダー構文を共有し、Codex ではサポート外のプレースホルダータイプ（shell-command, file-reference）をベストエフォートで出力します。型駆動のシリアライザーレジストリ（`PlaceholderSerializers`）によりコンパイル時の網羅性が保証され、新しいプレースホルダータイプを追加すると、すべてのエージェントで実装するまで型エラーが発生します。
 
 ### ソースレイアウト
 
 ```
 src/
-├── agents/             # Agent Registry（エージェント別定義、コンパイル時網羅性保証）
+├── agents/             # エージェントクラス（エージェント別1ファイル: パース、変換、ボディ処理）
 ├── types/              # 型定義（SemanticIR, BodySegment, エージェント固有フォーマット）
-├── parsers/            # ファイルパーサー（Markdown, TOML → エージェント固有型）
-├── converters/         # 双方向コンバーター（toIR/fromIR）+ ボディパーサー/シリアライザー
 ├── utils/              # 共有ユーティリティ（ファイル操作、バリデーション、ボディパースエンジン）
 └── cli/                # CLI エントリポイントと同期オーケストレーション
 ```

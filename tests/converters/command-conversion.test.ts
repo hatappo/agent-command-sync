@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { ClaudeCommandConverter } from "../../src/converters/claude-command-converter.js";
-import { GeminiCommandConverter } from "../../src/converters/gemini-command-converter.js";
-import { CodexCommandConverter } from "../../src/converters/codex-command-converter.js";
-import { OpenCodeCommandConverter } from "../../src/converters/opencode-command-converter.js";
+import { ClaudeAgent } from "../../src/agents/claude.js";
+import { GeminiAgent } from "../../src/agents/gemini.js";
+import { CodexAgent } from "../../src/agents/codex.js";
+import { OpenCodeAgent } from "../../src/agents/opencode.js";
 import type { ClaudeCommand, GeminiCommand, CodexCommand, OpenCodeCommand } from "../../src/types/index.js";
 
 describe("Command Conversion (Safety Net)", () => {
@@ -14,10 +14,10 @@ describe("Command Conversion (Safety Net)", () => {
         filePath: "/test/command.md",
       };
 
-      const claudeConverter = new ClaudeCommandConverter();
-      const geminiConverter = new GeminiCommandConverter();
-      const ir = claudeConverter.toIR(claude);
-      const gemini = geminiConverter.fromIR(ir);
+      const claudeAgent = new ClaudeAgent();
+      const geminiAgent = new GeminiAgent();
+      const ir = claudeAgent.commandToIR(claude);
+      const gemini = geminiAgent.commandFromIR(ir);
 
       expect(gemini.description).toBe("Test description");
       expect(gemini.prompt).toBe("Test body content");
@@ -35,10 +35,10 @@ describe("Command Conversion (Safety Net)", () => {
         filePath: "/test/command.md",
       };
 
-      const claudeConverter = new ClaudeCommandConverter();
-      const geminiConverter = new GeminiCommandConverter();
-      const ir = claudeConverter.toIR(claude);
-      const gemini = geminiConverter.fromIR(ir);
+      const claudeAgent = new ClaudeAgent();
+      const geminiAgent = new GeminiAgent();
+      const ir = claudeAgent.commandToIR(claude);
+      const gemini = geminiAgent.commandFromIR(ir);
 
       expect(gemini["allowed-tools"]).toBe("bash,read");
       expect(gemini["argument-hint"]).toBe("Enter filename");
@@ -54,10 +54,10 @@ describe("Command Conversion (Safety Net)", () => {
         filePath: "/test/command.toml",
       };
 
-      const geminiConverter = new GeminiCommandConverter();
-      const claudeConverter = new ClaudeCommandConverter();
-      const ir = geminiConverter.toIR(gemini);
-      const claude = claudeConverter.fromIR(ir);
+      const geminiAgent = new GeminiAgent();
+      const claudeAgent = new ClaudeAgent();
+      const ir = geminiAgent.commandToIR(gemini);
+      const claude = claudeAgent.commandFromIR(ir);
 
       expect(claude.frontmatter.description).toBe("Gemini description");
       expect(claude.content).toBe("Gemini prompt content");
@@ -71,10 +71,10 @@ describe("Command Conversion (Safety Net)", () => {
         "custom-field": "custom-value",
       };
 
-      const geminiConverter = new GeminiCommandConverter();
-      const claudeConverter = new ClaudeCommandConverter();
-      const ir = geminiConverter.toIR(gemini);
-      const claude = claudeConverter.fromIR(ir);
+      const geminiAgent = new GeminiAgent();
+      const claudeAgent = new ClaudeAgent();
+      const ir = geminiAgent.commandToIR(gemini);
+      const claude = claudeAgent.commandFromIR(ir);
 
       expect(claude.frontmatter["custom-field"]).toBe("custom-value");
     });
@@ -92,10 +92,10 @@ describe("Command Conversion (Safety Net)", () => {
         filePath: "/test/command.md",
       };
 
-      const claudeConverter = new ClaudeCommandConverter();
-      const codexConverter = new CodexCommandConverter();
-      const ir = claudeConverter.toIR(claude);
-      const codex = codexConverter.fromIR(ir);
+      const claudeAgent = new ClaudeAgent();
+      const codexAgent = new CodexAgent();
+      const ir = claudeAgent.commandToIR(claude);
+      const codex = codexAgent.commandFromIR(ir);
 
       expect(codex.content).toBe("Test content");
       expect(codex.frontmatter?.description).toBe("Test description");
@@ -115,10 +115,10 @@ describe("Command Conversion (Safety Net)", () => {
         filePath: "/test/command.md",
       };
 
-      const codexConverter = new CodexCommandConverter();
-      const claudeConverter = new ClaudeCommandConverter();
-      const ir = codexConverter.toIR(codex);
-      const claude = claudeConverter.fromIR(ir);
+      const codexAgent = new CodexAgent();
+      const claudeAgent = new ClaudeAgent();
+      const ir = codexAgent.commandToIR(codex);
+      const claude = claudeAgent.commandFromIR(ir);
 
       expect(claude.frontmatter.description).toBe("Codex desc");
       expect(claude.frontmatter["allowed-tools"]).toBe("bash");
@@ -134,10 +134,10 @@ describe("Command Conversion (Safety Net)", () => {
         filePath: "/test/command.toml",
       };
 
-      const geminiConverter = new GeminiCommandConverter();
-      const codexConverter = new CodexCommandConverter();
-      const ir = geminiConverter.toIR(gemini);
-      const codex = codexConverter.fromIR(ir);
+      const geminiAgent = new GeminiAgent();
+      const codexAgent = new CodexAgent();
+      const ir = geminiAgent.commandToIR(gemini);
+      const codex = codexAgent.commandFromIR(ir);
 
       expect(codex.content).toBe("Gemini prompt");
       expect(codex.frontmatter?.description).toBe("Gemini desc");
@@ -152,10 +152,10 @@ describe("Command Conversion (Safety Net)", () => {
         filePath: "/test/command.md",
       };
 
-      const codexConverter = new CodexCommandConverter();
-      const geminiConverter = new GeminiCommandConverter();
-      const ir = codexConverter.toIR(codex);
-      const gemini = geminiConverter.fromIR(ir);
+      const codexAgent = new CodexAgent();
+      const geminiAgent = new GeminiAgent();
+      const ir = codexAgent.commandToIR(codex);
+      const gemini = geminiAgent.commandFromIR(ir);
 
       expect(gemini.prompt).toBe("Codex content");
       expect(gemini.description).toBe("Codex desc");
@@ -170,13 +170,13 @@ describe("Command Conversion (Safety Net)", () => {
         filePath: "/test/command.md",
       };
 
-      const claudeConverter = new ClaudeCommandConverter();
-      const geminiConverter = new GeminiCommandConverter();
+      const claudeAgent = new ClaudeAgent();
+      const geminiAgent = new GeminiAgent();
 
-      const ir1 = claudeConverter.toIR(original);
-      const gemini = geminiConverter.fromIR(ir1);
-      const ir2 = geminiConverter.toIR(gemini);
-      const result = claudeConverter.fromIR(ir2);
+      const ir1 = claudeAgent.commandToIR(original);
+      const gemini = geminiAgent.commandFromIR(ir1);
+      const ir2 = geminiAgent.commandToIR(gemini);
+      const result = claudeAgent.commandFromIR(ir2);
 
       expect(result.frontmatter.description).toBe("Round-trip test");
       expect(result.content).toBe("Round-trip body");
@@ -196,13 +196,13 @@ describe("Command Conversion (Safety Net)", () => {
         filePath: "/test/command.md",
       };
 
-      const claudeConverter = new ClaudeCommandConverter();
-      const codexConverter = new CodexCommandConverter();
+      const claudeAgent = new ClaudeAgent();
+      const codexAgent = new CodexAgent();
 
-      const ir1 = claudeConverter.toIR(original);
-      const codex = codexConverter.fromIR(ir1);
-      const ir2 = codexConverter.toIR(codex);
-      const result = claudeConverter.fromIR(ir2);
+      const ir1 = claudeAgent.commandToIR(original);
+      const codex = codexAgent.commandFromIR(ir1);
+      const ir2 = codexAgent.commandToIR(codex);
+      const result = claudeAgent.commandFromIR(ir2);
 
       expect(result.frontmatter.description).toBe("Full round-trip");
       expect(result.frontmatter["allowed-tools"]).toBe("bash,read");
@@ -225,10 +225,10 @@ describe("Command Conversion (Safety Net)", () => {
         filePath: "/test/command.md",
       };
 
-      const claudeConverter = new ClaudeCommandConverter();
-      const opencodeConverter = new OpenCodeCommandConverter();
-      const ir = claudeConverter.toIR(claude);
-      const opencode = opencodeConverter.fromIR(ir);
+      const claudeAgent = new ClaudeAgent();
+      const opencodeAgent = new OpenCodeAgent();
+      const ir = claudeAgent.commandToIR(claude);
+      const opencode = opencodeAgent.commandFromIR(ir);
 
       expect(opencode.content).toBe("Test content with !`git status` and @config.json");
       expect(opencode.frontmatter?.description).toBe("Test description");
@@ -249,10 +249,10 @@ describe("Command Conversion (Safety Net)", () => {
         filePath: "/test/command.md",
       };
 
-      const claudeConverter = new ClaudeCommandConverter();
-      const opencodeConverter = new OpenCodeCommandConverter();
-      const ir = claudeConverter.toIR(claude);
-      const opencode = opencodeConverter.fromIR(ir, { removeUnsupported: true });
+      const claudeAgent = new ClaudeAgent();
+      const opencodeAgent = new OpenCodeAgent();
+      const ir = claudeAgent.commandToIR(claude);
+      const opencode = opencodeAgent.commandFromIR(ir, { removeUnsupported: true });
 
       expect(opencode.frontmatter?.description).toBe("Test");
       expect(opencode.frontmatter?.model).toBe("sonnet");
@@ -273,10 +273,10 @@ describe("Command Conversion (Safety Net)", () => {
         filePath: "/test/command.md",
       };
 
-      const opencodeConverter = new OpenCodeCommandConverter();
-      const claudeConverter = new ClaudeCommandConverter();
-      const ir = opencodeConverter.toIR(opencode);
-      const claude = claudeConverter.fromIR(ir);
+      const opencodeAgent = new OpenCodeAgent();
+      const claudeAgent = new ClaudeAgent();
+      const ir = opencodeAgent.commandToIR(opencode);
+      const claude = claudeAgent.commandFromIR(ir);
 
       expect(claude.frontmatter.description).toBe("OpenCode desc");
       expect(claude.frontmatter.model).toBe("sonnet");
@@ -298,13 +298,13 @@ describe("Command Conversion (Safety Net)", () => {
         filePath: "/test/command.md",
       };
 
-      const claudeConverter = new ClaudeCommandConverter();
-      const opencodeConverter = new OpenCodeCommandConverter();
+      const claudeAgent = new ClaudeAgent();
+      const opencodeAgent = new OpenCodeAgent();
 
-      const ir1 = claudeConverter.toIR(original);
-      const opencode = opencodeConverter.fromIR(ir1);
-      const ir2 = opencodeConverter.toIR(opencode);
-      const result = claudeConverter.fromIR(ir2);
+      const ir1 = claudeAgent.commandToIR(original);
+      const opencode = opencodeAgent.commandFromIR(ir1);
+      const ir2 = opencodeAgent.commandToIR(opencode);
+      const result = claudeAgent.commandFromIR(ir2);
 
       expect(result.frontmatter.description).toBe("Full round-trip");
       expect(result.frontmatter["allowed-tools"]).toBe("bash,read");
@@ -322,10 +322,10 @@ describe("Command Conversion (Safety Net)", () => {
         filePath: "/test/command.md",
       };
 
-      const claudeConverter = new ClaudeCommandConverter();
-      const geminiConverter = new GeminiCommandConverter();
-      const ir = claudeConverter.toIR(claude);
-      const gemini = geminiConverter.fromIR(ir);
+      const claudeAgent = new ClaudeAgent();
+      const geminiAgent = new GeminiAgent();
+      const ir = claudeAgent.commandToIR(claude);
+      const gemini = geminiAgent.commandFromIR(ir);
 
       expect(gemini.prompt).toBe("Run !{git status} with {{args}} and load @{config.json}");
     });
@@ -337,10 +337,10 @@ describe("Command Conversion (Safety Net)", () => {
         filePath: "/test/command.toml",
       };
 
-      const geminiConverter = new GeminiCommandConverter();
-      const claudeConverter = new ClaudeCommandConverter();
-      const ir = geminiConverter.toIR(gemini);
-      const claude = claudeConverter.fromIR(ir);
+      const geminiAgent = new GeminiAgent();
+      const claudeAgent = new ClaudeAgent();
+      const ir = geminiAgent.commandToIR(gemini);
+      const claude = claudeAgent.commandFromIR(ir);
 
       expect(claude.content).toBe("Execute !`npm test` with $ARGUMENTS and @package.json");
     });
@@ -352,15 +352,15 @@ describe("Command Conversion (Safety Net)", () => {
         filePath: "/test/command.md",
       };
 
-      const claudeConverter = new ClaudeCommandConverter();
-      const geminiConverter = new GeminiCommandConverter();
+      const claudeAgent = new ClaudeAgent();
+      const geminiAgent = new GeminiAgent();
 
-      const ir1 = claudeConverter.toIR(original);
-      const gemini = geminiConverter.fromIR(ir1);
+      const ir1 = claudeAgent.commandToIR(original);
+      const gemini = geminiAgent.commandFromIR(ir1);
       expect(gemini.prompt).toBe("First: $1, Second: $2, All: {{args}}");
 
-      const ir2 = geminiConverter.toIR(gemini);
-      const result = claudeConverter.fromIR(ir2);
+      const ir2 = geminiAgent.commandToIR(gemini);
+      const result = claudeAgent.commandFromIR(ir2);
       expect(result.content).toBe("First: $1, Second: $2, All: $ARGUMENTS");
     });
   });

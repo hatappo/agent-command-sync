@@ -298,7 +298,7 @@ All conversions go through a hub-and-spoke Semantic IR, eliminating the need for
 Source Format → Parser → toIR() → SemanticIR → fromIR() → Target Format
 ```
 
-Each agent has a single bidirectional converter implementing `toIR()` and `fromIR()`. Adding a new agent requires only one converter — not N converters for N existing agents.
+Each agent has a single class implementing all interfaces (`AgentConfig`, `BodyParser`, `CommandParser`, `CommandConverter`, `SkillParser`, `SkillConverter`). Adding a new agent requires only one agent class — not N converters for N existing agents.
 
 ### SemanticIR Structure
 
@@ -312,9 +312,9 @@ interface SemanticIR {
 }
 ```
 
-- **`semantic`** — Properties with shared meaning across agents (e.g., `description`). Converters map between agent-specific field names and semantic properties.
+- **`semantic`** — Properties with shared meaning across agents (e.g., `description`). Agent classes map between agent-specific field names and semantic properties.
 - **`extras`** — All other properties pass through unchanged. Agent-specific fields (e.g., Claude's `allowed-tools`) are preserved for round-trip fidelity and can be stripped with `--remove-unsupported`.
-- **`body`** — Tokenized as `BodySegment[]` (an array of plain strings and semantic placeholders), so placeholder syntax conversion (e.g., `$ARGUMENTS` ↔ `{{args}}`) happens automatically within each converter's `toIR()`/`fromIR()`.
+- **`body`** — Tokenized as `BodySegment[]` (an array of plain strings and semantic placeholders), so placeholder syntax conversion (e.g., `$ARGUMENTS` ↔ `{{args}}`) happens automatically within each agent's `commandToIR()`/`commandFromIR()`.
 
 ### Body Tokenization
 
@@ -328,16 +328,14 @@ type ContentPlaceholder =
   | { type: "file-reference"; path: string };     // @path / @{path}
 ```
 
-Each agent defines its own patterns and serializers colocated with its converters (`claude-body.ts`, `codex-body.ts`, `gemini-body.ts`). Claude and Codex share the same placeholder syntax via a common module (`_claude-codex-body.ts`), while Codex marks unsupported placeholder types (shell-command, file-reference) for best-effort output. A type-driven serializer registry (`PlaceholderSerializers`) ensures compile-time exhaustiveness — adding a new placeholder type causes a type error until every agent implements it.
+Each agent defines its own body patterns and serializers colocated within its agent class file (`src/agents/claude.ts`, `src/agents/gemini.ts`, etc.). Claude, Codex, and OpenCode share the same placeholder syntax via a common module (`src/agents/_claude-syntax-body-patterns.ts`), while Codex marks unsupported placeholder types (shell-command, file-reference) for best-effort output. A type-driven serializer registry (`PlaceholderSerializers`) ensures compile-time exhaustiveness — adding a new placeholder type causes a type error until every agent implements it.
 
 ### Source Layout
 
 ```
 src/
-├── agents/             # Agent Registry (AgentDefinition per agent, compile-time exhaustiveness)
+├── agents/             # Agent classes (one file per agent: parsing, conversion, body handling)
 ├── types/              # Type definitions (SemanticIR, BodySegment, agent formats)
-├── parsers/            # File parsers (Markdown, TOML → agent-specific types)
-├── converters/         # Bidirectional converters (toIR/fromIR) + body parsers/serializers
 ├── utils/              # Shared utilities (file ops, validation, body parsing engine)
 └── cli/                # CLI entry point and sync orchestration
 ```

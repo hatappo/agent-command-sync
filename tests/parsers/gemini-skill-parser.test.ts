@@ -2,19 +2,19 @@ import { mkdir, readFile as fsReadFile, rm, writeFile as fsWriteFile } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { GeminiSkillParser } from "../../src/parsers/gemini-skill-parser.js";
+import { GeminiAgent } from "../../src/agents/gemini.js";
 import type { GeminiSkill } from "../../src/types/index.js";
 import { fileExists } from "../../src/utils/file-utils.js";
 
 const fixturesPath = join(process.cwd(), "tests/fixtures/gemini-skills");
 
-describe("GeminiSkillParser", () => {
-  const parser = new GeminiSkillParser();
+describe("GeminiAgent (Skill)", () => {
+  const agent = new GeminiAgent();
 
-  describe("parse", () => {
+  describe("parseSkill", () => {
     it("should parse a standard skill directory", async () => {
       const skillDir = join(fixturesPath, "standard-skill");
-      const result = await parser.parse(skillDir);
+      const result = await agent.parseSkill(skillDir);
 
       expect(result.name).toBe("standard-skill");
       expect(result.description).toBe("A standard test skill for Gemini");
@@ -25,24 +25,24 @@ describe("GeminiSkillParser", () => {
     it("should throw error for invalid skill directory", async () => {
       const invalidDir = join(fixturesPath, "non-existent-skill");
 
-      await expect(parser.parse(invalidDir)).rejects.toThrow("Failed to parse Gemini skill");
+      await expect(agent.parseSkill(invalidDir)).rejects.toThrow("Failed to parse Gemini skill");
     });
   });
 
-  describe("validate", () => {
+  describe("validateSkill", () => {
     it("should validate a valid skill", async () => {
       const skillDir = join(fixturesPath, "standard-skill");
-      const skill = await parser.parse(skillDir);
+      const skill = await agent.parseSkill(skillDir);
 
-      expect(parser.validate(skill)).toBe(true);
+      expect(agent.validateSkill(skill)).toBe(true);
     });
   });
 
-  describe("stringify", () => {
+  describe("stringifySkill", () => {
     it("should stringify a skill to SKILL.md format", async () => {
       const skillDir = join(fixturesPath, "standard-skill");
-      const skill = await parser.parse(skillDir);
-      const result = parser.stringify(skill);
+      const skill = await agent.parseSkill(skillDir);
+      const result = agent.stringifySkill(skill);
 
       expect(result).toContain("---");
       expect(result).toContain("name: standard-skill");
@@ -50,7 +50,7 @@ describe("GeminiSkillParser", () => {
     });
   });
 
-  describe("writeToDirectory", () => {
+  describe("writeSkillToDirectory", () => {
     let tmpDir: string;
 
     beforeEach(async () => {
@@ -67,10 +67,10 @@ describe("GeminiSkillParser", () => {
 
     it("should write SKILL.md correctly", async () => {
       const skillDir = join(fixturesPath, "standard-skill");
-      const skill = await parser.parse(skillDir);
+      const skill = await agent.parseSkill(skillDir);
 
       const targetDir = join(tmpDir, "output");
-      await parser.writeToDirectory(skill, targetDir);
+      await agent.writeSkillToDirectory(skill, skillDir, targetDir);
 
       const written = await fsReadFile(join(targetDir, "SKILL.md"), "utf-8");
       expect(written).toContain("name: standard-skill");
@@ -87,7 +87,7 @@ describe("GeminiSkillParser", () => {
       };
 
       const targetDir = join(tmpDir, "output");
-      await parser.writeToDirectory(skill, targetDir);
+      await agent.writeSkillToDirectory(skill, tmpDir, targetDir);
 
       const content = await fsReadFile(join(targetDir, "lib", "helper.py"), "utf-8");
       expect(content).toBe("print('hello')");
@@ -107,7 +107,7 @@ describe("GeminiSkillParser", () => {
       };
 
       const targetDir = join(tmpDir, "target");
-      await parser.writeToDirectory(skill, targetDir);
+      await agent.writeSkillToDirectory(skill, sourceDir, targetDir);
 
       expect(await fileExists(join(targetDir, "data.pdf"))).toBe(true);
     });

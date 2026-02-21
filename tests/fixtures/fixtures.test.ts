@@ -1,45 +1,45 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { ClaudeParser } from "../../src/parsers/claude-parser.js";
-import { GeminiParser } from "../../src/parsers/gemini-parser.js";
+import { ClaudeAgent } from "../../src/agents/claude.js";
+import { GeminiAgent } from "../../src/agents/gemini.js";
 
 const fixturesDir = join(__dirname, ".");
 
 describe("Agent Slash Sync Tests", () => {
   describe("Edge Cases", () => {
     it("should handle empty files gracefully", async () => {
-      const parser = new ClaudeParser();
+      const agent = new ClaudeAgent();
       const filePath = join(fixturesDir, "edge-cases", "empty.md");
 
-      const result = await parser.parse(filePath);
+      const result = await agent.parseCommand(filePath);
 
       expect(result.content).toBe("");
-      expect(parser.validate(result)).toBe(true);
+      expect(agent.validateCommand(result)).toBe(true);
     });
 
     it("should handle invalid YAML frontmatter", async () => {
-      const parser = new ClaudeParser();
+      const agent = new ClaudeAgent();
       const filePath = join(fixturesDir, "edge-cases", "invalid-yaml.md");
 
-      await expect(parser.parse(filePath)).rejects.toThrow("Failed to parse Claude command file");
+      await expect(agent.parseCommand(filePath)).rejects.toThrow("Failed to parse Claude command file");
     });
 
     it("should handle special characters", async () => {
-      const parser = new ClaudeParser();
+      const agent = new ClaudeAgent();
       const filePath = join(fixturesDir, "edge-cases", "special-chars.md");
 
-      const result = await parser.parse(filePath);
+      const result = await agent.parseCommand(filePath);
 
       expect(result.frontmatter.description).toContain("éñ中文🚀");
       expect(result.content).toContain("éñ中文🚀");
-      expect(parser.validate(result)).toBe(true);
+      expect(agent.validateCommand(result)).toBe(true);
     });
 
     it("should handle invalid TOML", async () => {
-      const parser = new GeminiParser();
+      const agent = new GeminiAgent();
       const filePath = join(fixturesDir, "edge-cases", "invalid.toml");
 
-      await expect(parser.parse(filePath)).rejects.toThrow("Failed to parse Gemini command file");
+      await expect(agent.parseCommand(filePath)).rejects.toThrow("Failed to parse Gemini command file");
     });
   });
 
@@ -82,7 +82,7 @@ describe("Agent Slash Sync Tests", () => {
 
   describe("TOML Output Format", () => {
     it("should output prompt field last in TOML", async () => {
-      const parser = new GeminiParser();
+      const agent = new GeminiAgent();
       const command = {
         description: "Test command",
         model: "test-model",
@@ -90,7 +90,7 @@ describe("Agent Slash Sync Tests", () => {
         filePath: "test.toml",
       };
 
-      const toml = parser.stringify(command);
+      const toml = agent.stringifyCommand(command);
       const lines = toml.trim().split("\n");
 
       // Find the index of each field
@@ -104,13 +104,13 @@ describe("Agent Slash Sync Tests", () => {
     });
 
     it("should handle empty description correctly", async () => {
-      const parser = new GeminiParser();
+      const agent = new GeminiAgent();
       const command = {
         prompt: "Test prompt",
         filePath: "test.toml",
       };
 
-      const toml = parser.stringify(command);
+      const toml = agent.stringifyCommand(command);
       expect(toml).not.toContain("description");
       expect(toml).toContain("prompt = ");
     });

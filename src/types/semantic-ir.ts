@@ -47,11 +47,3 @@ export interface SemanticIR {
 export interface ConverterOptions {
   removeUnsupported?: boolean;
 }
-
-/**
- * Bidirectional converter interface using SemanticIR
- */
-export interface SemanticConverter<TFormat> {
-  toIR(source: TFormat): SemanticIR;
-  fromIR(ir: SemanticIR, options?: ConverterOptions): TFormat;
-}

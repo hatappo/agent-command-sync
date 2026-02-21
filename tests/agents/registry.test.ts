@@ -46,14 +46,19 @@ describe("Agent Registry", () => {
   it("should have all required handler functions", () => {
     for (const product of PRODUCT_TYPES) {
       const agent = AGENT_REGISTRY[product];
-      expect(typeof agent.commands.parse).toBe("function");
-      expect(typeof agent.commands.toIR).toBe("function");
-      expect(typeof agent.commands.fromIR).toBe("function");
-      expect(typeof agent.commands.stringify).toBe("function");
-      expect(typeof agent.skills.parse).toBe("function");
-      expect(typeof agent.skills.toIR).toBe("function");
-      expect(typeof agent.skills.fromIR).toBe("function");
-      expect(typeof agent.skills.writeToDirectory).toBe("function");
+      expect(typeof agent.parseBody).toBe("function");
+      expect(typeof agent.serializeBody).toBe("function");
+      expect(typeof agent.parseCommand).toBe("function");
+      expect(typeof agent.validateCommand).toBe("function");
+      expect(typeof agent.stringifyCommand).toBe("function");
+      expect(typeof agent.commandToIR).toBe("function");
+      expect(typeof agent.commandFromIR).toBe("function");
+      expect(typeof agent.parseSkill).toBe("function");
+      expect(typeof agent.validateSkill).toBe("function");
+      expect(typeof agent.stringifySkill).toBe("function");
+      expect(typeof agent.writeSkillToDirectory).toBe("function");
+      expect(typeof agent.skillToIR).toBe("function");
+      expect(typeof agent.skillFromIR).toBe("function");
     }
   });
 });

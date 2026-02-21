@@ -3,7 +3,7 @@ import { createClaudeAgent } from "./claude.js";
 import { createCodexAgent } from "./codex.js";
 import { createGeminiAgent } from "./gemini.js";
 import { createOpenCodeAgent } from "./opencode.js";
-import type { AgentDefinition } from "./types.js";
+import type { AgentDefinition } from "./agent-definition.js";
 
 /**
  * Agent registry: maps each ProductType to its AgentDefinition.

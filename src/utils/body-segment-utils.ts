@@ -2,8 +2,8 @@
  * Shared body segment parsing and serialization engine
  *
  * Agent-specific patterns and serializers are defined in:
- * - src/converters/claude-body.ts (Claude/Codex)
- * - src/converters/gemini-body.ts (Gemini)
+ * - src/agents/_claude-syntax-body-patterns.ts (Claude/Codex/OpenCode)
+ * - src/agents/gemini.ts (Gemini)
  */
 
 import { debuglog } from "node:util";

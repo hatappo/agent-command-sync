@@ -170,14 +170,14 @@ async function convertSingleFile(
   try {
     // Step 1: Parse and convert to SemanticIR
     const src = AGENT_REGISTRY[options.source];
-    const command = await src.commands.parse(sourceFile);
-    const ir: SemanticIR = src.commands.toIR(command);
+    const command = await src.parseCommand(sourceFile);
+    const ir: SemanticIR = src.commandToIR(command);
 
     // Step 2: Convert from SemanticIR to target format
     const converterOptions = { removeUnsupported: options.removeUnsupported };
     const dst = AGENT_REGISTRY[options.destination];
-    const targetCommand = dst.commands.fromIR(ir, converterOptions);
-    const targetContent = dst.commands.stringify(targetCommand);
+    const targetCommand = dst.commandFromIR(ir, converterOptions);
+    const targetContent = dst.stringifyCommand(targetCommand);
     const targetExt = dst.fileExtension;
 
     // Determine target file path (user directory only)
@@ -310,8 +310,8 @@ async function convertSingleSkill(
   try {
     // Step 1: Parse and convert to SemanticIR
     const src = AGENT_REGISTRY[options.source];
-    const skill = await src.skills.parse(skillDir);
-    const ir: SemanticIR = src.skills.toIR(skill);
+    const skill = await src.parseSkill(skillDir);
+    const ir: SemanticIR = src.skillToIR(skill);
 
     // Get skill directories
     const sourceDir = resolveSkillDir(src, options.customDirs?.[options.source]).user;
@@ -346,8 +346,8 @@ async function convertSingleSkill(
 
     // Step 3: Convert from SemanticIR to target format and write
     const converterOptions = { removeUnsupported: options.removeUnsupported };
-    const targetSkill = dst.skills.fromIR(ir, converterOptions);
-    await dst.skills.writeToDirectory(targetSkill, skillDir, targetSkillDir);
+    const targetSkill = dst.skillFromIR(ir, converterOptions);
+    await dst.writeSkillToDirectory(targetSkill, skillDir, targetSkillDir);
 
     operations.push({
       type: targetExists ? "M" : "A",

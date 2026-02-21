@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, extname, join, relative, resolve } from "node:path";
-import type { AgentDefinition } from "../agents/types.js";
+import type { AgentDefinition } from "../agents/agent-definition.js";
 import type { FileSearchOptions } from "../types/index.js";
 import { SKILL_CONSTANTS } from "./constants.js";
 

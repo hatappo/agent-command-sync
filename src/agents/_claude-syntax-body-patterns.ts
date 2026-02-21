@@ -1,13 +1,13 @@
 /**
- * Shared body patterns and serializers for Claude and Codex
+ * Shared body patterns and serializers for Claude-syntax agents (Claude, Codex, OpenCode)
  *
- * Claude and Codex share the same placeholder syntax.
- * Agent-specific wrappers: claude-body.ts, codex-body.ts
+ * These agents share the same placeholder syntax ($ARGUMENTS, !`cmd`, @path, $1-$9).
+ * Agent-specific wrappers call parseBody/serializeBody with these patterns.
  */
 
 import type { PatternDef, PlaceholderSerializers } from "../types/body-segment.js";
 
-export const CLAUDE_CODEX_PATTERNS: PatternDef[] = [
+export const CLAUDE_SYNTAX_PATTERNS: PatternDef[] = [
   // $ARGUMENTS (highest priority — must precede $1-$9)
   {
     regex: /\$ARGUMENTS/g,
@@ -35,7 +35,7 @@ export const CLAUDE_CODEX_PATTERNS: PatternDef[] = [
   },
 ];
 
-export const CLAUDE_CODEX_SERIALIZERS: PlaceholderSerializers = {
+export const CLAUDE_SYNTAX_SERIALIZERS: PlaceholderSerializers = {
   arguments: () => "$ARGUMENTS",
   "individual-argument": (p) => `$${p.index}`,
   "shell-command": (p) => `!\`${p.command}\``,
