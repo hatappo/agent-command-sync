@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { CLIOptions } from "../../src/cli/options.js";
+import { showStatus } from "../../src/cli/status.js";
 import { syncCommands } from "../../src/cli/sync.js";
 import { directoryExists, ensureDirectory, fileExists, readFile, writeFile } from "../../src/utils/file-utils.js";
 
@@ -1083,6 +1084,184 @@ custom-gemini = "gval"`;
       expect(await directoryExists(orphanSkill)).toBe(false);
       // skill-a should still exist
       expect(await directoryExists(targetSkillA)).toBe(true);
+    });
+  });
+
+  describe("status subcommand", () => {
+    let chimeraStatusBaseDir: string;
+    let chimeraStatusCmdDir: string;
+    let chimeraStatusSkillsDir: string;
+
+    beforeEach(async () => {
+      chimeraStatusBaseDir = join(testDir, ".config", "acsync-status");
+      chimeraStatusCmdDir = join(chimeraStatusBaseDir, "commands");
+      chimeraStatusSkillsDir = join(chimeraStatusBaseDir, "skills");
+      await ensureDirectory(chimeraStatusCmdDir);
+      await ensureDirectory(chimeraStatusSkillsDir);
+    });
+
+    it("should detect no agents when chimera hub is empty", async () => {
+      const logs: string[] = [];
+      const origLog = console.log;
+      console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+
+      try {
+        await showStatus({ chimera: chimeraStatusBaseDir });
+      } finally {
+        console.log = origLog;
+      }
+
+      const output = logs.join("\n");
+      expect(output).toContain("v3.0.0");
+      expect(output).toContain("Lv.0");
+      expect(output).toContain("Ghost");
+      expect(output).toContain("No agents detected yet");
+    });
+
+    it("should detect agents from _chimera sections in commands", async () => {
+      const content = `---
+description: Test
+_chimera:
+  claude:
+    model: opus-4
+  gemini:
+    custom: value
+---
+
+Body`;
+
+      await writeFile(join(chimeraStatusCmdDir, "test.md"), content);
+
+      const logs: string[] = [];
+      const origLog = console.log;
+      console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+
+      try {
+        await showStatus({ chimera: chimeraStatusBaseDir });
+      } finally {
+        console.log = origLog;
+      }
+
+      const output = logs.join("\n");
+      expect(output).toContain("Lv.2");
+      expect(output).toContain("Claude Code");
+      expect(output).toContain("Gemini CLI");
+      expect(output).toContain("Bird");
+    });
+
+    it("should detect agents from _chimera sections in skills", async () => {
+      const skillDir = join(chimeraStatusSkillsDir, "test-skill");
+      await ensureDirectory(skillDir);
+      await writeFile(
+        join(skillDir, "SKILL.md"),
+        `---
+name: test-skill
+description: Test
+_chimera:
+  codex:
+    some-field: value
+---
+
+Skill body`,
+      );
+
+      const logs: string[] = [];
+      const origLog = console.log;
+      console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+
+      try {
+        await showStatus({ chimera: chimeraStatusBaseDir });
+      } finally {
+        console.log = origLog;
+      }
+
+      const output = logs.join("\n");
+      expect(output).toContain("Lv.1");
+      expect(output).toContain("Codex CLI");
+      expect(output).toContain("Cat");
+    });
+
+    it("should merge agents from both commands and skills", async () => {
+      await writeFile(
+        join(chimeraStatusCmdDir, "cmd.md"),
+        `---
+description: Cmd
+_chimera:
+  claude:
+    model: opus-4
+---
+
+Body`,
+      );
+
+      const skillDir = join(chimeraStatusSkillsDir, "skill");
+      await ensureDirectory(skillDir);
+      await writeFile(
+        join(skillDir, "SKILL.md"),
+        `---
+name: skill
+description: Skill
+_chimera:
+  gemini:
+    custom: val
+  codex:
+    field: val
+---
+
+Body`,
+      );
+
+      const logs: string[] = [];
+      const origLog = console.log;
+      console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+
+      try {
+        await showStatus({ chimera: chimeraStatusBaseDir });
+      } finally {
+        console.log = origLog;
+      }
+
+      const output = logs.join("\n");
+      expect(output).toContain("Lv.3");
+      expect(output).toContain("Fish");
+    });
+
+    it("should display chimera ASCII art matching agent count", async () => {
+      // Create a command with 5 agents
+      await writeFile(
+        join(chimeraStatusCmdDir, "multi.md"),
+        `---
+description: Multi
+_chimera:
+  claude:
+    m: v
+  gemini:
+    m: v
+  codex:
+    m: v
+  opencode:
+    m: v
+  copilot:
+    m: v
+---
+
+Body`,
+      );
+
+      const logs: string[] = [];
+      const origLog = console.log;
+      console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+
+      try {
+        await showStatus({ chimera: chimeraStatusBaseDir });
+      } finally {
+        console.log = origLog;
+      }
+
+      const output = logs.join("\n");
+      expect(output).toContain("Lv.5");
+      expect(output).toContain("~~~>o");
+      expect(output).toContain("Dragon");
     });
   });
 });

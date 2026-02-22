@@ -8,6 +8,7 @@ import { PRODUCT_TYPES } from "../types/intermediate.js";
 import type { ProductType } from "../types/intermediate.js";
 import type { ContentFilter } from "../types/skill.js";
 import { validateCLIOptions } from "./options.js";
+import { showStatus } from "./status.js";
 import { syncCommands } from "./sync.js";
 import type { CLIOptions } from "./options.js";
 
@@ -258,6 +259,22 @@ planCmd.action(async (agent: string, options) => {
   }
 });
 
+// ── status subcommand ────────────────────────────────────────────
+
+const statusCmd = program
+  .command("status")
+  .description("Show Chimera status and detected agents");
+
+registerDirOptions(statusCmd);
+
+statusCmd.action(async (options) => {
+  try {
+    await showStatus(buildCustomDirs(options));
+  } catch (error) {
+    handleError(error);
+  }
+});
+
 // ── Help ────────────────────────────────────────────────────────
 
 program.on("--help", () => {
@@ -269,6 +286,7 @@ program.on("--help", () => {
   console.log("  $ acs drift claude                           # Preview import             (shorthand for: acs sync -s claude -d chimera -n)");
   console.log("  $ acs apply gemini                           # Apply Chimera hub to agent (shorthand for: acs sync -s chimera -d gemini)");
   console.log("  $ acs plan gemini                            # Preview apply              (shorthand for: acs sync -s chimera -d gemini -n)");
+  console.log("  $ acs status                                       # Show Chimera status and detected agents");
   console.log("  $ acs sync -s claude -d gemini --remove-unsupported # Remove unsupported fields");
   console.log("  $ acs sync -s gemini -d claude --no-overwrite     # Skip existing files");
   console.log("  $ acs sync -s claude -d gemini --sync-delete      # Delete orphaned files");
