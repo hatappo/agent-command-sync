@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { CodexAgent } from "../../src/agents/codex.js";
 import { ClaudeAgent } from "../../src/agents/claude.js";
 import { CopilotAgent } from "../../src/agents/copilot.js";
+import { CursorAgent } from "../../src/agents/cursor.js";
 import { GeminiAgent } from "../../src/agents/gemini.js";
 import type { ClaudeSkill } from "../../src/types/index.js";
 
@@ -213,6 +214,91 @@ describe("Skill Conversion (Safety Net)", () => {
       expect(copilot.frontmatter["allowed-tools"]).toBeUndefined();
       expect(copilot.frontmatter.context).toBeUndefined();
       expect(copilot.frontmatter.hooks).toBeUndefined();
+    });
+  });
+
+  describe("Claude -> Cursor (removeUnsupported=false)", () => {
+    it("should preserve Claude-specific fields directly", () => {
+      const claude: ClaudeSkill = {
+        name: "test-skill",
+        description: "Test description",
+        content: "Test content",
+        dirPath: "/test/skills/test-skill",
+        supportFiles: [],
+        frontmatter: {
+          name: "test-skill",
+          description: "Test description",
+          "disable-model-invocation": true,
+          "user-invocable": false,
+          "allowed-tools": "bash",
+          model: "sonnet",
+          context: "fork",
+          agent: "task",
+          hooks: { "pre-tool-execution": "echo test" },
+          "argument-hint": "Enter path",
+        },
+      };
+
+      const claudeAgent = new ClaudeAgent();
+      const cursorAgent = new CursorAgent();
+      const ir = claudeAgent.skillToIR(claude);
+      const cursor = cursorAgent.skillFromIR(ir, { removeUnsupported: false });
+
+      expect(cursor.frontmatter.name).toBe("test-skill");
+      expect(cursor.frontmatter.description).toBe("Test description");
+      expect(cursor.frontmatter["disable-model-invocation"]).toBe(true);
+      // Cursor uses same spelling as Claude
+      expect(cursor.frontmatter["user-invocable"]).toBe(false);
+      // allowed-tools is supported by Cursor (agentskills.io standard)
+      expect(cursor.frontmatter["allowed-tools"]).toBe("bash");
+      // Claude-specific fields preserved when removeUnsupported=false
+      expect(cursor.frontmatter.model).toBe("sonnet");
+      expect(cursor.frontmatter.context).toBe("fork");
+      expect(cursor.frontmatter.agent).toBe("task");
+      expect(cursor.frontmatter.hooks).toEqual({ "pre-tool-execution": "echo test" });
+      expect(cursor.frontmatter["argument-hint"]).toBe("Enter path");
+    });
+  });
+
+  describe("Claude -> Cursor (removeUnsupported=true)", () => {
+    it("should remove Claude-specific fields but keep agentskills.io fields", () => {
+      const claude: ClaudeSkill = {
+        name: "test-skill",
+        content: "Test content",
+        dirPath: "/test",
+        supportFiles: [],
+        frontmatter: {
+          name: "test-skill",
+          description: "Test description",
+          "disable-model-invocation": true,
+          "user-invocable": false,
+          "allowed-tools": "bash",
+          model: "sonnet",
+          context: "fork",
+          agent: "task",
+          hooks: { "pre-tool-execution": "echo test" },
+          "argument-hint": "Enter path",
+        },
+      };
+
+      const claudeAgent = new ClaudeAgent();
+      const cursorAgent = new CursorAgent();
+      const ir = claudeAgent.skillToIR(claude);
+      const cursor = cursorAgent.skillFromIR(ir, { removeUnsupported: true });
+
+      expect(cursor.frontmatter.name).toBe("test-skill");
+      expect(cursor.frontmatter.description).toBe("Test description");
+      // Semantic field preserved
+      expect(cursor.frontmatter["disable-model-invocation"]).toBe(true);
+      // agentskills.io standard fields preserved
+      expect(cursor.frontmatter["user-invocable"]).toBe(false);
+      expect(cursor.frontmatter["allowed-tools"]).toBe("bash");
+      // Claude-specific fields removed
+      expect(cursor.frontmatter.model).toBeUndefined();
+      expect(cursor.frontmatter.context).toBeUndefined();
+      expect(cursor.frontmatter.agent).toBeUndefined();
+      expect(cursor.frontmatter.hooks).toBeUndefined();
+      expect(cursor.frontmatter["argument-hint"]).toBeUndefined();
     });
   });
 });

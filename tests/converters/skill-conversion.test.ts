@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import { CodexAgent } from "../../src/agents/codex.js";
 import { ClaudeAgent } from "../../src/agents/claude.js";
 import { CopilotAgent } from "../../src/agents/copilot.js";
+import { CursorAgent } from "../../src/agents/cursor.js";
 import { OpenCodeAgent } from "../../src/agents/opencode.js";
-import type { CodexSkill, ClaudeSkill, CopilotSkill, OpenCodeSkill } from "../../src/types/index.js";
+import type { CodexSkill, ClaudeSkill, CopilotSkill, CursorSkill, OpenCodeSkill } from "../../src/types/index.js";
 
 describe("Skill Conversion", () => {
   describe("allow_implicit_invocation ↔ disable-model-invocation conversion", () => {
@@ -443,6 +444,152 @@ describe("Skill Conversion", () => {
         const result = claudeAgent.skillFromIR(ir2);
 
         // Back to Claude "user-invocable" (c)
+        expect(result.frontmatter["user-invocable"]).toBe(true);
+      });
+    });
+  });
+
+  describe("Cursor Skill Conversion", () => {
+    describe("Claude → Cursor (via IR)", () => {
+      const claudeAgent = new ClaudeAgent();
+      const cursorAgent = new CursorAgent();
+
+      it("should convert Claude skill to Cursor preserving agentskills.io fields", () => {
+        const claudeSkill: ClaudeSkill = {
+          name: "test-skill",
+          content: "Test content",
+          dirPath: "/test",
+          supportFiles: [],
+          frontmatter: {
+            name: "test-skill",
+            description: "Test",
+            "disable-model-invocation": true,
+            "user-invocable": true,
+            "allowed-tools": "bash",
+          },
+        };
+
+        const ir = claudeAgent.skillToIR(claudeSkill);
+        const cursorSkill = cursorAgent.skillFromIR(ir);
+
+        expect(cursorSkill.frontmatter.name).toBe("test-skill");
+        expect(cursorSkill.frontmatter.description).toBe("Test");
+        expect(cursorSkill.frontmatter["disable-model-invocation"]).toBe(true);
+        // user-invocable uses same spelling as Claude (no normalization needed)
+        expect(cursorSkill.frontmatter["user-invocable"]).toBe(true);
+        // allowed-tools is supported by Cursor (agentskills.io standard)
+        expect(cursorSkill.frontmatter["allowed-tools"]).toBe("bash");
+      });
+
+      it("should remove Claude-specific fields with removeUnsupported", () => {
+        const claudeSkill: ClaudeSkill = {
+          name: "test-skill",
+          content: "Test",
+          dirPath: "/test",
+          supportFiles: [],
+          frontmatter: {
+            name: "test-skill",
+            "user-invocable": true,
+            "allowed-tools": "bash",
+            context: "fork",
+            hooks: { "pre-tool-execution": "echo test" },
+            model: "sonnet",
+            agent: "task",
+            "argument-hint": "Enter path",
+          },
+        };
+
+        const ir = claudeAgent.skillToIR(claudeSkill);
+        const cursorSkill = cursorAgent.skillFromIR(ir, { removeUnsupported: true });
+
+        // These should be removed (CLAUDE_SKILL_FIELDS)
+        expect(cursorSkill.frontmatter.context).toBeUndefined();
+        expect(cursorSkill.frontmatter.hooks).toBeUndefined();
+        expect(cursorSkill.frontmatter.model).toBeUndefined();
+        expect(cursorSkill.frontmatter.agent).toBeUndefined();
+        expect(cursorSkill.frontmatter["argument-hint"]).toBeUndefined();
+        // These should be preserved (supported by Cursor)
+        expect(cursorSkill.frontmatter["user-invocable"]).toBe(true);
+        expect(cursorSkill.frontmatter["allowed-tools"]).toBe("bash");
+      });
+    });
+
+    describe("Cursor → Claude (via IR)", () => {
+      const cursorAgent = new CursorAgent();
+      const claudeAgent = new ClaudeAgent();
+
+      it("should convert Cursor skill to Claude with user-invocable same spelling", () => {
+        const cursorSkill: CursorSkill = {
+          name: "test-skill",
+          content: "Test content",
+          dirPath: "/test",
+          supportFiles: [],
+          frontmatter: {
+            name: "test-skill",
+            description: "Test",
+            "user-invocable": true,
+            "disable-model-invocation": false,
+            "allowed-tools": "bash",
+          },
+        };
+
+        const ir = cursorAgent.skillToIR(cursorSkill);
+        const claudeSkill = claudeAgent.skillFromIR(ir);
+
+        expect(claudeSkill.frontmatter.name).toBe("test-skill");
+        expect(claudeSkill.frontmatter.description).toBe("Test");
+        expect(claudeSkill.frontmatter["user-invocable"]).toBe(true);
+        expect(claudeSkill.frontmatter["disable-model-invocation"]).toBe(false);
+        expect(claudeSkill.frontmatter["allowed-tools"]).toBe("bash");
+      });
+    });
+
+    describe("Round-trip: Claude → Cursor → Claude", () => {
+      const claudeAgent = new ClaudeAgent();
+      const cursorAgent = new CursorAgent();
+
+      it("should preserve disable-model-invocation through round-trip", () => {
+        const original: ClaudeSkill = {
+          name: "test-skill",
+          content: "Test content",
+          dirPath: "/test",
+          supportFiles: [],
+          frontmatter: {
+            name: "test-skill",
+            description: "Test",
+            "disable-model-invocation": true,
+          },
+        };
+
+        const ir1 = claudeAgent.skillToIR(original);
+        const cursor = cursorAgent.skillFromIR(ir1);
+        const ir2 = cursorAgent.skillToIR(cursor);
+        const result = claudeAgent.skillFromIR(ir2);
+
+        expect(result.frontmatter["disable-model-invocation"]).toBe(true);
+      });
+
+      it("should preserve user-invocable through round-trip (same spelling)", () => {
+        const original: ClaudeSkill = {
+          name: "test-skill",
+          content: "Test content",
+          dirPath: "/test",
+          supportFiles: [],
+          frontmatter: {
+            name: "test-skill",
+            "user-invocable": true,
+          },
+        };
+
+        const ir1 = claudeAgent.skillToIR(original);
+        const cursor = cursorAgent.skillFromIR(ir1);
+
+        // Cursor uses same "user-invocable" spelling as Claude
+        expect(cursor.frontmatter["user-invocable"]).toBe(true);
+
+        const ir2 = cursorAgent.skillToIR(cursor);
+        const result = claudeAgent.skillFromIR(ir2);
+
         expect(result.frontmatter["user-invocable"]).toBe(true);
       });
     });

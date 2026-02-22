@@ -9,6 +9,7 @@ export const FILE_EXTENSIONS = {
   CLAUDE: ".md",
   GEMINI: ".toml",
   COPILOT: ".prompt.md",
+  CURSOR: ".md",
 } as const;
 
 /**

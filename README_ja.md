@@ -7,7 +7,7 @@
 [![npm version](https://badge.fury.io/js/agent-command-sync.svg)](https://www.npmjs.com/package/agent-command-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Claude Code、Gemini CLI、Codex CLI、OpenCode、GitHub Copilot 間でカスタムスラッシュコマンドとスキル（Skills）を双方向に変換・同期する、直感的なビジュアルフィードバック付きのツールです。
+Claude Code、Gemini CLI、Codex CLI、OpenCode、GitHub Copilot、Cursor 間でカスタムスラッシュコマンドとスキル（Skills）を双方向に変換・同期する、直感的なビジュアルフィードバック付きのツールです。
 
 ## CHANGELOG
 
@@ -49,8 +49,8 @@ acsync -n -s claude -d gemini
 ## 機能
 
 - **カラフルな出力** - 色分けされたステータスインジケータによる明確なビジュアルフィードバック
-- **高速変換** - Claude Code、Gemini CLI、Codex CLI、OpenCode、GitHub Copilot 間でコマンドを効率的に同期
-- **双方向対応** - 任意の方向への変換に対応（Claude ↔ Gemini ↔ Codex ↔ OpenCode ↔ Copilot）
+- **高速変換** - Claude Code、Gemini CLI、Codex CLI、OpenCode、GitHub Copilot、Cursor 間でコマンドを効率的に同期
+- **双方向対応** - 任意の方向への変換に対応（Claude ↔ Gemini ↔ Codex ↔ OpenCode ↔ Copilot ↔ Cursor）
 - **デフォルトで安全** - ドライランモードで適用前に変更をプレビュー
 - **短縮コマンド** - `agent-command-sync` の代わりに `acsync` を使用可能
 - **選択的同期** - 特定のファイルまたは全コマンドを一括変換
@@ -59,8 +59,8 @@ acsync -n -s claude -d gemini
 
 | オプション                    | 説明                                                                     |
 | --------------------------- | ----------------------------------------------------------------------- |
-| `-s, --src <product>`       | **必須。** ソース製品: `claude`、`gemini`、`codex`、`opencode`、または `copilot` |
-| `-d, --dest <product>`      | **必須。** 宛先製品: `claude`、`gemini`、`codex`、`opencode`、または `copilot` |
+| `-s, --src <product>`       | **必須。** ソース製品: `claude`、`gemini`、`codex`、`opencode`、`copilot`、または `cursor` |
+| `-d, --dest <product>`      | **必須。** 宛先製品: `claude`、`gemini`、`codex`、`opencode`、`copilot`、または `cursor` |
 | `-t, --type <type>`         | コンテンツタイプ: `commands`、`skills`、または `both`（デフォルト: `both`）  |
 | `-f, --file <filename>`     | 特定のファイルのみ変換（`.md`, `.toml` 拡張子をサポート）                    |
 | `-n, --noop`                | 変更を適用せずにプレビュー                                                 |
@@ -70,6 +70,7 @@ acsync -n -s claude -d gemini
 | `--codex-dir <path>`        | Codex ベースディレクトリ（デフォルト: ~/.codex）                           |
 | `--opencode-dir <path>`     | OpenCode ベースディレクトリ（デフォルト: ~/.config/opencode）               |
 | `--copilot-dir <path>`      | Copilot ベースディレクトリ（デフォルト: ~/.copilot）                        |
+| `--cursor-dir <path>`       | Cursor ベースディレクトリ（デフォルト: ~/.cursor）                          |
 | `--no-overwrite`            | ターゲットディレクトリの既存ファイルをスキップ                                |
 | `--sync-delete`             | ターゲットディレクトリの孤立ファイルを削除                                   |
 | `--remove-unsupported`      | ターゲット形式でサポートされていないフィールドを削除                           |
@@ -107,6 +108,7 @@ acsync -s claude -d gemini -v
 - **Codex CLI**: `~/.codex/prompts/*.md`
 - **OpenCode**: `~/.config/opencode/commands/*.md`
 - **GitHub Copilot**: `~/.copilot/prompts/*.prompt.md`
+- **Cursor**: `~/.cursor/commands/*.md`
 
 ### Skills
 - **Claude Code**: `~/.claude/skills/<skill-name>/SKILL.md`
@@ -114,6 +116,7 @@ acsync -s claude -d gemini -v
 - **Codex CLI**: `~/.codex/skills/<skill-name>/SKILL.md`
 - **OpenCode**: `~/.config/opencode/skills/<skill-name>/SKILL.md`
 - **GitHub Copilot**: `~/.copilot/skills/<skill-name>/SKILL.md`
+- **Cursor**: `~/.cursor/skills/<skill-name>/SKILL.md`
 
 ## 形式比較と変換仕様
 
@@ -131,23 +134,23 @@ acsync -s claude -d gemini -v
 
 ### ファイル構造とメタデータ
 
-| 機能                                      | Claude Code   | Gemini CLI    | Codex CLI     | OpenCode      | Copilot       | 変換メモ                                      |
-| ----------------------------------------- | ------------- | ------------- | ------------- | ------------- | ------------- | -------------------------------------------- |
-| ファイル形式                               | Markdown      | TOML          | Markdown      | Markdown      | Markdown (`.prompt.md`) | 自動変換                                |
-| コンテンツフィールド                        | 本文コンテンツ  | `prompt`      | 本文コンテンツ  | 本文コンテンツ  | 本文コンテンツ  | メインコマンドの内容                           |
-| 説明メタデータ                            | `description` | `description` | `description` | `description` | `description` | 形式間で保持                                  |
-| `model`                                   | サポート       | -             | -             | サポート       | サポート       | Claude/OpenCode/Copilot間で保持               |
-| `tools`（YAML配列）                       | -             | -             | -             | -             | サポート       | Copilot固有（extras経由でパススルー）           |
-| `allowed-tools`, `argument-hint`          | サポート       | -             | -             | -             | -             | Claude固有（`--remove-unsupported`を使用して削除）|
+| 機能                                      | Claude Code   | Gemini CLI    | Codex CLI     | OpenCode      | Copilot       | Cursor        | 変換メモ                                      |
+| ----------------------------------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | -------------------------------------------- |
+| ファイル形式                               | Markdown      | TOML          | Markdown      | Markdown      | Markdown (`.prompt.md`) | Markdown | 自動変換                                |
+| コンテンツフィールド                        | 本文コンテンツ  | `prompt`      | 本文コンテンツ  | 本文コンテンツ  | 本文コンテンツ  | 本文コンテンツ  | メインコマンドの内容                           |
+| 説明メタデータ                            | `description` | `description` | `description` | `description` | `description` | -             | Cursorへの変換時に消失（frontmatterなし）        |
+| `model`                                   | サポート       | -             | -             | サポート       | サポート       | -             | Claude/OpenCode/Copilot間で保持               |
+| `tools`（YAML配列）                       | -             | -             | -             | -             | サポート       | -             | Copilot固有（extras経由でパススルー）           |
+| `allowed-tools`, `argument-hint`          | サポート       | -             | -             | -             | -             | -             | Claude固有（`--remove-unsupported`を使用して削除）|
 
 ### コンテンツプレースホルダーと構文
 
-| 機能                  | Claude Code    | Gemini CLI     | Codex CLI      | OpenCode       | Copilot        | 変換動作                                    |
-| -------------------- | -------------- | -------------- | -------------- | -------------- | -------------- | ------------------------------------------ |
-| すべての引数          | `$ARGUMENTS`   | `{{args}}`     | `$ARGUMENTS`   | `$ARGUMENTS`   | -              | 形式間で変換                                |
-| 個別引数              | `$1` ... `$9`  | -              | `$1` ... `$9`  | `$1` ... `$9`  | -              | そのまま保持（Gemini/Copilotはサポートなし）  |
-| シェルコマンド        | `` !`command` ``| `!{command}`  | -              | `` !`command` ``| -             | 形式間で変換                                |
-| ファイル参照          | `@path/to/file`| `@{path/to/file}` | -           | `@path/to/file`| -              | 形式間で変換                                |
+| 機能                  | Claude Code    | Gemini CLI     | Codex CLI      | OpenCode       | Copilot        | Cursor         | 変換動作                                    |
+| -------------------- | -------------- | -------------- | -------------- | -------------- | -------------- | -------------- | ------------------------------------------ |
+| すべての引数          | `$ARGUMENTS`   | `{{args}}`     | `$ARGUMENTS`   | `$ARGUMENTS`   | -              | -              | 形式間で変換                                |
+| 個別引数              | `$1` ... `$9`  | -              | `$1` ... `$9`  | `$1` ... `$9`  | -              | -              | そのまま保持（Gemini/Copilot/Cursorはサポートなし）  |
+| シェルコマンド        | `` !`command` ``| `!{command}`  | -              | `` !`command` ``| -             | -              | 形式間で変換                                |
+| ファイル参照          | `@path/to/file`| `@{path/to/file}` | -           | `@path/to/file`| -              | -              | 形式間で変換                                |
 
 #### 個別引数
 プレースホルダー `$1` から `$9` は、個々のコマンド引数を参照できます。例えば、`$1` は最初の引数、`$2` は2番目の引数を参照します。この機能はClaude Code、Codex CLI、OpenCodeでサポートされていますが、Gemini CLIではサポートされていません。変換時、これらのプレースホルダーはそのまま保持されます。
@@ -164,7 +167,7 @@ acsync -s claude -d gemini -v
 
 ## Skills 形式
 
-Skills は Claude Code、Gemini CLI、Codex CLI、OpenCode が採用している [Agent Skills](https://agentskills.io/) オープンスタンダードに従います。
+Skills は Claude Code、Gemini CLI、Codex CLI、OpenCode、Cursor が採用している [Agent Skills](https://agentskills.io/) オープンスタンダードに従います。
 
 ### ディレクトリ構造
 
@@ -195,18 +198,18 @@ description: スキルの説明
 
 ### スキルメタデータの比較
 
-| フィールド | Claude Code | Gemini CLI | Codex CLI | OpenCode | Copilot | 変換メモ |
-| --------- | ----------- | ---------- | --------- | -------- | ------- | -------- |
-| `name` | ✓ | ✓ | ✓ | ✓ | ✓ | 必須 |
-| `description` | ✓ | ✓ | ✓ | ✓ | ✓ | 保持 |
-| `argument-hint` | ✓ | - | - | - | ✓ | Claude/Copilot |
-| `allowed-tools` | ✓ | - | - | - | - | Claude 固有 |
-| `model` | ✓ | - | - | - | - | Claude 固有 |
-| `context` | ✓ | - | - | - | - | Claude 固有（例: `"fork"`） |
-| `agent` | ✓ | - | - | - | - | Claude 固有 |
-| `hooks` | ✓ | - | - | - | - | Claude 固有（before/after/on_error） |
-| `disable-model-invocation` | ✓ | - | ✓* | ✓** | ✓ | 変換あり（下記参照） |
-| `user-invocable` / `user-invokable` | ✓ | - | - | - | ✓*** | スペル正規化付きで変換 |
+| フィールド | Claude Code | Gemini CLI | Codex CLI | OpenCode | Copilot | Cursor | 変換メモ |
+| --------- | ----------- | ---------- | --------- | -------- | ------- | ------ | -------- |
+| `name` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | 必須 |
+| `description` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | 保持 |
+| `argument-hint` | ✓ | - | - | - | ✓ | - | Claude/Copilot |
+| `allowed-tools` | ✓ | - | - | - | - | ✓ | Claude/Cursor（agentskills.io） |
+| `model` | ✓ | - | - | - | - | - | Claude 固有 |
+| `context` | ✓ | - | - | - | - | - | Claude 固有（例: `"fork"`） |
+| `agent` | ✓ | - | - | - | - | - | Claude 固有 |
+| `hooks` | ✓ | - | - | - | - | - | Claude 固有（before/after/on_error） |
+| `disable-model-invocation` | ✓ | - | ✓* | ✓** | ✓ | ✓ | 変換あり（下記参照） |
+| `user-invocable` / `user-invokable` | ✓ | - | - | - | ✓*** | ✓ | スペル正規化付きで変換 |
 
 \* Codex は `agents/openai.yaml` 内の `policy.allow_implicit_invocation` を使用（論理反転）
 \*\* OpenCode は SKILL.md の frontmatter 内で `disable-model-invocation` を直接使用
@@ -260,12 +263,12 @@ Claude → Codex 変換時に `disable-model-invocation` が設定されてい�
 
 Commands と同様：
 
-| 機能 | Claude Code / Codex CLI / OpenCode | Gemini CLI | Copilot |
-| ---- | ---------------------------------- | ---------- | ------- |
-| すべての引数 | `$ARGUMENTS` | `{{args}}` | サポートなし |
-| 個別引数 | `$1` ... `$9` | サポートなし | サポートなし |
-| シェルコマンド | `` !`command` `` | `!{command}` | サポートなし |
-| ファイル参照 | `@path/to/file` | `@{path/to/file}` | サポートなし |
+| 機能 | Claude Code / Codex CLI / OpenCode | Gemini CLI | Copilot | Cursor |
+| ---- | ---------------------------------- | ---------- | ------- | ------ |
+| すべての引数 | `$ARGUMENTS` | `{{args}}` | サポートなし | サポートなし |
+| 個別引数 | `$1` ... `$9` | サポートなし | サポートなし | サポートなし |
+| シェルコマンド | `` !`command` `` | `!{command}` | サポートなし | サポートなし |
+| ファイル参照 | `@path/to/file` | `@{path/to/file}` | サポートなし | サポートなし |
 
 ---
 

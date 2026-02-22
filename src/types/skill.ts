@@ -140,6 +140,20 @@ export interface CopilotSkill extends SkillBase {
 }
 
 /**
+ * Cursor skill format (agentskills.io standard)
+ */
+export interface CursorSkill extends SkillBase {
+  frontmatter: {
+    name?: string;
+    description?: string;
+    "allowed-tools"?: string;
+    "user-invocable"?: boolean;
+    "disable-model-invocation"?: boolean;
+    [key: string]: unknown;
+  };
+}
+
+/**
  * Content type for commands and skills
  */
 export type ContentType = "command" | "skill";
