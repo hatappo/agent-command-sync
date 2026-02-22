@@ -8,7 +8,7 @@ import type { ContentFilter } from "./skill.js";
 /**
  * Supported product types (single source of truth)
  */
-export const PRODUCT_TYPES = ["claude", "gemini", "codex", "opencode"] as const;
+export const PRODUCT_TYPES = ["claude", "gemini", "codex", "opencode", "copilot"] as const;
 export type ProductType = (typeof PRODUCT_TYPES)[number];
 
 /**

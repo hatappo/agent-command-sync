@@ -7,7 +7,7 @@
 [![npm version](https://badge.fury.io/js/agent-command-sync.svg)](https://www.npmjs.com/package/agent-command-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Bidirectionally convert and sync Custom Slash Commands and Skills between Claude Code, Gemini CLI, Codex CLI, and OpenCode with intuitive visual feedback.
+Bidirectionally convert and sync Custom Slash Commands and Skills between Claude Code, Gemini CLI, Codex CLI, OpenCode, and GitHub Copilot with intuitive visual feedback.
 
 ## CHANGELOG
 
@@ -49,8 +49,8 @@ acsync -n -s claude -d gemini
 ## Features
 
 - **Colorful Output** - Clear visual feedback with color-coded status indicators
-- **Fast Conversion** - Efficiently sync commands between Claude Code, Gemini CLI, Codex CLI, and OpenCode
-- **Bidirectional** - Convert in any direction (Claude ↔ Gemini ↔ Codex ↔ OpenCode)
+- **Fast Conversion** - Efficiently sync commands between Claude Code, Gemini CLI, Codex CLI, OpenCode, and GitHub Copilot
+- **Bidirectional** - Convert in any direction (Claude ↔ Gemini ↔ Codex ↔ OpenCode ↔ Copilot)
 - **Safe by Default** - Preview changes with dry-run mode before applying
 - **Short Command** - Use `acsync` instead of `agent-command-sync`
 - **Selective Sync** - Convert specific files or all commands at once
@@ -59,8 +59,8 @@ acsync -n -s claude -d gemini
 
 | Option                      | Description                                                           |
 | --------------------------- | --------------------------------------------------------------------- |
-| `-s, --src <product>`       | **Required.** Source product: `claude`, `gemini`, `codex`, or `opencode` |
-| `-d, --dest <product>`      | **Required.** Destination product: `claude`, `gemini`, `codex`, or `opencode` |
+| `-s, --src <product>`       | **Required.** Source product: `claude`, `gemini`, `codex`, `opencode`, or `copilot` |
+| `-d, --dest <product>`      | **Required.** Destination product: `claude`, `gemini`, `codex`, `opencode`, or `copilot` |
 | `-t, --type <type>`         | Content type: `commands`, `skills`, or `both` (default: `both`)      |
 | `-f, --file <filename>`     | Convert specific file only (supports `.md`, `.toml` extensions)      |
 | `-n, --noop`                | Preview changes without applying them                                 |
@@ -69,6 +69,7 @@ acsync -n -s claude -d gemini
 | `--gemini-dir <path>`       | Gemini base directory (default: ~/.gemini)                            |
 | `--codex-dir <path>`        | Codex base directory (default: ~/.codex)                              |
 | `--opencode-dir <path>`     | OpenCode base directory (default: ~/.config/opencode)                 |
+| `--copilot-dir <path>`      | Copilot base directory (default: ~/.copilot)                          |
 | `--no-overwrite`            | Skip existing files in target directory                               |
 | `--sync-delete`             | Delete orphaned files in target directory                             |
 | `--remove-unsupported`      | Remove fields not supported by target format                          |
@@ -105,12 +106,14 @@ acsync -s claude -d gemini -v
 - **Gemini CLI**: `~/.gemini/commands/*.toml`
 - **Codex CLI**: `~/.codex/prompts/*.md`
 - **OpenCode**: `~/.config/opencode/commands/*.md`
+- **GitHub Copilot**: `~/.copilot/prompts/*.prompt.md`
 
 ### Skills
 - **Claude Code**: `~/.claude/skills/<skill-name>/SKILL.md`
 - **Gemini CLI**: `~/.gemini/skills/<skill-name>/SKILL.md`
 - **Codex CLI**: `~/.codex/skills/<skill-name>/SKILL.md`
 - **OpenCode**: `~/.config/opencode/skills/<skill-name>/SKILL.md`
+- **GitHub Copilot**: `~/.copilot/skills/<skill-name>/SKILL.md`
 
 ## Format Comparison and Conversion Specification
 
@@ -128,22 +131,23 @@ acsync -s claude -d gemini -v
 
 ### File Structure and Metadata
 
-| Feature                                   | Claude Code   | Gemini CLI    | Codex CLI     | OpenCode      | Conversion Notes                             |
-| ----------------------------------------- | ------------- | ------------- | ------------- | ------------- | -------------------------------------------- |
-| File format                               | Markdown      | TOML          | Markdown      | Markdown      | Automatically converted                      |
-| Content field                             | Body content  | `prompt`      | Body content  | Body content  | Main command content                         |
-| Description metadata                      | `description` | `description` | `description` | `description` | Preserved across formats                     |
-| `model`                                   | Supported     | -             | -             | Supported     | Preserved for Claude/OpenCode                |
-| `allowed-tools`, `argument-hint`          | Supported     | -             | -             | -             | Claude-specific (use `--remove-unsupported`) |
+| Feature                                   | Claude Code   | Gemini CLI    | Codex CLI     | OpenCode      | Copilot       | Conversion Notes                             |
+| ----------------------------------------- | ------------- | ------------- | ------------- | ------------- | ------------- | -------------------------------------------- |
+| File format                               | Markdown      | TOML          | Markdown      | Markdown      | Markdown (`.prompt.md`) | Automatically converted              |
+| Content field                             | Body content  | `prompt`      | Body content  | Body content  | Body content  | Main command content                         |
+| Description metadata                      | `description` | `description` | `description` | `description` | `description` | Preserved across formats                     |
+| `model`                                   | Supported     | -             | -             | Supported     | Supported     | Preserved for Claude/OpenCode/Copilot        |
+| `tools` (YAML array)                      | -             | -             | -             | -             | Supported     | Copilot-specific (passthrough via extras)    |
+| `allowed-tools`, `argument-hint`          | Supported     | -             | -             | -             | -             | Claude-specific (use `--remove-unsupported`) |
 
 ### Content Placeholders and Syntax
 
-| Feature               | Claude Code    | Gemini CLI     | Codex CLI      | OpenCode       | Conversion Behavior                    |
-| --------------------- | -------------- | -------------- | -------------- | -------------- | -------------------------------------- |
-| All arguments         | `$ARGUMENTS`   | `{{args}}`     | `$ARGUMENTS`   | `$ARGUMENTS`   | Converted between formats              |
-| Individual arguments  | `$1` ... `$9`  | -              | `$1` ... `$9`  | `$1` ... `$9`  | Preserved (not supported in Gemini)    |
-| Shell command         | `` !`command` ``| `!{command}`  | -              | `` !`command` ``| Converted between formats              |
-| File reference        | `@path/to/file`| `@{path/to/file}` | -           | `@path/to/file`| Converted between formats              |
+| Feature               | Claude Code    | Gemini CLI     | Codex CLI      | OpenCode       | Copilot        | Conversion Behavior                    |
+| --------------------- | -------------- | -------------- | -------------- | -------------- | -------------- | -------------------------------------- |
+| All arguments         | `$ARGUMENTS`   | `{{args}}`     | `$ARGUMENTS`   | `$ARGUMENTS`   | -              | Converted between formats              |
+| Individual arguments  | `$1` ... `$9`  | -              | `$1` ... `$9`  | `$1` ... `$9`  | -              | Preserved (not supported in Gemini/Copilot) |
+| Shell command         | `` !`command` ``| `!{command}`  | -              | `` !`command` ``| -             | Converted between formats              |
+| File reference        | `@path/to/file`| `@{path/to/file}` | -           | `@path/to/file`| -              | Converted between formats              |
 
 #### Individual Arguments
 The placeholders `$1` through `$9` allow referencing individual command arguments. For example, `$1` refers to the first argument, `$2` to the second, and so on. This feature is supported in Claude Code, Codex CLI, and OpenCode, but not in Gemini CLI. During conversion, these placeholders are preserved as-is.
@@ -191,21 +195,22 @@ Use $ARGUMENTS for user input.
 
 ### Skill Metadata Comparison
 
-| Field | Claude Code | Gemini CLI | Codex CLI | OpenCode | Conversion Notes |
-| ----- | ----------- | ---------- | --------- | -------- | ---------------- |
-| `name` | ✓ | ✓ | ✓ | ✓ | Required |
-| `description` | ✓ | ✓ | ✓ | ✓ | Preserved |
-| `argument-hint` | ✓ | - | - | - | Claude-specific |
-| `allowed-tools` | ✓ | - | - | - | Claude-specific |
-| `model` | ✓ | - | - | - | Claude-specific |
-| `context` | ✓ | - | - | - | Claude-specific (e.g., `"fork"`) |
-| `agent` | ✓ | - | - | - | Claude-specific |
-| `hooks` | ✓ | - | - | - | Claude-specific (before/after/on_error) |
-| `disable-model-invocation` | ✓ | - | ✓* | ✓** | Converted (see below) |
-| `user-invocable` | ✓ | - | - | - | Claude-specific |
+| Field | Claude Code | Gemini CLI | Codex CLI | OpenCode | Copilot | Conversion Notes |
+| ----- | ----------- | ---------- | --------- | -------- | ------- | ---------------- |
+| `name` | ✓ | ✓ | ✓ | ✓ | ✓ | Required |
+| `description` | ✓ | ✓ | ✓ | ✓ | ✓ | Preserved |
+| `argument-hint` | ✓ | - | - | - | ✓ | Claude/Copilot |
+| `allowed-tools` | ✓ | - | - | - | - | Claude-specific |
+| `model` | ✓ | - | - | - | - | Claude-specific |
+| `context` | ✓ | - | - | - | - | Claude-specific (e.g., `"fork"`) |
+| `agent` | ✓ | - | - | - | - | Claude-specific |
+| `hooks` | ✓ | - | - | - | - | Claude-specific (before/after/on_error) |
+| `disable-model-invocation` | ✓ | - | ✓* | ✓** | ✓ | Converted (see below) |
+| `user-invocable` / `user-invokable` | ✓ | - | - | - | ✓*** | Converted with spelling normalization |
 
 \* Codex uses `policy.allow_implicit_invocation` in `agents/openai.yaml` (inverted logic)
 \*\* OpenCode uses `disable-model-invocation` directly in SKILL.md frontmatter
+\*\*\* Copilot uses `user-invokable` (with 'k') instead of Claude's `user-invocable` (with 'c'); automatically normalized during conversion
 
 ### Codex-Specific: agents/openai.yaml
 
@@ -255,12 +260,12 @@ Support files (scripts, configs, images, etc.) are copied as-is during conversio
 
 Same as Commands:
 
-| Feature | Claude Code / Codex CLI / OpenCode | Gemini CLI |
-| ------- | ---------------------------------- | ---------- |
-| All arguments | `$ARGUMENTS` | `{{args}}` |
-| Individual arguments | `$1` ... `$9` | Not supported |
-| Shell command | `` !`command` `` | `!{command}` |
-| File reference | `@path/to/file` | `@{path/to/file}` |
+| Feature | Claude Code / Codex CLI / OpenCode | Gemini CLI | Copilot |
+| ------- | ---------------------------------- | ---------- | ------- |
+| All arguments | `$ARGUMENTS` | `{{args}}` | Not supported |
+| Individual arguments | `$1` ... `$9` | Not supported | Not supported |
+| Shell command | `` !`command` `` | `!{command}` | Not supported |
+| File reference | `@path/to/file` | `@{path/to/file}` | Not supported |
 
 ---
 
@@ -271,6 +276,7 @@ Same as Commands:
 - [gemini-cli/docs/cli/custom-commands.md at main · google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/custom-commands.md)
 - [codex/docs/prompts.md at main · openai/codex](https://github.com/openai/codex/blob/main/docs/prompts.md)
 - [OpenCode](https://opencode.ai/)
+- [Custom instructions for GitHub Copilot](https://docs.github.com/en/copilot/customizing-copilot/adding-repository-custom-instructions-for-github-copilot)
 
 ### Skills
 - [Agent Skills Standard](https://agentskills.io/)

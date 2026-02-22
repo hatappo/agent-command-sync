@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { CodexAgent } from "../../src/agents/codex.js";
 import { ClaudeAgent } from "../../src/agents/claude.js";
+import { CopilotAgent } from "../../src/agents/copilot.js";
 import { OpenCodeAgent } from "../../src/agents/opencode.js";
-import type { CodexSkill, ClaudeSkill, OpenCodeSkill } from "../../src/types/index.js";
+import type { CodexSkill, ClaudeSkill, CopilotSkill, OpenCodeSkill } from "../../src/types/index.js";
 
 describe("Skill Conversion", () => {
   describe("allow_implicit_invocation ↔ disable-model-invocation conversion", () => {
@@ -310,6 +311,139 @@ describe("Skill Conversion", () => {
 
         expect(result.frontmatter["disable-model-invocation"]).toBe(true);
         expect(result.content).toBe("Test content with !`git status` and @config.json");
+      });
+    });
+  });
+
+  describe("Copilot Skill Conversion", () => {
+    describe("Claude → Copilot (via IR)", () => {
+      const claudeAgent = new ClaudeAgent();
+      const copilotAgent = new CopilotAgent();
+
+      it("should convert Claude skill to Copilot with user-invokable spelling", () => {
+        const claudeSkill: ClaudeSkill = {
+          name: "test-skill",
+          content: "Test content",
+          dirPath: "/test",
+          supportFiles: [],
+          frontmatter: {
+            name: "test-skill",
+            description: "Test",
+            "user-invocable": true,
+            "disable-model-invocation": true,
+          },
+        };
+
+        const ir = claudeAgent.skillToIR(claudeSkill);
+        const copilotSkill = copilotAgent.skillFromIR(ir);
+
+        expect(copilotSkill.frontmatter.name).toBe("test-skill");
+        expect(copilotSkill.frontmatter.description).toBe("Test");
+        expect(copilotSkill.frontmatter["user-invokable"]).toBe(true);
+        expect(copilotSkill.frontmatter["disable-model-invocation"]).toBe(true);
+      });
+
+      it("should remove Claude-specific fields with removeUnsupported", () => {
+        const claudeSkill: ClaudeSkill = {
+          name: "test-skill",
+          content: "Test",
+          dirPath: "/test",
+          supportFiles: [],
+          frontmatter: {
+            name: "test-skill",
+            "user-invocable": true,
+            "allowed-tools": "bash",
+            context: "fork",
+            hooks: { "pre-tool-execution": "echo test" },
+          },
+        };
+
+        const ir = claudeAgent.skillToIR(claudeSkill);
+        const copilotSkill = copilotAgent.skillFromIR(ir, { removeUnsupported: true });
+
+        expect(copilotSkill.frontmatter["user-invokable"]).toBeUndefined();
+        expect(copilotSkill.frontmatter["allowed-tools"]).toBeUndefined();
+        expect(copilotSkill.frontmatter.context).toBeUndefined();
+        expect(copilotSkill.frontmatter.hooks).toBeUndefined();
+      });
+    });
+
+    describe("Copilot → Claude (via IR)", () => {
+      const copilotAgent = new CopilotAgent();
+      const claudeAgent = new ClaudeAgent();
+
+      it("should convert Copilot skill to Claude with user-invocable spelling", () => {
+        const copilotSkill: CopilotSkill = {
+          name: "test-skill",
+          content: "Test content",
+          dirPath: "/test",
+          supportFiles: [],
+          frontmatter: {
+            name: "test-skill",
+            description: "Test",
+            "user-invokable": true,
+            "disable-model-invocation": false,
+          },
+        };
+
+        const ir = copilotAgent.skillToIR(copilotSkill);
+        const claudeSkill = claudeAgent.skillFromIR(ir);
+
+        expect(claudeSkill.frontmatter.name).toBe("test-skill");
+        expect(claudeSkill.frontmatter.description).toBe("Test");
+        expect(claudeSkill.frontmatter["user-invocable"]).toBe(true);
+        expect(claudeSkill.frontmatter["disable-model-invocation"]).toBe(false);
+      });
+    });
+
+    describe("Round-trip: Claude → Copilot → Claude", () => {
+      const claudeAgent = new ClaudeAgent();
+      const copilotAgent = new CopilotAgent();
+
+      it("should preserve disable-model-invocation through round-trip", () => {
+        const original: ClaudeSkill = {
+          name: "test-skill",
+          content: "Test content",
+          dirPath: "/test",
+          supportFiles: [],
+          frontmatter: {
+            name: "test-skill",
+            description: "Test",
+            "disable-model-invocation": true,
+          },
+        };
+
+        const ir1 = claudeAgent.skillToIR(original);
+        const copilot = copilotAgent.skillFromIR(ir1);
+        const ir2 = copilotAgent.skillToIR(copilot);
+        const result = claudeAgent.skillFromIR(ir2);
+
+        expect(result.frontmatter["disable-model-invocation"]).toBe(true);
+      });
+
+      it("should preserve user-invocable through round-trip", () => {
+        const original: ClaudeSkill = {
+          name: "test-skill",
+          content: "Test content",
+          dirPath: "/test",
+          supportFiles: [],
+          frontmatter: {
+            name: "test-skill",
+            "user-invocable": true,
+          },
+        };
+
+        const ir1 = claudeAgent.skillToIR(original);
+        const copilot = copilotAgent.skillFromIR(ir1);
+
+        // Copilot uses "user-invokable" (k)
+        expect(copilot.frontmatter["user-invokable"]).toBe(true);
+
+        const ir2 = copilotAgent.skillToIR(copilot);
+        const result = claudeAgent.skillFromIR(ir2);
+
+        // Back to Claude "user-invocable" (c)
+        expect(result.frontmatter["user-invocable"]).toBe(true);
       });
     });
   });

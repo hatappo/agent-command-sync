@@ -131,6 +131,18 @@ describe("FileUtils", () => {
     it("should use first extension as default", () => {
       expect(autoCompleteExtension("test", [".toml", ".yaml", ".yml"])).toBe("test.toml");
     });
+
+    it("should handle compound extension .prompt.md", () => {
+      expect(autoCompleteExtension("test.prompt.md", [".prompt.md"])).toBe("test.prompt.md");
+    });
+
+    it("should add compound extension if not present", () => {
+      expect(autoCompleteExtension("test", [".prompt.md"])).toBe("test.prompt.md");
+    });
+
+    it("should replace simple extension with compound extension", () => {
+      expect(autoCompleteExtension("test.md", [".prompt.md"])).toBe("test.prompt.md");
+    });
   });
 
   describe("getBaseName", () => {
@@ -146,6 +158,11 @@ describe("FileUtils", () => {
 
     it("should handle multiple dots", () => {
       expect(getBaseName("file.name.ext")).toBe("file.name");
+    });
+
+    it("should handle compound extension with explicit parameter", () => {
+      expect(getBaseName("test.prompt.md", ".prompt.md")).toBe("test");
+      expect(getBaseName("path/to/test.prompt.md", ".prompt.md")).toBe("test");
     });
   });
 
@@ -169,6 +186,20 @@ describe("FileUtils", () => {
       const filePath = "/base/commands/frontend/react/component.md";
 
       expect(getCommandName(filePath, baseDir)).toBe("frontend:react:component");
+    });
+
+    it("should handle compound extension .prompt.md with sourceExtension", () => {
+      const baseDir = "/base/prompts";
+      const filePath = "/base/prompts/git/commit.prompt.md";
+
+      expect(getCommandName(filePath, baseDir, ".prompt.md")).toBe("git:commit");
+    });
+
+    it("should handle single-level compound extension", () => {
+      const baseDir = "/base/prompts";
+      const filePath = "/base/prompts/test.prompt.md";
+
+      expect(getCommandName(filePath, baseDir, ".prompt.md")).toBe("test");
     });
   });
 
@@ -274,6 +305,36 @@ describe("FileUtils", () => {
 
       it("should return empty array for non-existent directory", async () => {
         const result = await findAgentCommands(AGENT_REGISTRY.opencode, undefined, "/non/existent/path");
+        expect(result).toEqual([]);
+      });
+    });
+
+    describe("copilot", () => {
+      it("should find .prompt.md files in prompts directory", async () => {
+        const promptsDir = join(testDir, "prompts");
+        await mkdir(promptsDir, { recursive: true });
+        await fsWriteFile(join(promptsDir, "test.prompt.md"), "# Test", "utf-8");
+        await fsWriteFile(join(promptsDir, "deploy.prompt.md"), "# Deploy", "utf-8");
+
+        const result = await findAgentCommands(AGENT_REGISTRY.copilot, undefined, testDir);
+        expect(result).toHaveLength(2);
+        expect(result).toContain(join(promptsDir, "deploy.prompt.md"));
+        expect(result).toContain(join(promptsDir, "test.prompt.md"));
+      });
+
+      it("should not match plain .md files as .prompt.md", async () => {
+        const promptsDir = join(testDir, "prompts");
+        await mkdir(promptsDir, { recursive: true });
+        await fsWriteFile(join(promptsDir, "test.prompt.md"), "# Test", "utf-8");
+        await fsWriteFile(join(promptsDir, "plain.md"), "# Plain", "utf-8");
+
+        const result = await findAgentCommands(AGENT_REGISTRY.copilot, undefined, testDir);
+        expect(result).toHaveLength(1);
+        expect(result[0]).toBe(join(promptsDir, "test.prompt.md"));
+      });
+
+      it("should return empty array for non-existent directory", async () => {
+        const result = await findAgentCommands(AGENT_REGISTRY.copilot, undefined, "/non/existent/path");
         expect(result).toEqual([]);
       });
     });

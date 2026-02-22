@@ -45,3 +45,20 @@ export interface OpenCodeCommand {
   content: string;
   filePath: string;
 }
+
+/**
+ * GitHub Copilot command format (.prompt.md)
+ */
+export interface CopilotCommand {
+  frontmatter: {
+    description?: string;
+    name?: string;
+    "argument-hint"?: string;
+    agent?: string;
+    model?: string;
+    tools?: string[];
+    [key: string]: unknown;
+  };
+  content: string;
+  filePath: string;
+}

@@ -1,6 +1,7 @@
 import type { ProductType } from "../types/intermediate.js";
 import { createClaudeAgent } from "./claude.js";
 import { createCodexAgent } from "./codex.js";
+import { createCopilotAgent } from "./copilot.js";
 import { createGeminiAgent } from "./gemini.js";
 import { createOpenCodeAgent } from "./opencode.js";
 import type { AgentDefinition } from "./agent-definition.js";
@@ -14,4 +15,5 @@ export const AGENT_REGISTRY: Record<ProductType, AgentDefinition> = {
   gemini: createGeminiAgent(),
   codex: createCodexAgent(),
   opencode: createOpenCodeAgent(),
+  copilot: createCopilotAgent(),
 };

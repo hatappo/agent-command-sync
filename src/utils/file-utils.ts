@@ -78,16 +78,18 @@ export async function deleteFile(filePath: string): Promise<void> {
  * Auto-complete or normalize file extension
  */
 export function autoCompleteExtension(filename: string, possibleExtensions: string[]): string {
+  // Check compound extensions first (e.g. ".prompt.md")
+  for (const ext of possibleExtensions) {
+    if (filename.endsWith(ext)) {
+      return filename;
+    }
+  }
+
   const currentExt = extname(filename);
 
   // Add the first extension if there's no extension
   if (!currentExt) {
     return `${filename}${possibleExtensions[0]}`;
-  }
-
-  // Return as is if it already has the correct extension
-  if (possibleExtensions.includes(currentExt)) {
-    return filename;
   }
 
   // Replace if it has the wrong extension
@@ -99,8 +101,11 @@ export function autoCompleteExtension(filename: string, possibleExtensions: stri
 /**
  * Get base name without extension from a file path
  */
-export function getBaseName(filePath: string): string {
+export function getBaseName(filePath: string, compoundExtension?: string): string {
   const filename = filePath.split("/").pop() || "";
+  if (compoundExtension && filename.endsWith(compoundExtension)) {
+    return filename.slice(0, -compoundExtension.length);
+  }
   const ext = extname(filename);
   return ext ? filename.slice(0, -ext.length) : filename;
 }
@@ -159,8 +164,8 @@ export async function findFiles(directory: string, options: FileSearchOptions): 
         if (entry.isDirectory() && options.recursive) {
           await searchDirectory(fullPath);
         } else if (entry.isFile()) {
-          const ext = extname(entry.name);
-          if (options.extensions.includes(ext)) {
+          const matchesExtension = options.extensions.some((ext) => entry.name.endsWith(ext));
+          if (matchesExtension) {
             // Check exclusion patterns
             if (options.excludePatterns) {
               const shouldExclude = options.excludePatterns.some(
@@ -206,8 +211,8 @@ export async function findAgentCommands(
     const fileWithExt = autoCompleteExtension(specificFile, [extension]);
 
     // Try multiple extension patterns
-    const possibleExtensions = [".md", ".toml"];
-    const baseName = specificFile.replace(/\.(md|toml)$/, "");
+    const possibleExtensions = [".prompt.md", ".md", ".toml"];
+    const baseName = specificFile.replace(/\.prompt\.md$|\.md$|\.toml$/, "");
 
     const possiblePaths: string[] = [];
 
@@ -289,9 +294,14 @@ export async function findAgentSkills(
 /**
  * Generate command name from file path
  */
-export function getCommandName(filePath: string, baseDirectory: string): string {
+export function getCommandName(filePath: string, baseDirectory: string, sourceExtension?: string): string {
   const relativePath = relative(baseDirectory, filePath);
-  const pathWithoutExt = relativePath.replace(/\.[^/.]+$/, "");
+  let pathWithoutExt: string;
+  if (sourceExtension && relativePath.endsWith(sourceExtension)) {
+    pathWithoutExt = relativePath.slice(0, -sourceExtension.length);
+  } else {
+    pathWithoutExt = relativePath.replace(/\.[^/.]+$/, "");
+  }
 
   // Convert directory structure to colon (namespacing)
   return pathWithoutExt.replace(/\//g, ":");
