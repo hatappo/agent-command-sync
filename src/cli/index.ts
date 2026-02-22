@@ -273,6 +273,15 @@ statusCmd.action(async (options) => {
   }
 });
 
+// ── version subcommand ───────────────────────────────────────────
+
+program
+  .command("version")
+  .description("Show version")
+  .action(() => {
+    console.log(version);
+  });
+
 // ── Help ────────────────────────────────────────────────────────
 
 program.on("--help", () => {

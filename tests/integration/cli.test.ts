@@ -2,6 +2,7 @@ import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { version } from "../../package.json" assert { type: "json" };
 import type { CLIOptions } from "../../src/cli/options.js";
 import { showStatus } from "../../src/cli/status.js";
 import { syncCommands } from "../../src/cli/sync.js";
@@ -1115,7 +1116,7 @@ custom-gemini = "gval"`;
       }
 
       const output = logs.join("\n");
-      expect(output).toContain("v3.0.0");
+      expect(output).toContain(`v${version}`);
       expect(output).toContain("Lv.0");
       expect(output).toContain("Ghost");
       expect(output).toContain("No agents detected yet");
