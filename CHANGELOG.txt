@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.4.0] - 2026-02-23
+
+### Added
+- **`[=]` Unchanged indicator**: Commands and skills whose converted content is identical to the existing target are now reported as `[=]` (Blue) instead of `[M]`, with file writes skipped for unchanged files
+
+### Fixed
+- **Skill conversion: remove `_claude_` prefix pattern**: Skill fields are now passed through as-is (like commands), instead of being stored with `_claude_*` prefix in target frontmatter. Lossy conversion is handled by the Chimera hub. This simplifies the codebase and makes skill conversion consistent with command conversion.
+
 ## [3.2.0] - 2026-02-23
 
 ### Added
