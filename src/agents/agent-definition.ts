@@ -36,7 +36,7 @@ export interface CommandParser<T> {
  * Bidirectional command conversion via SemanticIR.
  */
 export interface CommandConverter<T> {
-  commandToIR(source: T): SemanticIR;
+  commandToIR(source: T, options?: ConverterOptions): SemanticIR;
   commandFromIR(ir: SemanticIR, options?: ConverterOptions): T;
 }
 
@@ -54,7 +54,7 @@ export interface SkillParser<T> {
  * Bidirectional skill conversion via SemanticIR.
  */
 export interface SkillConverter<T> {
-  skillToIR(source: T): SemanticIR;
+  skillToIR(source: T, options?: ConverterOptions): SemanticIR;
   skillFromIR(ir: SemanticIR, options?: ConverterOptions): T;
 }
 

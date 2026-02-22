@@ -7,7 +7,7 @@
 [![npm version](https://badge.fury.io/js/agent-command-sync.svg)](https://www.npmjs.com/package/agent-command-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Bidirectionally convert and sync Custom Slash Commands and Skills between Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor with intuitive visual feedback.
+Bidirectionally convert and sync Custom Slash Commands and Skills between Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor with intuitive visual feedback. Features a **Chimera** virtual agent as a lossless conversion hub.
 
 ## CHANGELOG
 
@@ -22,20 +22,28 @@ npm install -g agent-command-sync
 ## Quick Start
 
 ```bash
-# Convert Claude Code → Gemini CLI (Commands + Skills)
-acsync -s claude -d gemini
+# Direct conversion between agents
+acs sync -s claude -d gemini
+acs sync -s gemini -d claude
 
-# Convert Gemini CLI → Claude Code
-acsync -s gemini -d claude
+# Import into Chimera hub (lossless)
+acs import claude
+acs import gemini
 
-# Convert Skills only
-acsync -s claude -d gemini -t skills
+# Apply from Chimera hub to an agent
+acs apply gemini
+acs apply claude
 
-# Convert Commands only
-acsync -s claude -d gemini -t commands
+# Preview changes (dry run)
+acs drift claude          # Preview import
+acs plan gemini           # Preview apply
 
-# Preview changes without applying
-acsync -n -s claude -d gemini
+# Convert Skills or Commands only
+acs sync -s claude -d gemini -t skills
+acs sync -s claude -d gemini -t commands
+
+# Preview direct conversion
+acs sync -n -s claude -d gemini
 ```
 
 ## Screenshots
@@ -52,15 +60,51 @@ acsync -n -s claude -d gemini
 - **Fast Conversion** - Efficiently sync commands between Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor
 - **Bidirectional** - Convert in any direction (Claude ↔ Gemini ↔ Codex ↔ OpenCode ↔ Copilot ↔ Cursor)
 - **Safe by Default** - Preview changes with dry-run mode before applying
-- **Short Command** - Use `acsync` instead of `agent-command-sync`
+- **Chimera Hub** - Lossless conversion via virtual agent that preserves all agent-specific settings
+- **Subcommands** - `import`, `apply`, `drift`, `plan` for Chimera hub workflow; `sync` for direct conversion
+- **Short Command** - Use `acs` instead of `agent-command-sync`
 - **Selective Sync** - Convert specific files or all commands at once
 
-## Options
+## Subcommands
+
+### `acs sync` — Direct conversion between agents
+
+```bash
+acs sync -s <source> -d <dest> [options]
+```
+
+### `acs import <agent>` — Import into Chimera hub (shorthand for `acs sync -s <agent> -d chimera`)
+
+```bash
+acs import claude                          # Import all from Claude
+acs import gemini -t commands              # Import commands only
+```
+
+### `acs drift <agent>` — Preview import (shorthand for `acs sync -s <agent> -d chimera -n`)
+
+```bash
+acs drift claude                           # Preview import changes
+```
+
+### `acs apply <agent>` — Apply Chimera hub to agent (shorthand for `acs sync -s chimera -d <agent>`)
+
+```bash
+acs apply gemini                           # Apply to Gemini
+acs apply claude --remove-unsupported      # Remove unsupported fields
+```
+
+### `acs plan <agent>` — Preview apply (shorthand for `acs sync -s chimera -d <agent> -n`)
+
+```bash
+acs plan gemini                            # Preview apply changes
+```
+
+## Options (sync subcommand)
 
 | Option                      | Description                                                           |
 | --------------------------- | --------------------------------------------------------------------- |
-| `-s, --src <product>`       | **Required.** Source product: `claude`, `gemini`, `codex`, `opencode`, `copilot`, or `cursor` |
-| `-d, --dest <product>`      | **Required.** Destination product: `claude`, `gemini`, `codex`, `opencode`, `copilot`, or `cursor` |
+| `-s, --src <product>`       | **Required.** Source product: `claude`, `gemini`, `codex`, `opencode`, `copilot`, `cursor`, or `chimera` |
+| `-d, --dest <product>`      | **Required.** Destination product: `claude`, `gemini`, `codex`, `opencode`, `copilot`, `cursor`, or `chimera` |
 | `-t, --type <type>`         | Content type: `commands`, `skills`, or `both` (default: `both`)      |
 | `-f, --file <filename>`     | Convert specific file only (supports `.md`, `.toml` extensions)      |
 | `-n, --noop`                | Preview changes without applying them                                 |
@@ -71,6 +115,7 @@ acsync -n -s claude -d gemini
 | `--opencode-dir <path>`     | OpenCode base directory (default: ~/.config/opencode)                 |
 | `--copilot-dir <path>`      | Copilot base directory (default: ~/.copilot)                          |
 | `--cursor-dir <path>`       | Cursor base directory (default: ~/.cursor)                            |
+| `--chimera-dir <path>`      | Chimera base directory (default: ~/.config/acsync)                    |
 | `--no-overwrite`            | Skip existing files in target directory                               |
 | `--sync-delete`             | Delete orphaned files in target directory                             |
 | `--remove-unsupported`      | Remove fields not supported by target format                          |
@@ -78,26 +123,26 @@ acsync -n -s claude -d gemini
 ## Examples
 
 ```bash
-# Convert all commands and skills with preview
-acsync -n -s claude -d gemini
+# Direct conversion with preview
+acs sync -n -s claude -d gemini
 
 # Convert specific file
-acsync -s gemini -d claude -f analyze-code
+acs sync -s gemini -d claude -f analyze-code
 
-# Convert Skills only
-acsync -s claude -d gemini -t skills
-
-# Convert specific skill
-acsync -s claude -d gemini -t skills -f my-skill
+# Chimera hub workflow
+acs import claude                          # Import Claude → Chimera
+acs import gemini                          # Import Gemini → Chimera (merges)
+acs apply claude                           # Apply Chimera → Claude (with Claude extras)
+acs apply gemini                           # Apply Chimera → Gemini (with Gemini extras)
 
 # Full sync with cleanup
-acsync -s claude -d gemini --sync-delete --remove-unsupported
+acs sync -s claude -d gemini --sync-delete --remove-unsupported
 
-# Use custom directories (base directories, /commands and /skills will be added automatically)
-acsync -s claude -d gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
+# Use custom directories
+acs sync -s claude -d gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
 
 # Show verbose output for debugging
-acsync -s claude -d gemini -v
+acs sync -s claude -d gemini -v
 ```
 
 ## Default File Locations
@@ -109,6 +154,7 @@ acsync -s claude -d gemini -v
 - **OpenCode**: `~/.config/opencode/commands/*.md`
 - **GitHub Copilot**: `~/.copilot/prompts/*.prompt.md`
 - **Cursor**: `~/.cursor/commands/*.md`
+- **Chimera**: `~/.config/acsync/commands/*.md`
 
 ### Skills
 - **Claude Code**: `~/.claude/skills/<skill-name>/SKILL.md`
@@ -117,6 +163,7 @@ acsync -s claude -d gemini -v
 - **OpenCode**: `~/.config/opencode/skills/<skill-name>/SKILL.md`
 - **GitHub Copilot**: `~/.copilot/skills/<skill-name>/SKILL.md`
 - **Cursor**: `~/.cursor/skills/<skill-name>/SKILL.md`
+- **Chimera**: `~/.config/acsync/skills/<skill-name>/SKILL.md`
 
 ## Format Comparison and Conversion Specification
 

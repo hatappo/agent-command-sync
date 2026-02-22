@@ -82,7 +82,7 @@ export class CursorAgent implements AgentDefinition {
 
   // ── CommandConverter ──────────────────────────────────────────────
 
-  commandToIR(source: CursorCommand): SemanticIR {
+  commandToIR(source: CursorCommand, _options?: ConverterOptions): SemanticIR {
     return {
       contentType: "command",
       body: this.parseBody(source.content),
@@ -213,7 +213,7 @@ export class CursorAgent implements AgentDefinition {
 
   // ── SkillConverter ────────────────────────────────────────────────
 
-  skillToIR(source: CursorSkill): SemanticIR {
+  skillToIR(source: CursorSkill, _options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     const fm = source.frontmatter;
 

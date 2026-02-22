@@ -10,6 +10,7 @@ export const FILE_EXTENSIONS = {
   GEMINI: ".toml",
   COPILOT: ".prompt.md",
   CURSOR: ".md",
+  CHIMERA: ".md",
 } as const;
 
 /**

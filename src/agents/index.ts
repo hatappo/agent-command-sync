@@ -8,6 +8,7 @@ export type {
   SkillConverter,
 } from "./agent-definition.js";
 export { AGENT_REGISTRY } from "./registry.js";
+export * from "./chimera.js";
 export * from "./claude.js";
 export * from "./gemini.js";
 export * from "./codex.js";

@@ -1,34 +1,49 @@
 /**
- * Claude Code agent — unified parser, converter, and body handling
+ * Chimera virtual agent — lossless hub for cross-agent conversion
+ *
+ * File format: Claude-based (YAML frontmatter + Markdown body, Claude placeholder syntax)
+ * with a `_chimera` section in frontmatter to store per-agent extras.
  */
 
 import { mkdir, writeFile as fsWriteFile, copyFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import matter from "gray-matter";
 import type { BodySegment } from "../types/body-segment.js";
-import type { ClaudeCommand, ClaudeSkill } from "../types/index.js";
+import type { ChimeraCommand } from "../types/command.js";
+import type { ChimeraSkill } from "../types/skill.js";
 import { ParseError } from "../types/index.js";
 import type { ConverterOptions, SemanticIR } from "../types/semantic-ir.js";
 import { parseBody, serializeBody } from "../utils/body-segment-utils.js";
 import { FILE_EXTENSIONS, SKILL_CONSTANTS } from "../utils/constants.js";
 import { readFile, fileExists } from "../utils/file-utils.js";
 import { collectSupportFiles, getSkillName, isSkillDirectory } from "../utils/skill-utils.js";
-import { validateClaudeCommand } from "../utils/validation.js";
 import { CLAUDE_SYNTAX_PATTERNS, CLAUDE_SYNTAX_SERIALIZERS } from "./_claude-syntax-body-patterns.js";
 import type { AgentDefinition } from "./agent-definition.js";
 
-/** Fields that map to semantic properties (shared across 2+ agents) */
+const CHIMERA_KEY = "_chimera";
+const SEMANTIC_COMMAND_FIELDS = ["description"] as const;
 const SEMANTIC_SKILL_FIELDS = ["name", "description", "disable-model-invocation"] as const;
 
-export class ClaudeAgent implements AgentDefinition {
+/** Filter out undefined/null values from a record (YAML serializer cannot handle undefined) */
+function filterUndefined(obj: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined && value !== null) {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
+export class ChimeraAgent implements AgentDefinition {
   // ── AgentConfig ───────────────────────────────────────────────────
 
-  readonly displayName = "Claude Code";
+  readonly displayName = "Chimera";
   readonly dirs = {
     commandSubdir: "commands",
     skillSubdir: "skills",
-    projectBase: ".claude",
-    userDefault: ".claude",
+    projectBase: ".config/acsync",
+    userDefault: ".config/acsync",
   };
   readonly fileExtension = ".md";
 
@@ -44,17 +59,15 @@ export class ClaudeAgent implements AgentDefinition {
 
   // ── CommandParser ─────────────────────────────────────────────────
 
-  async parseCommand(filePath: string): Promise<ClaudeCommand> {
+  async parseCommand(filePath: string): Promise<ChimeraCommand> {
     try {
       const content = await readFile(filePath);
       const parsed = matter(content);
 
       return {
         frontmatter: {
-          "allowed-tools": parsed.data["allowed-tools"],
-          "argument-hint": parsed.data["argument-hint"],
           description: parsed.data.description,
-          model: parsed.data.model,
+          [CHIMERA_KEY]: parsed.data[CHIMERA_KEY],
           ...parsed.data,
         },
         content: parsed.content,
@@ -62,28 +75,19 @@ export class ClaudeAgent implements AgentDefinition {
       };
     } catch (error) {
       throw new ParseError(
-        `Failed to parse Claude command file: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to parse Chimera command file: ${error instanceof Error ? error.message : String(error)}`,
         filePath,
         error instanceof Error ? error : undefined,
       );
     }
   }
 
-  validateCommand(data: ClaudeCommand): boolean {
-    const errors = validateClaudeCommand(data);
-    return errors.length === 0;
+  validateCommand(data: ChimeraCommand): boolean {
+    return typeof data.content === "string" && typeof data.filePath === "string";
   }
 
-  stringifyCommand(command: ClaudeCommand): string {
+  stringifyCommand(command: ChimeraCommand): string {
     const { frontmatter, content } = command;
-
-    const hasValidFrontmatter = Object.keys(frontmatter).some(
-      (key) => frontmatter[key] !== undefined && frontmatter[key] !== null,
-    );
-
-    if (!hasValidFrontmatter) {
-      return content;
-    }
 
     const cleanFrontmatter: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(frontmatter)) {
@@ -92,51 +96,77 @@ export class ClaudeAgent implements AgentDefinition {
       }
     }
 
+    const hasValidFrontmatter = Object.keys(cleanFrontmatter).length > 0;
+
+    if (!hasValidFrontmatter) {
+      return content;
+    }
+
     return matter.stringify(content, cleanFrontmatter);
   }
 
   // ── CommandConverter ──────────────────────────────────────────────
 
-  commandToIR(source: ClaudeCommand, _options?: ConverterOptions): SemanticIR {
+  commandToIR(source: ChimeraCommand, options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     let description: string | undefined;
 
     for (const [key, value] of Object.entries(source.frontmatter)) {
-      if (key === "description") {
-        description = value as string | undefined;
+      if (key === CHIMERA_KEY) continue;
+      if ((SEMANTIC_COMMAND_FIELDS as readonly string[]).includes(key)) {
+        if (key === "description") description = value as string | undefined;
       } else {
         extras[key] = value;
       }
+    }
+
+    // If destinationType is specified, use that agent's extras from _chimera section
+    const chimeraSection = source.frontmatter[CHIMERA_KEY];
+    const destType = options?.destinationType;
+    let resolvedExtras: Record<string, unknown> = extras;
+
+    if (destType && destType !== "chimera" && chimeraSection?.[destType]) {
+      resolvedExtras = { ...extras, ...chimeraSection[destType] };
     }
 
     return {
       contentType: "command",
       body: this.parseBody(source.content),
       semantic: { description },
-      extras,
+      extras: resolvedExtras,
       meta: {
         sourcePath: source.filePath,
-        sourceType: "claude",
+        sourceType: "chimera",
       },
     };
   }
 
-  commandFromIR(ir: SemanticIR, _options?: ConverterOptions): ClaudeCommand {
-    const frontmatter: ClaudeCommand["frontmatter"] = {};
+  commandFromIR(ir: SemanticIR, options?: ConverterOptions): ChimeraCommand {
+    const frontmatter: ChimeraCommand["frontmatter"] = {};
 
+    // Set semantic fields at top level
     if (ir.semantic.description !== undefined) {
       frontmatter.description = ir.semantic.description;
     }
 
-    for (const [key, value] of Object.entries(ir.extras)) {
-      if (key !== "prompt") {
-        frontmatter[key] = value;
+    // Build _chimera section by merging with existing target
+    const existingChimera = this.getExistingChimeraSection(options?.existingTarget, "command");
+    const sourceType = ir.meta.sourceType;
+
+    if (sourceType && sourceType !== "chimera") {
+      const cleanExtras = filterUndefined(ir.extras);
+      if (Object.keys(cleanExtras).length > 0) {
+        existingChimera[sourceType] = cleanExtras;
       }
     }
 
+    if (Object.keys(existingChimera).length > 0) {
+      frontmatter[CHIMERA_KEY] = existingChimera;
+    }
+
     let filePath = ir.meta.sourcePath || "";
-    if (!filePath.endsWith(FILE_EXTENSIONS.CLAUDE)) {
-      filePath = filePath.replace(/\.[^.]+$/, FILE_EXTENSIONS.CLAUDE);
+    if (!filePath.endsWith(FILE_EXTENSIONS.CHIMERA)) {
+      filePath = filePath.replace(/\.[^.]+$/, FILE_EXTENSIONS.CHIMERA);
     }
 
     return { frontmatter, content: this.serializeBody(ir.body), filePath };
@@ -144,7 +174,7 @@ export class ClaudeAgent implements AgentDefinition {
 
   // ── SkillParser ───────────────────────────────────────────────────
 
-  async parseSkill(dirPath: string): Promise<ClaudeSkill> {
+  async parseSkill(dirPath: string): Promise<ChimeraSkill> {
     try {
       if (!(await isSkillDirectory(dirPath))) {
         throw new Error(`Not a valid skill directory: missing ${SKILL_CONSTANTS.SKILL_FILE_NAME}`);
@@ -178,27 +208,21 @@ export class ClaudeAgent implements AgentDefinition {
         frontmatter: {
           name: parsed.data.name,
           description: parsed.data.description,
-          "argument-hint": parsed.data["argument-hint"],
           "disable-model-invocation": parsed.data["disable-model-invocation"],
-          "user-invocable": parsed.data["user-invocable"],
-          "allowed-tools": parsed.data["allowed-tools"],
-          model: parsed.data.model,
-          context: parsed.data.context,
-          agent: parsed.data.agent,
-          hooks: parsed.data.hooks,
+          [CHIMERA_KEY]: parsed.data[CHIMERA_KEY],
           ...parsed.data,
         },
       };
     } catch (error) {
       throw new ParseError(
-        `Failed to parse Claude skill: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to parse Chimera skill: ${error instanceof Error ? error.message : String(error)}`,
         dirPath,
         error instanceof Error ? error : undefined,
       );
     }
   }
 
-  validateSkill(data: ClaudeSkill): boolean {
+  validateSkill(data: ChimeraSkill): boolean {
     if (!data.content || typeof data.content !== "string") {
       return false;
     }
@@ -208,7 +232,7 @@ export class ClaudeAgent implements AgentDefinition {
     return true;
   }
 
-  stringifySkill(skill: ClaudeSkill): string {
+  stringifySkill(skill: ChimeraSkill): string {
     const { frontmatter, content } = skill;
 
     const cleanFrontmatter: Record<string, unknown> = {};
@@ -227,7 +251,7 @@ export class ClaudeAgent implements AgentDefinition {
     return matter.stringify(content, cleanFrontmatter);
   }
 
-  async writeSkillToDirectory(skill: ClaudeSkill, sourceDirPath: string, targetDir: string): Promise<void> {
+  async writeSkillToDirectory(skill: ChimeraSkill, sourceDirPath: string, targetDir: string): Promise<void> {
     skill.dirPath = sourceDirPath;
 
     await mkdir(targetDir, { recursive: true });
@@ -252,14 +276,24 @@ export class ClaudeAgent implements AgentDefinition {
 
   // ── SkillConverter ────────────────────────────────────────────────
 
-  skillToIR(source: ClaudeSkill, _options?: ConverterOptions): SemanticIR {
+  skillToIR(source: ChimeraSkill, options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     const fm = source.frontmatter;
 
     for (const [key, value] of Object.entries(fm)) {
+      if (key === CHIMERA_KEY) continue;
       if (!(SEMANTIC_SKILL_FIELDS as readonly string[]).includes(key)) {
         extras[key] = value;
       }
+    }
+
+    // If destinationType is specified, use that agent's extras from _chimera section
+    const chimeraSection = fm[CHIMERA_KEY];
+    const destType = options?.destinationType;
+    let resolvedExtras: Record<string, unknown> = extras;
+
+    if (destType && destType !== "chimera" && chimeraSection?.[destType]) {
+      resolvedExtras = { ...extras, ...chimeraSection[destType] };
     }
 
     return {
@@ -271,32 +305,42 @@ export class ClaudeAgent implements AgentDefinition {
         modelInvocationEnabled:
           typeof fm["disable-model-invocation"] === "boolean" ? !fm["disable-model-invocation"] : undefined,
       },
-      extras,
+      extras: resolvedExtras,
       meta: {
         sourcePath: source.dirPath,
-        sourceType: "claude",
+        sourceType: "chimera",
         supportFiles: source.supportFiles,
         skillName: source.name,
       },
     };
   }
 
-  skillFromIR(ir: SemanticIR, _options?: ConverterOptions): ClaudeSkill {
+  skillFromIR(ir: SemanticIR, options?: ConverterOptions): ChimeraSkill {
     const skillName = ir.meta.skillName || "unnamed-skill";
     const supportFiles = ir.meta.supportFiles || [];
 
-    const frontmatter: ClaudeSkill["frontmatter"] = {};
+    const frontmatter: ChimeraSkill["frontmatter"] = {};
 
+    // Set semantic fields at top level
     if (ir.semantic.name !== undefined) frontmatter.name = ir.semantic.name;
     if (ir.semantic.description !== undefined) frontmatter.description = ir.semantic.description;
     if (ir.semantic.modelInvocationEnabled !== undefined) {
       frontmatter["disable-model-invocation"] = !ir.semantic.modelInvocationEnabled;
     }
 
-    for (const [key, value] of Object.entries(ir.extras)) {
-      if (!(key in frontmatter)) {
-        frontmatter[key] = value;
+    // Build _chimera section by merging with existing target
+    const existingChimera = this.getExistingChimeraSection(options?.existingTarget, "skill");
+    const sourceType = ir.meta.sourceType;
+
+    if (sourceType && sourceType !== "chimera") {
+      const cleanExtras = filterUndefined(ir.extras);
+      if (Object.keys(cleanExtras).length > 0) {
+        existingChimera[sourceType] = cleanExtras;
       }
+    }
+
+    if (Object.keys(existingChimera).length > 0) {
+      frontmatter[CHIMERA_KEY] = existingChimera;
     }
 
     return {
@@ -308,8 +352,32 @@ export class ClaudeAgent implements AgentDefinition {
       frontmatter,
     };
   }
+
+  // ── Private helpers ───────────────────────────────────────────────
+
+  private getExistingChimeraSection(
+    existingTarget: unknown,
+    type: "command" | "skill",
+  ): Record<string, Record<string, unknown>> {
+    if (!existingTarget) return {};
+
+    try {
+      if (type === "command") {
+        const existing = existingTarget as ChimeraCommand;
+        return existing.frontmatter?.[CHIMERA_KEY]
+          ? structuredClone(existing.frontmatter[CHIMERA_KEY])
+          : {};
+      }
+      const existing = existingTarget as ChimeraSkill;
+      return existing.frontmatter?.[CHIMERA_KEY]
+        ? structuredClone(existing.frontmatter[CHIMERA_KEY])
+        : {};
+    } catch {
+      return {};
+    }
+  }
 }
 
-export function createClaudeAgent(): AgentDefinition {
-  return new ClaudeAgent();
+export function createChimeraAgent(): AgentDefinition {
+  return new ChimeraAgent();
 }

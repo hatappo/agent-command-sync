@@ -100,7 +100,7 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
     }
 
     // Display results
-    displayResults(operations, errors, options.noop);
+    displayResults(operations, errors, options);
 
     return {
       success: errors.length === 0,
@@ -170,15 +170,9 @@ async function convertSingleFile(
   try {
     // Step 1: Parse and convert to SemanticIR
     const src = AGENT_REGISTRY[options.source];
-    const command = await src.parseCommand(sourceFile);
-    const ir: SemanticIR = src.commandToIR(command);
-
-    // Step 2: Convert from SemanticIR to target format
-    const converterOptions = { removeUnsupported: options.removeUnsupported };
     const dst = AGENT_REGISTRY[options.destination];
-    const targetCommand = dst.commandFromIR(ir, converterOptions);
-    const targetContent = dst.stringifyCommand(targetCommand);
-    const targetExt = dst.fileExtension;
+    const command = await src.parseCommand(sourceFile);
+    const ir: SemanticIR = src.commandToIR(command, { destinationType: options.destination });
 
     // Determine target file path (user directory only)
     const sourceDir = resolveCommandDir(src, options.customDirs?.[options.source]).user;
@@ -189,7 +183,25 @@ async function convertSingleFile(
     }
 
     const commandName = getCommandName(sourceFile, sourceDir, src.fileExtension);
+    const targetExt = dst.fileExtension;
     const targetFile = getFilePathFromCommandName(commandName, targetDir, targetExt);
+
+    // Step 2: Read existing target for merge (used by chimera, ignored by others)
+    let existingTarget: unknown;
+    if (await fileExists(targetFile)) {
+      try {
+        existingTarget = await dst.parseCommand(targetFile);
+      } catch {
+        /* ignore parse errors on existing target */
+      }
+    }
+
+    // Step 3: Convert from SemanticIR to target format
+    const targetCommand = dst.commandFromIR(ir, {
+      removeUnsupported: options.removeUnsupported,
+      existingTarget,
+    });
+    const targetContent = dst.stringifyCommand(targetCommand);
 
     // Execute file operation
     const operation = await handleFileOperation(targetFile, targetContent, options);
@@ -310,12 +322,12 @@ async function convertSingleSkill(
   try {
     // Step 1: Parse and convert to SemanticIR
     const src = AGENT_REGISTRY[options.source];
+    const dst = AGENT_REGISTRY[options.destination];
     const skill = await src.parseSkill(skillDir);
-    const ir: SemanticIR = src.skillToIR(skill);
+    const ir: SemanticIR = src.skillToIR(skill, { destinationType: options.destination });
 
     // Get skill directories
     const sourceDir = resolveSkillDir(src, options.customDirs?.[options.source]).user;
-    const dst = AGENT_REGISTRY[options.destination];
     const targetDir = resolveSkillDir(dst, options.customDirs?.[options.destination]).user;
 
     const skillName = getSkillNameFromPath(skillDir, sourceDir);
@@ -334,6 +346,16 @@ async function convertSingleSkill(
       return { operations, errors };
     }
 
+    // Read existing target for merge (used by chimera, ignored by others)
+    let existingTarget: unknown;
+    if (targetExists) {
+      try {
+        existingTarget = await dst.parseSkill(targetSkillDir);
+      } catch {
+        /* ignore parse errors on existing target */
+      }
+    }
+
     // In no-op mode
     if (options.noop) {
       operations.push({
@@ -345,8 +367,10 @@ async function convertSingleSkill(
     }
 
     // Step 3: Convert from SemanticIR to target format and write
-    const converterOptions = { removeUnsupported: options.removeUnsupported };
-    const targetSkill = dst.skillFromIR(ir, converterOptions);
+    const targetSkill = dst.skillFromIR(ir, {
+      removeUnsupported: options.removeUnsupported,
+      existingTarget,
+    });
     await dst.writeSkillToDirectory(targetSkill, skillDir, targetSkillDir);
 
     operations.push({
@@ -427,7 +451,18 @@ const operationStyles = {
 /**
  * Display results
  */
-function displayResults(operations: FileOperation[], errors: Error[], isNoop: boolean): void {
+function getNoopMessage(rawSubCommand?: string): string {
+  switch (rawSubCommand) {
+    case "drift":
+      return "This was a dry run. Use `acs import` to apply changes.";
+    case "plan":
+      return "This was a dry run. Use `acs apply` to apply changes.";
+    default:
+      return "This was a dry run. Use without --noop to apply changes.";
+  }
+}
+
+function displayResults(operations: FileOperation[], errors: Error[], options: CLIOptions): void {
   console.log(picocolors.bold("\nResults:"));
 
   if (operations.length === 0) {
@@ -467,8 +502,8 @@ function displayResults(operations: FileOperation[], errors: Error[], isNoop: bo
     });
   }
 
-  if (isNoop) {
-    console.log(picocolors.cyan("\nThis was a no-op run. Use without --noop to apply changes."));
+  if (options.noop) {
+    console.log(picocolors.cyan(`\n${getNoopMessage(options.rawSubCommand)}`));
   } else if (errors.length === 0) {
     console.log(picocolors.green("\n✓ Conversion completed successfully!"));
   }
