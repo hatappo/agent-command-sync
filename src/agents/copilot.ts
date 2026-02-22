@@ -113,7 +113,7 @@ export class CopilotAgent implements AgentDefinition {
 
   // ── CommandConverter ──────────────────────────────────────────────
 
-  commandToIR(source: CopilotCommand): SemanticIR {
+  commandToIR(source: CopilotCommand, _options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     let description: string | undefined;
 
@@ -264,7 +264,7 @@ export class CopilotAgent implements AgentDefinition {
 
   // ── SkillConverter ────────────────────────────────────────────────
 
-  skillToIR(source: CopilotSkill): SemanticIR {
+  skillToIR(source: CopilotSkill, _options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     const fm = source.frontmatter;
 

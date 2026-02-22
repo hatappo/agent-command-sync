@@ -154,6 +154,19 @@ export interface CursorSkill extends SkillBase {
 }
 
 /**
+ * Chimera virtual agent skill format (Claude-based with _chimera extras)
+ */
+export interface ChimeraSkill extends SkillBase {
+  frontmatter: {
+    name?: string;
+    description?: string;
+    "disable-model-invocation"?: boolean;
+    _chimera?: Record<string, Record<string, unknown>>;
+    [key: string]: unknown;
+  };
+}
+
+/**
  * Content type for commands and skills
  */
 export type ContentType = "command" | "skill";

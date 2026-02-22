@@ -70,3 +70,16 @@ export interface CursorCommand {
   content: string;
   filePath: string;
 }
+
+/**
+ * Chimera virtual agent command format (Claude-based with _chimera extras)
+ */
+export interface ChimeraCommand {
+  frontmatter: {
+    description?: string;
+    _chimera?: Record<string, Record<string, unknown>>;
+    [key: string]: unknown;
+  };
+  content: string;
+  filePath: string;
+}

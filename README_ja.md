@@ -7,7 +7,7 @@
 [![npm version](https://badge.fury.io/js/agent-command-sync.svg)](https://www.npmjs.com/package/agent-command-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Claude Code、Gemini CLI、Codex CLI、OpenCode、GitHub Copilot、Cursor 間でカスタムスラッシュコマンドとスキル（Skills）を双方向に変換・同期する、直感的なビジュアルフィードバック付きのツールです。
+Claude Code、Gemini CLI、Codex CLI、OpenCode、GitHub Copilot、Cursor 間でカスタムスラッシュコマンドとスキル（Skills）を双方向に変換・同期する、直感的なビジュアルフィードバック付きのツールです。ロスレス変換ハブとして **Chimera** 仮想エージェントを搭載しています。
 
 ## CHANGELOG
 
@@ -22,20 +22,28 @@ npm install -g agent-command-sync
 ## クイックスタート
 
 ```bash
-# Claude Code → Gemini CLI に変換（Commands + Skills）
-acsync -s claude -d gemini
+# エージェント間の直接変換
+acs sync -s claude -d gemini
+acs sync -s gemini -d claude
 
-# Gemini CLI → Claude Code に変換
-acsync -s gemini -d claude
+# Chimera ハブにインポート（ロスレス）
+acs import claude
+acs import gemini
 
-# Skills のみ変換
-acsync -s claude -d gemini -t skills
+# Chimera ハブからエージェントに適用
+acs apply gemini
+acs apply claude
 
-# Commands のみ変換
-acsync -s claude -d gemini -t commands
+# 変更のプレビュー（ドライラン）
+acs drift claude          # インポートのプレビュー
+acs plan gemini           # 適用のプレビュー
 
-# 適用前に変更をプレビュー
-acsync -n -s claude -d gemini
+# Skills または Commands のみ変換
+acs sync -s claude -d gemini -t skills
+acs sync -s claude -d gemini -t commands
+
+# 直接変換のプレビュー
+acs sync -n -s claude -d gemini
 ```
 
 ## スクリーンショット
@@ -52,15 +60,51 @@ acsync -n -s claude -d gemini
 - **高速変換** - Claude Code、Gemini CLI、Codex CLI、OpenCode、GitHub Copilot、Cursor 間でコマンドを効率的に同期
 - **双方向対応** - 任意の方向への変換に対応（Claude ↔ Gemini ↔ Codex ↔ OpenCode ↔ Copilot ↔ Cursor）
 - **デフォルトで安全** - ドライランモードで適用前に変更をプレビュー
-- **短縮コマンド** - `agent-command-sync` の代わりに `acsync` を使用可能
+- **Chimera ハブ** - 全エージェント固有設定を保持するロスレス変換ハブ（仮想エージェント）
+- **サブコマンド** - Chimera ハブワークフロー用の `import`, `apply`, `drift`, `plan` と直接変換用の `sync`
+- **短縮コマンド** - `agent-command-sync` の代わりに `acs` を使用可能
 - **選択的同期** - 特定のファイルまたは全コマンドを一括変換
 
-## オプション
+## サブコマンド
+
+### `acs sync` — エージェント間の直接変換
+
+```bash
+acs sync -s <source> -d <dest> [options]
+```
+
+### `acs import <agent>` — Chimera ハブにインポート (shorthand for `acs sync -s <agent> -d chimera`)
+
+```bash
+acs import claude                          # Claude から全てインポート
+acs import gemini -t commands              # Commands のみインポート
+```
+
+### `acs drift <agent>` — インポートのプレビュー (shorthand for `acs sync -s <agent> -d chimera -n`)
+
+```bash
+acs drift claude                           # インポートの変更をプレビュー
+```
+
+### `acs apply <agent>` — Chimera ハブからエージェントに適用 (shorthand for `acs sync -s chimera -d <agent>`)
+
+```bash
+acs apply gemini                           # Gemini に適用
+acs apply claude --remove-unsupported      # サポートされていないフィールドを削除
+```
+
+### `acs plan <agent>` — 適用のプレビュー (shorthand for `acs sync -s chimera -d <agent> -n`)
+
+```bash
+acs plan gemini                            # 適用の変更をプレビュー
+```
+
+## オプション（sync サブコマンド）
 
 | オプション                    | 説明                                                                     |
 | --------------------------- | ----------------------------------------------------------------------- |
-| `-s, --src <product>`       | **必須。** ソース製品: `claude`、`gemini`、`codex`、`opencode`、`copilot`、または `cursor` |
-| `-d, --dest <product>`      | **必須。** 宛先製品: `claude`、`gemini`、`codex`、`opencode`、`copilot`、または `cursor` |
+| `-s, --src <product>`       | **必須。** ソース製品: `claude`、`gemini`、`codex`、`opencode`、`copilot`、`cursor`、または `chimera` |
+| `-d, --dest <product>`      | **必須。** 宛先製品: `claude`、`gemini`、`codex`、`opencode`、`copilot`、`cursor`、または `chimera` |
 | `-t, --type <type>`         | コンテンツタイプ: `commands`、`skills`、または `both`（デフォルト: `both`）  |
 | `-f, --file <filename>`     | 特定のファイルのみ変換（`.md`, `.toml` 拡張子をサポート）                    |
 | `-n, --noop`                | 変更を適用せずにプレビュー                                                 |
@@ -71,6 +115,7 @@ acsync -n -s claude -d gemini
 | `--opencode-dir <path>`     | OpenCode ベースディレクトリ（デフォルト: ~/.config/opencode）               |
 | `--copilot-dir <path>`      | Copilot ベースディレクトリ（デフォルト: ~/.copilot）                        |
 | `--cursor-dir <path>`       | Cursor ベースディレクトリ（デフォルト: ~/.cursor）                          |
+| `--chimera-dir <path>`      | Chimera ベースディレクトリ（デフォルト: ~/.config/acsync）                  |
 | `--no-overwrite`            | ターゲットディレクトリの既存ファイルをスキップ                                |
 | `--sync-delete`             | ターゲットディレクトリの孤立ファイルを削除                                   |
 | `--remove-unsupported`      | ターゲット形式でサポートされていないフィールドを削除                           |
@@ -78,26 +123,26 @@ acsync -n -s claude -d gemini
 ## 使用例
 
 ```bash
-# プレビュー付きで全コマンドとスキルを変換
-acsync -n -s claude -d gemini
+# プレビュー付きで直接変換
+acs sync -n -s claude -d gemini
 
 # 特定のファイルを変換
-acsync -s gemini -d claude -f analyze-code
+acs sync -s gemini -d claude -f analyze-code
 
-# Skills のみ変換
-acsync -s claude -d gemini -t skills
-
-# 特定のスキルを変換
-acsync -s claude -d gemini -t skills -f my-skill
+# Chimera ハブワークフロー
+acs import claude                          # Claude → Chimera にインポート
+acs import gemini                          # Gemini → Chimera にインポート（マージ）
+acs apply claude                           # Chimera → Claude に適用（Claude extras 付き）
+acs apply gemini                           # Chimera → Gemini に適用（Gemini extras 付き）
 
 # クリーンアップ付きの完全同期
-acsync -s claude -d gemini --sync-delete --remove-unsupported
+acs sync -s claude -d gemini --sync-delete --remove-unsupported
 
 # カスタムディレクトリを使用（ベースディレクトリを指定、/commands と /skills は自動的に追加されます）
-acsync -s claude -d gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
+acs sync -s claude -d gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
 
 # デバッグ用の詳細出力を表示
-acsync -s claude -d gemini -v
+acs sync -s claude -d gemini -v
 ```
 
 ## デフォルトのファイルの場所
@@ -109,6 +154,7 @@ acsync -s claude -d gemini -v
 - **OpenCode**: `~/.config/opencode/commands/*.md`
 - **GitHub Copilot**: `~/.copilot/prompts/*.prompt.md`
 - **Cursor**: `~/.cursor/commands/*.md`
+- **Chimera**: `~/.config/acsync/commands/*.md`
 
 ### Skills
 - **Claude Code**: `~/.claude/skills/<skill-name>/SKILL.md`
@@ -117,6 +163,7 @@ acsync -s claude -d gemini -v
 - **OpenCode**: `~/.config/opencode/skills/<skill-name>/SKILL.md`
 - **GitHub Copilot**: `~/.copilot/skills/<skill-name>/SKILL.md`
 - **Cursor**: `~/.cursor/skills/<skill-name>/SKILL.md`
+- **Chimera**: `~/.config/acsync/skills/<skill-name>/SKILL.md`
 
 ## 形式比較と変換仕様
 

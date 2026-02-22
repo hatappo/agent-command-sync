@@ -107,7 +107,7 @@ export class CodexAgent implements AgentDefinition {
 
   // ── CommandConverter ──────────────────────────────────────────────
 
-  commandToIR(source: CodexCommand): SemanticIR {
+  commandToIR(source: CodexCommand, _options?: ConverterOptions): SemanticIR {
     const fm = source.frontmatter || {};
     const extras: Record<string, unknown> = {};
     let description: string | undefined;
@@ -273,7 +273,7 @@ export class CodexAgent implements AgentDefinition {
 
   // ── SkillConverter ────────────────────────────────────────────────
 
-  skillToIR(source: CodexSkill): SemanticIR {
+  skillToIR(source: CodexSkill, _options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     let modelInvocationEnabled: boolean | undefined;
 

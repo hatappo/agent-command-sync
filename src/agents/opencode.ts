@@ -100,7 +100,7 @@ export class OpenCodeAgent implements AgentDefinition {
 
   // ── CommandConverter ──────────────────────────────────────────────
 
-  commandToIR(source: OpenCodeCommand): SemanticIR {
+  commandToIR(source: OpenCodeCommand, _options?: ConverterOptions): SemanticIR {
     const fm = source.frontmatter || {};
     const extras: Record<string, unknown> = {};
     let description: string | undefined;
@@ -253,7 +253,7 @@ export class OpenCodeAgent implements AgentDefinition {
 
   // ── SkillConverter ────────────────────────────────────────────────
 
-  skillToIR(source: OpenCodeSkill): SemanticIR {
+  skillToIR(source: OpenCodeSkill, _options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     let modelInvocationEnabled: boolean | undefined;
 

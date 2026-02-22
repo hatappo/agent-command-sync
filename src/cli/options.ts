@@ -5,7 +5,8 @@ import type { IntermediateConversionOptions } from "../types/index.js";
  * CLI option type definition
  */
 export interface CLIOptions extends IntermediateConversionOptions {
-  // All fields inherited from IntermediateConversionOptions
+  /** The original subcommand name (e.g., "sync", "import", "drift", "apply", "plan") */
+  rawSubCommand?: string;
 }
 
 /**

@@ -136,7 +136,7 @@ export class GeminiAgent implements AgentDefinition {
 
   // ── CommandConverter ──────────────────────────────────────────────
 
-  commandToIR(source: GeminiCommand): SemanticIR {
+  commandToIR(source: GeminiCommand, _options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     let description: string | undefined;
 
@@ -288,7 +288,7 @@ export class GeminiAgent implements AgentDefinition {
 
   // ── SkillConverter ────────────────────────────────────────────────
 
-  skillToIR(source: GeminiSkill): SemanticIR {
+  skillToIR(source: GeminiSkill, _options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     let modelInvocationEnabled: boolean | undefined;
 

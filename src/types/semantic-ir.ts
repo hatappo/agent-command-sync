@@ -42,8 +42,12 @@ export interface SemanticIR {
 }
 
 /**
- * Options for fromIR conversion
+ * Options for toIR/fromIR conversion
  */
 export interface ConverterOptions {
   removeUnsupported?: boolean;
+  /** toIR: destination agent type (chimera uses this to select _chimera.{target} extras) */
+  destinationType?: ProductType;
+  /** fromIR: existing target data for merge (chimera uses this to preserve other agents' extras) */
+  existingTarget?: unknown;
 }

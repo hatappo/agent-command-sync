@@ -758,6 +758,238 @@ Test skill with $ARGUMENTS.`,
     });
   });
 
+  describe("Chimera hub conversion", () => {
+    let chimeraBaseDir: string;
+    let chimeraDir: string;
+    let chimeraSkillsDir: string;
+
+    beforeEach(async () => {
+      chimeraBaseDir = join(testDir, ".config", "acsync");
+      chimeraDir = join(chimeraBaseDir, "commands");
+      chimeraSkillsDir = join(chimeraBaseDir, "skills");
+      await ensureDirectory(chimeraDir);
+    });
+
+    it("should import Claude command into Chimera with _chimera.claude extras", async () => {
+      const claudeContent = `---
+description: Test command
+model: sonnet
+allowed-tools: Bash(git:*)
+---
+
+Test content with $ARGUMENTS`;
+
+      await writeFile(join(claudeDir, "test-import.md"), claudeContent);
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "chimera",
+        contentType: "commands",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        customDirs: { claude: claudeBaseDir, chimera: chimeraBaseDir },
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+
+      const chimeraFile = join(chimeraDir, "test-import.md");
+      expect(await fileExists(chimeraFile)).toBe(true);
+
+      const content = await readFile(chimeraFile);
+      expect(content).toContain("description: Test command");
+      expect(content).toContain("_chimera");
+      expect(content).toContain("claude");
+      expect(content).toContain("$ARGUMENTS");
+    });
+
+    it("should apply Chimera command to Gemini with _chimera.gemini extras", async () => {
+      const chimeraContent = `---
+description: Chimera command
+_chimera:
+  gemini:
+    custom-gemini-field: gemini-value
+  claude:
+    model: opus-4
+---
+
+Run !` + "`npm test`" + " with $ARGUMENTS.";
+
+      await writeFile(join(chimeraDir, "test-apply.md"), chimeraContent);
+
+      const options: CLIOptions = {
+        source: "chimera",
+        destination: "gemini",
+        contentType: "commands",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        customDirs: { chimera: chimeraBaseDir, gemini: geminiBaseDir },
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+
+      const geminiFile = join(geminiDir, "test-apply.toml");
+      expect(await fileExists(geminiFile)).toBe(true);
+
+      const content = await readFile(geminiFile);
+      expect(content).toContain('description = "Chimera command"');
+      expect(content).toContain("{{args}}");
+      expect(content).toContain("custom-gemini-field");
+      // Claude extras should NOT appear in Gemini output
+      expect(content).not.toContain("opus-4");
+    });
+
+    it("should import and then apply preserving extras (round-trip)", async () => {
+      // Step 1: Import Claude -> Chimera
+      const claudeContent = `---
+description: Round-trip test
+model: sonnet
+allowed-tools: Read,Write
+---
+
+Body with $ARGUMENTS`;
+
+      await writeFile(join(claudeDir, "round-trip.md"), claudeContent);
+
+      const importOptions: CLIOptions = {
+        source: "claude",
+        destination: "chimera",
+        contentType: "commands",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        customDirs: { claude: claudeBaseDir, chimera: chimeraBaseDir },
+      };
+
+      const importResult = await syncCommands(importOptions);
+      expect(importResult.success).toBe(true);
+
+      // Step 2: Apply Chimera -> Claude (should restore extras)
+      const applyOptions: CLIOptions = {
+        source: "chimera",
+        destination: "claude",
+        contentType: "commands",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        customDirs: { chimera: chimeraBaseDir, claude: claudeBaseDir },
+      };
+
+      const applyResult = await syncCommands(applyOptions);
+      expect(applyResult.success).toBe(true);
+
+      const claudeFile = join(claudeDir, "round-trip.md");
+      const content = await readFile(claudeFile);
+      expect(content).toContain("description: Round-trip test");
+      expect(content).toContain("model: sonnet");
+      expect(content).toContain("allowed-tools:");
+      expect(content).toContain("$ARGUMENTS");
+    });
+
+    it("should import skill into Chimera", async () => {
+      await ensureDirectory(chimeraSkillsDir);
+      const skillDir = join(claudeSkillsDir, "chimera-skill");
+      await ensureDirectory(skillDir);
+      await writeFile(
+        join(skillDir, "SKILL.md"),
+        `---
+name: chimera-skill
+description: Test skill
+model: opus-4
+---
+
+Skill body.`,
+      );
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "chimera",
+        contentType: "skills",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        customDirs: { claude: claudeBaseDir, chimera: chimeraBaseDir },
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+
+      const targetSkillMd = join(chimeraSkillsDir, "chimera-skill", "SKILL.md");
+      expect(await fileExists(targetSkillMd)).toBe(true);
+
+      const content = await readFile(targetSkillMd);
+      expect(content).toContain("name: chimera-skill");
+      expect(content).toContain("_chimera");
+    });
+
+    it("should merge imports from multiple agents", async () => {
+      // First import: Claude -> Chimera
+      const claudeContent = `---
+description: Multi-import test
+model: sonnet
+---
+
+Body`;
+
+      await writeFile(join(claudeDir, "multi-import.md"), claudeContent);
+
+      const importClaude: CLIOptions = {
+        source: "claude",
+        destination: "chimera",
+        contentType: "commands",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        customDirs: { claude: claudeBaseDir, chimera: chimeraBaseDir },
+      };
+
+      await syncCommands(importClaude);
+
+      // Second import: Gemini -> Chimera (should merge, keeping claude section)
+      const geminiContent = `description = "Multi-import test"
+prompt = "Body"
+custom-gemini = "gval"`;
+
+      await writeFile(join(geminiDir, "multi-import.toml"), geminiContent);
+
+      const importGemini: CLIOptions = {
+        source: "gemini",
+        destination: "chimera",
+        contentType: "commands",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        customDirs: { gemini: geminiBaseDir, chimera: chimeraBaseDir },
+      };
+
+      await syncCommands(importGemini);
+
+      const chimeraFile = join(chimeraDir, "multi-import.md");
+      const content = await readFile(chimeraFile);
+
+      // Both agent sections should exist
+      expect(content).toContain("claude");
+      expect(content).toContain("gemini");
+    });
+  });
+
   describe("syncDelete", () => {
     it("should delete orphaned command files in target", async () => {
       // Source: only cmd-a.md
