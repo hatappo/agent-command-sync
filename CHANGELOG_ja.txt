@@ -1,5 +1,50 @@
 # 変更履歴
 
+## [3.2.0] - 2026-02-23
+
+### 追加機能
+- **`acs version` サブコマンド**: 現在のバージョン番号を表示
+
+## [3.1.0] - 2026-02-23
+
+### 追加機能
+- **`acs status` サブコマンド**: Chimera ハブの状態を ASCII アート付きで表示
+  - 進化するキメラ ASCII アート（Lv.0 の Ghost から10種の動物形態まで）
+  - 検出エージェント、構成、コマンド/スキル件数を吹き出しで表示
+  - Chimera ハブの `_chimera` フロントマターセクションをスキャンして同期済みエージェントを検出
+
+## [3.0.0] - 2026-02-22
+
+### 破壊的変更
+- **CLI サブコマンドアーキテクチャ**: フラットな CLI オプションからサブコマンド方式に変更
+  - `acs sync -s <src> -d <dest>` で直接変換
+  - `acs import <agent>` は `acs sync -s <agent> -d chimera` の省略形
+  - `acs drift <agent>` は `acs sync -s <agent> -d chimera -n` の省略形
+  - `acs apply <agent>` は `acs sync -s chimera -d <agent>` の省略形
+  - `acs plan <agent>` は `acs sync -s chimera -d <agent> -n` の省略形
+- noop メッセージがサブコマンドに応じた表現に変更（例: `drift` では「Use `acs import` to apply changes」）
+
+### 追加機能
+- **Chimera 仮想エージェント**: 全エージェント固有設定を `_chimera` フロントマターセクションに保持するロスレス変換ハブ
+  - 任意のエージェントからのインポート時にエージェント別名前空間へ extras をマージ
+  - 任意のエージェントへの適用時に保存された extras からエージェント固有設定を復元
+  - コマンドとスキルの両方に対応
+- **GitHub Copilot サポート**: 5番目のエージェント形式として追加（`.prompt.md` + YAML フロントマター）
+- **Cursor サポート**: 6番目のエージェント形式として追加（プレーン Markdown、フロントマターなし）
+- Chimera ハブワークフロードキュメント（`docs/chimera-hub-workflow.md`）
+
+### 変更
+- **Agent Registry パターン**: パーサー/コンバーターをエージェントごとに単一クラスへ統合
+  - switch 文を型安全なレジストリルックアップに置換
+  - レジストリからの動的 CLI オプション生成
+- テストスイート拡充: 250 → 381 テスト
+
+## [2.2.1] - 2026-02-21
+
+### 修正
+- README 画像に GitHub 絶対 URL を使用して npm 表示を修正
+- publish 時の watch モード防止のため vitest に `--run` フラグを追加
+
 ## [2.2.0] - 2026-02-21
 
 ### 追加機能

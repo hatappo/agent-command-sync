@@ -1,5 +1,50 @@
 # Changelog
 
+## [3.2.0] - 2026-02-23
+
+### Added
+- **`acs version` subcommand**: Display the current version number
+
+## [3.1.0] - 2026-02-23
+
+### Added
+- **`acs status` subcommand**: Show Chimera hub status with ASCII art evolution
+  - Displays evolving Chimera ASCII art (Ghost at Lv.0 through 10 animal forms)
+  - Shows detected agents, composition, and command/skill counts in a speech bubble
+  - Scans Chimera hub `_chimera` frontmatter sections to detect synced agents
+
+## [3.0.0] - 2026-02-22
+
+### Breaking Changes
+- **CLI subcommand architecture**: Replaced flat CLI options with subcommands
+  - `acs sync -s <src> -d <dest>` for direct conversion
+  - `acs import <agent>` shorthand for `acs sync -s <agent> -d chimera`
+  - `acs drift <agent>` shorthand for `acs sync -s <agent> -d chimera -n`
+  - `acs apply <agent>` shorthand for `acs sync -s chimera -d <agent>`
+  - `acs plan <agent>` shorthand for `acs sync -s chimera -d <agent> -n`
+- Noop messages now reflect the subcommand used (e.g., "Use `acs import` to apply changes" for `drift`)
+
+### Added
+- **Chimera virtual agent**: Lossless conversion hub that preserves all agent-specific settings in `_chimera` frontmatter sections
+  - Import from any agent merges extras into per-agent namespaces
+  - Apply to any agent restores agent-specific settings from stored extras
+  - Supports both commands and skills
+- **GitHub Copilot support**: Added as 5th agent format (`.prompt.md` with YAML frontmatter)
+- **Cursor support**: Added as 6th agent format (plain Markdown, no frontmatter)
+- Chimera hub workflow documentation (`docs/chimera-hub-workflow.md`)
+
+### Changed
+- **Agent Registry pattern**: Unified parser/converter into single agent class per agent
+  - Replaced switch statements with type-safe registry lookup
+  - Dynamic CLI option generation from registry
+- Test suite expansion: 250 → 381 tests
+
+## [2.2.1] - 2026-02-21
+
+### Fixed
+- Use absolute GitHub URLs for README images to fix npm display
+- Add `--run` flag to vitest to prevent watch mode during publish
+
 ## [2.2.0] - 2026-02-21
 
 ### Added
