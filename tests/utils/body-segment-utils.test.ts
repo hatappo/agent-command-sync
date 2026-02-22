@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ClaudeAgent } from "../../src/agents/claude.js";
 import { CodexAgent } from "../../src/agents/codex.js";
+import { CopilotAgent } from "../../src/agents/copilot.js";
 import { GeminiAgent } from "../../src/agents/gemini.js";
 import { OpenCodeAgent } from "../../src/agents/opencode.js";
 
@@ -8,6 +9,7 @@ const claude = new ClaudeAgent();
 const gemini = new GeminiAgent();
 const codex = new CodexAgent();
 const opencode = new OpenCodeAgent();
+const copilot = new CopilotAgent();
 
 describe("Body Segment Utils", () => {
   describe("parseBody (Claude)", () => {
@@ -323,6 +325,47 @@ describe("Body Segment Utils", () => {
       const segments = opencode.parseBody(original);
       const result = opencode.serializeBody(segments);
       expect(result).toBe(original);
+    });
+  });
+
+  describe("parseBody (Copilot)", () => {
+    it("should produce same result as Claude parseBody (shared patterns)", () => {
+      const input = "Run !`git status` with $ARGUMENTS and load @config.json for user $1";
+      expect(copilot.parseBody(input)).toEqual(claude.parseBody(input));
+    });
+
+    it("should treat Copilot VS Code variables as plain text", () => {
+      const input = "Use ${selection} and ${file} to help";
+      const segments = copilot.parseBody(input);
+      expect(segments).toEqual(["Use ${selection} and ${file} to help"]);
+    });
+  });
+
+  describe("serializeBody (Copilot)", () => {
+    it("should serialize all placeholder types using Claude syntax (best-effort)", () => {
+      const result = copilot.serializeBody([
+        "Run ",
+        { type: "shell-command", command: "git status" },
+        " with ",
+        { type: "arguments" },
+      ]);
+      expect(result).toBe("Run !`git status` with $ARGUMENTS");
+    });
+  });
+
+  describe("Copilot round-trip", () => {
+    it("should round-trip Copilot body through parse and serialize", () => {
+      const original = "Run !`git status` with $ARGUMENTS and load @config.json for user $1";
+      const segments = copilot.parseBody(original);
+      const result = copilot.serializeBody(segments);
+      expect(result).toBe(original);
+    });
+
+    it("should convert Claude to Copilot via segments", () => {
+      const claudeBody = "Run $ARGUMENTS for user $1";
+      const segments = claude.parseBody(claudeBody);
+      const copilotBody = copilot.serializeBody(segments);
+      expect(copilotBody).toBe("Run $ARGUMENTS for user $1");
     });
   });
 });

@@ -188,7 +188,7 @@ async function convertSingleFile(
       throw new Error(`Source file ${sourceFile} is not in the ${options.source} user commands directory`);
     }
 
-    const commandName = getCommandName(sourceFile, sourceDir);
+    const commandName = getCommandName(sourceFile, sourceDir, src.fileExtension);
     const targetFile = getFilePathFromCommandName(commandName, targetDir, targetExt);
 
     // Execute file operation
@@ -258,7 +258,7 @@ async function handleSyncDelete(
 
     const expectedTargetFiles = new Set(
       sourceFiles.map((sourceFile) => {
-        const commandName = getCommandName(sourceFile, sourceDir);
+        const commandName = getCommandName(sourceFile, sourceDir, src.fileExtension);
         return getFilePathFromCommandName(commandName, targetDir, targetExt);
       }),
     );

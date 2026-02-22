@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CodexAgent } from "../../src/agents/codex.js";
 import { ClaudeAgent } from "../../src/agents/claude.js";
+import { CopilotAgent } from "../../src/agents/copilot.js";
 import { GeminiAgent } from "../../src/agents/gemini.js";
 import type { ClaudeSkill } from "../../src/types/index.js";
 
@@ -138,6 +139,80 @@ describe("Skill Conversion (Safety Net)", () => {
       expect(codex.frontmatter._claude_user_invocable).toBeUndefined();
       expect(codex.frontmatter._claude_allowed_tools).toBeUndefined();
       expect(codex.frontmatter._claude_context).toBeUndefined();
+    });
+  });
+
+  describe("Claude -> Copilot (removeUnsupported=false)", () => {
+    it("should preserve Claude-specific fields directly", () => {
+      const claude: ClaudeSkill = {
+        name: "test-skill",
+        description: "Test description",
+        content: "Test content",
+        dirPath: "/test/skills/test-skill",
+        supportFiles: [],
+        frontmatter: {
+          name: "test-skill",
+          description: "Test description",
+          "disable-model-invocation": true,
+          "user-invocable": false,
+          "allowed-tools": "bash",
+          model: "sonnet",
+          context: "fork",
+          hooks: { "pre-tool-execution": "echo test" },
+        },
+      };
+
+      const claudeAgent = new ClaudeAgent();
+      const copilotAgent = new CopilotAgent();
+      const ir = claudeAgent.skillToIR(claude);
+      const copilot = copilotAgent.skillFromIR(ir, { removeUnsupported: false });
+
+      expect(copilot.frontmatter.name).toBe("test-skill");
+      expect(copilot.frontmatter.description).toBe("Test description");
+      expect(copilot.frontmatter["disable-model-invocation"]).toBe(true);
+      expect(copilot.frontmatter["user-invokable"]).toBe(false);
+      expect(copilot.frontmatter["allowed-tools"]).toBe("bash");
+      expect(copilot.frontmatter.model).toBe("sonnet");
+      expect(copilot.frontmatter.context).toBe("fork");
+      expect(copilot.frontmatter.hooks).toEqual({ "pre-tool-execution": "echo test" });
+    });
+  });
+
+  describe("Claude -> Copilot (removeUnsupported=true)", () => {
+    it("should remove Claude-specific fields but keep semantic ones", () => {
+      const claude: ClaudeSkill = {
+        name: "test-skill",
+        content: "Test content",
+        dirPath: "/test",
+        supportFiles: [],
+        frontmatter: {
+          name: "test-skill",
+          description: "Test description",
+          "disable-model-invocation": true,
+          "user-invocable": false,
+          "allowed-tools": "bash",
+          model: "sonnet",
+          context: "fork",
+          hooks: { "pre-tool-execution": "echo test" },
+        },
+      };
+
+      const claudeAgent = new ClaudeAgent();
+      const copilotAgent = new CopilotAgent();
+      const ir = claudeAgent.skillToIR(claude);
+      const copilot = copilotAgent.skillFromIR(ir, { removeUnsupported: true });
+
+      expect(copilot.frontmatter.name).toBe("test-skill");
+      expect(copilot.frontmatter.description).toBe("Test description");
+      // disable-model-invocation is semantic, should be preserved
+      expect(copilot.frontmatter["disable-model-invocation"]).toBe(true);
+      // model is not in CLAUDE_SKILL_FIELDS, so it's preserved
+      expect(copilot.frontmatter.model).toBe("sonnet");
+      // These Claude-specific fields should be removed
+      expect(copilot.frontmatter["user-invokable"]).toBeUndefined();
+      expect(copilot.frontmatter["allowed-tools"]).toBeUndefined();
+      expect(copilot.frontmatter.context).toBeUndefined();
+      expect(copilot.frontmatter.hooks).toBeUndefined();
     });
   });
 });

@@ -1,9 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { ClaudeAgent } from "../../src/agents/claude.js";
+import { CopilotAgent } from "../../src/agents/copilot.js";
 import { GeminiAgent } from "../../src/agents/gemini.js";
 import { CodexAgent } from "../../src/agents/codex.js";
 import { OpenCodeAgent } from "../../src/agents/opencode.js";
-import type { ClaudeCommand, GeminiCommand, CodexCommand, OpenCodeCommand } from "../../src/types/index.js";
+import type {
+  ClaudeCommand,
+  CopilotCommand,
+  GeminiCommand,
+  CodexCommand,
+  OpenCodeCommand,
+} from "../../src/types/index.js";
 
 describe("Command Conversion (Safety Net)", () => {
   describe("Claude -> Gemini", () => {
@@ -311,6 +318,124 @@ describe("Command Conversion (Safety Net)", () => {
       expect(result.frontmatter["argument-hint"]).toBe("Enter path");
       expect(result.frontmatter.model).toBe("sonnet");
       expect(result.content).toBe("Run !`git status` with $ARGUMENTS and @config.json");
+    });
+  });
+
+  describe("Claude -> Copilot", () => {
+    it("should convert description and body", () => {
+      const claude: ClaudeCommand = {
+        frontmatter: { description: "Test description", "allowed-tools": "bash", model: "sonnet" },
+        content: "Test body content",
+        filePath: "/test/command.md",
+      };
+
+      const claudeAgent = new ClaudeAgent();
+      const copilotAgent = new CopilotAgent();
+      const ir = claudeAgent.commandToIR(claude);
+      const copilot = copilotAgent.commandFromIR(ir);
+
+      expect(copilot.frontmatter.description).toBe("Test description");
+      expect(copilot.content).toBe("Test body content");
+      expect(copilot.frontmatter["allowed-tools"]).toBe("bash");
+      expect(copilot.frontmatter.model).toBe("sonnet");
+    });
+
+    it("should remove allowed-tools with removeUnsupported", () => {
+      const claude: ClaudeCommand = {
+        frontmatter: {
+          description: "Test",
+          "allowed-tools": "bash",
+          "argument-hint": "Enter path",
+          model: "sonnet",
+        },
+        content: "Body",
+        filePath: "/test/command.md",
+      };
+
+      const claudeAgent = new ClaudeAgent();
+      const copilotAgent = new CopilotAgent();
+      const ir = claudeAgent.commandToIR(claude);
+      const copilot = copilotAgent.commandFromIR(ir, { removeUnsupported: true });
+
+      expect(copilot.frontmatter.description).toBe("Test");
+      expect(copilot.frontmatter.model).toBe("sonnet");
+      expect(copilot.frontmatter["argument-hint"]).toBe("Enter path");
+      expect(copilot.frontmatter["allowed-tools"]).toBeUndefined();
+    });
+
+    it("should change file extension to .prompt.md", () => {
+      const claude: ClaudeCommand = {
+        frontmatter: { description: "Test" },
+        content: "Body",
+        filePath: "/test/command.md",
+      };
+
+      const claudeAgent = new ClaudeAgent();
+      const copilotAgent = new CopilotAgent();
+      const ir = claudeAgent.commandToIR(claude);
+      const copilot = copilotAgent.commandFromIR(ir);
+
+      expect(copilot.filePath).toBe("/test/command.prompt.md");
+    });
+  });
+
+  describe("Copilot -> Claude", () => {
+    it("should convert description and content", () => {
+      const copilot: CopilotCommand = {
+        frontmatter: { description: "Copilot desc", tools: ["bash", "codeEditor"], agent: "copilot" },
+        content: "Copilot content",
+        filePath: "/test/command.prompt.md",
+      };
+
+      const copilotAgent = new CopilotAgent();
+      const claudeAgent = new ClaudeAgent();
+      const ir = copilotAgent.commandToIR(copilot);
+      const claude = claudeAgent.commandFromIR(ir);
+
+      expect(claude.frontmatter.description).toBe("Copilot desc");
+      expect(claude.content).toBe("Copilot content");
+      expect(claude.frontmatter.tools).toEqual(["bash", "codeEditor"]);
+      expect(claude.frontmatter.agent).toBe("copilot");
+    });
+  });
+
+  describe("Gemini -> Copilot", () => {
+    it("should convert prompt to content and preserve description", () => {
+      const gemini: GeminiCommand = {
+        description: "Gemini desc",
+        prompt: "Gemini prompt with {{args}}",
+        filePath: "/test/command.toml",
+      };
+
+      const geminiAgent = new GeminiAgent();
+      const copilotAgent = new CopilotAgent();
+      const ir = geminiAgent.commandToIR(gemini);
+      const copilot = copilotAgent.commandFromIR(ir);
+
+      expect(copilot.frontmatter.description).toBe("Gemini desc");
+      expect(copilot.content).toBe("Gemini prompt with $ARGUMENTS");
+    });
+  });
+
+  describe("Round-trip: Claude -> Copilot -> Claude", () => {
+    it("should preserve description and body", () => {
+      const original: ClaudeCommand = {
+        frontmatter: { description: "Round-trip test", model: "sonnet" },
+        content: "Round-trip body content",
+        filePath: "/test/command.md",
+      };
+
+      const claudeAgent = new ClaudeAgent();
+      const copilotAgent = new CopilotAgent();
+
+      const ir1 = claudeAgent.commandToIR(original);
+      const copilot = copilotAgent.commandFromIR(ir1);
+      const ir2 = copilotAgent.commandToIR(copilot);
+      const result = claudeAgent.commandFromIR(ir2);
+
+      expect(result.frontmatter.description).toBe("Round-trip test");
+      expect(result.frontmatter.model).toBe("sonnet");
+      expect(result.content).toBe("Round-trip body content");
     });
   });
 

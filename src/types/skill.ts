@@ -126,6 +126,20 @@ export interface OpenCodeSkill extends SkillBase {
 }
 
 /**
+ * GitHub Copilot skill format
+ */
+export interface CopilotSkill extends SkillBase {
+  frontmatter: {
+    name?: string;
+    description?: string;
+    "argument-hint"?: string;
+    "user-invokable"?: boolean;
+    "disable-model-invocation"?: boolean;
+    [key: string]: unknown;
+  };
+}
+
+/**
  * Content type for commands and skills
  */
 export type ContentType = "command" | "skill";
