@@ -364,14 +364,10 @@ export class ChimeraAgent implements AgentDefinition {
     try {
       if (type === "command") {
         const existing = existingTarget as ChimeraCommand;
-        return existing.frontmatter?.[CHIMERA_KEY]
-          ? structuredClone(existing.frontmatter[CHIMERA_KEY])
-          : {};
+        return existing.frontmatter?.[CHIMERA_KEY] ? structuredClone(existing.frontmatter[CHIMERA_KEY]) : {};
       }
       const existing = existingTarget as ChimeraSkill;
-      return existing.frontmatter?.[CHIMERA_KEY]
-        ? structuredClone(existing.frontmatter[CHIMERA_KEY])
-        : {};
+      return existing.frontmatter?.[CHIMERA_KEY] ? structuredClone(existing.frontmatter[CHIMERA_KEY]) : {};
     } catch {
       return {};
     }

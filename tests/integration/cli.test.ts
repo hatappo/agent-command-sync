@@ -808,7 +808,8 @@ Test content with $ARGUMENTS`;
     });
 
     it("should apply Chimera command to Gemini with _chimera.gemini extras", async () => {
-      const chimeraContent = `---
+      const chimeraContent =
+        `---
 description: Chimera command
 _chimera:
   gemini:
@@ -817,7 +818,9 @@ _chimera:
     model: opus-4
 ---
 
-Run !` + "`npm test`" + " with $ARGUMENTS.";
+Run !` +
+        "`npm test`" +
+        " with $ARGUMENTS.";
 
       await writeFile(join(chimeraDir, "test-apply.md"), chimeraContent);
 

@@ -18,10 +18,7 @@ const productList = PRODUCT_TYPES.join(", ");
 
 const program = new Command();
 
-program
-  .name("acs")
-  .description(`Convert Custom Slash Commands and Skills between ${displayNames}`)
-  .version(version);
+program.name("acs").description(`Convert Custom Slash Commands and Skills between ${displayNames}`).version(version);
 
 // ── Helpers ───────────────────────────────────────────────────────
 
@@ -99,7 +96,10 @@ registerDirOptions(syncCmd);
 syncCmd.action(async (options) => {
   try {
     if (options.src === options.dest) {
-      console.error(picocolors.red(picocolors.bold("Error:")), picocolors.red("Source and destination must be different"));
+      console.error(
+        picocolors.red(picocolors.bold("Error:")),
+        picocolors.red("Source and destination must be different"),
+      );
       process.exit(1);
     }
 
@@ -261,9 +261,7 @@ planCmd.action(async (agent: string, options) => {
 
 // ── status subcommand ────────────────────────────────────────────
 
-const statusCmd = program
-  .command("status")
-  .description("Show Chimera status and detected agents");
+const statusCmd = program.command("status").description("Show Chimera status and detected agents");
 
 registerDirOptions(statusCmd);
 
@@ -282,10 +280,18 @@ program.on("--help", () => {
   console.log("Examples:");
   console.log("  $ acs sync -s claude -d gemini               # Direct conversion");
   console.log("  $ acs sync -s claude -d gemini -t commands   # Convert only commands");
-  console.log("  $ acs import claude                          # Import into Chimera hub    (shorthand for: acs sync -s claude -d chimera)");
-  console.log("  $ acs drift claude                           # Preview import             (shorthand for: acs sync -s claude -d chimera -n)");
-  console.log("  $ acs apply gemini                           # Apply Chimera hub to agent (shorthand for: acs sync -s chimera -d gemini)");
-  console.log("  $ acs plan gemini                            # Preview apply              (shorthand for: acs sync -s chimera -d gemini -n)");
+  console.log(
+    "  $ acs import claude                          # Import into Chimera hub    (shorthand for: acs sync -s claude -d chimera)",
+  );
+  console.log(
+    "  $ acs drift claude                           # Preview import             (shorthand for: acs sync -s claude -d chimera -n)",
+  );
+  console.log(
+    "  $ acs apply gemini                           # Apply Chimera hub to agent (shorthand for: acs sync -s chimera -d gemini)",
+  );
+  console.log(
+    "  $ acs plan gemini                            # Preview apply              (shorthand for: acs sync -s chimera -d gemini -n)",
+  );
   console.log("  $ acs status                                       # Show Chimera status and detected agents");
   console.log("  $ acs sync -s claude -d gemini --remove-unsupported # Remove unsupported fields");
   console.log("  $ acs sync -s gemini -d claude --no-overwrite     # Skip existing files");

@@ -219,8 +219,6 @@ export async function showStatus(customDirs?: Partial<Record<ProductType, string
   console.log();
 
   // Flavor message
-  console.log(
-    picocolors.dim("  Your Chimera grows as you sync more agents. Keep collecting!"),
-  );
+  console.log(picocolors.dim("  Your Chimera grows as you sync more agents. Keep collecting!"));
   console.log();
 }
