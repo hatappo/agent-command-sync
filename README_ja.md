@@ -65,6 +65,8 @@ acs sync -n -s claude -d gemini
 - **短縮コマンド** - `agent-command-sync` の代わりに `acs` を使用可能
 - **選択的同期** - 特定のファイルまたは全コマンドを一括変換
 
+> **v2 からのアップグレード？** [マイグレーションガイド](docs/migration-v2-to-v3_ja.md)をご確認ください。
+
 ## サブコマンド
 
 ### `acs sync` — エージェント間の直接変換

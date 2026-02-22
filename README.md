@@ -65,6 +65,8 @@ acs sync -n -s claude -d gemini
 - **Short Command** - Use `acs` instead of `agent-command-sync`
 - **Selective Sync** - Convert specific files or all commands at once
 
+> **Upgrading from v2?** See the [Migration Guide](docs/migration-v2-to-v3.md).
+
 ## Subcommands
 
 ### `acs sync` — Direct conversion between agents
