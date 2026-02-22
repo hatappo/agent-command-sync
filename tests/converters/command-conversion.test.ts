@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { ClaudeAgent } from "../../src/agents/claude.js";
 import { CopilotAgent } from "../../src/agents/copilot.js";
+import { CursorAgent } from "../../src/agents/cursor.js";
 import { GeminiAgent } from "../../src/agents/gemini.js";
 import { CodexAgent } from "../../src/agents/codex.js";
 import { OpenCodeAgent } from "../../src/agents/opencode.js";
 import type {
   ClaudeCommand,
   CopilotCommand,
+  CursorCommand,
   GeminiCommand,
   CodexCommand,
   OpenCodeCommand,
@@ -487,6 +489,113 @@ describe("Command Conversion (Safety Net)", () => {
       const ir2 = geminiAgent.commandToIR(gemini);
       const result = claudeAgent.commandFromIR(ir2);
       expect(result.content).toBe("First: $1, Second: $2, All: $ARGUMENTS");
+    });
+  });
+
+  describe("Claude -> Cursor", () => {
+    it("should convert body but lose description (lossy)", () => {
+      const claude: ClaudeCommand = {
+        frontmatter: { description: "Test description", "allowed-tools": "bash", model: "sonnet" },
+        content: "Test body content",
+        filePath: "/test/command.md",
+      };
+
+      const claudeAgent = new ClaudeAgent();
+      const cursorAgent = new CursorAgent();
+      const ir = claudeAgent.commandToIR(claude);
+      const cursor = cursorAgent.commandFromIR(ir);
+
+      expect(cursor.content).toBe("Test body content");
+      // Cursor has no frontmatter, so description is lost
+      expect("frontmatter" in cursor).toBe(false);
+    });
+
+    it("should keep .md extension unchanged", () => {
+      const claude: ClaudeCommand = {
+        frontmatter: { description: "Test" },
+        content: "Body",
+        filePath: "/test/command.md",
+      };
+
+      const claudeAgent = new ClaudeAgent();
+      const cursorAgent = new CursorAgent();
+      const ir = claudeAgent.commandToIR(claude);
+      const cursor = cursorAgent.commandFromIR(ir);
+
+      expect(cursor.filePath).toBe("/test/command.md");
+    });
+  });
+
+  describe("Cursor -> Claude", () => {
+    it("should convert body without description", () => {
+      const cursor: CursorCommand = {
+        content: "Cursor content",
+        filePath: "/test/command.md",
+      };
+
+      const cursorAgent = new CursorAgent();
+      const claudeAgent = new ClaudeAgent();
+      const ir = cursorAgent.commandToIR(cursor);
+      const claude = claudeAgent.commandFromIR(ir);
+
+      expect(claude.content).toBe("Cursor content");
+      expect(claude.frontmatter.description).toBeUndefined();
+    });
+  });
+
+  describe("Gemini -> Cursor", () => {
+    it("should convert prompt to content and lose description", () => {
+      const gemini: GeminiCommand = {
+        description: "Gemini desc",
+        prompt: "Gemini prompt with {{args}}",
+        filePath: "/test/command.toml",
+      };
+
+      const geminiAgent = new GeminiAgent();
+      const cursorAgent = new CursorAgent();
+      const ir = geminiAgent.commandToIR(gemini);
+      const cursor = cursorAgent.commandFromIR(ir);
+
+      // Placeholders are serialized as best-effort (Cursor unsupported)
+      expect(cursor.content).toBe("Gemini prompt with $ARGUMENTS");
+      expect(cursor.filePath).toBe("/test/command.md");
+    });
+  });
+
+  describe("Copilot -> Cursor", () => {
+    it("should shorten .prompt.md to .md", () => {
+      const copilot: CopilotCommand = {
+        frontmatter: { description: "Copilot desc" },
+        content: "Copilot content",
+        filePath: "/test/command.prompt.md",
+      };
+
+      const copilotAgent = new CopilotAgent();
+      const cursorAgent = new CursorAgent();
+      const ir = copilotAgent.commandToIR(copilot);
+      const cursor = cursorAgent.commandFromIR(ir);
+
+      expect(cursor.content).toBe("Copilot content");
+      expect(cursor.filePath).toBe("/test/command.md");
+    });
+  });
+
+  describe("Round-trip: Cursor -> Claude -> Cursor", () => {
+    it("should preserve body content", () => {
+      const original: CursorCommand = {
+        content: "Round-trip body content",
+        filePath: "/test/command.md",
+      };
+
+      const cursorAgent = new CursorAgent();
+      const claudeAgent = new ClaudeAgent();
+
+      const ir1 = cursorAgent.commandToIR(original);
+      const claude = claudeAgent.commandFromIR(ir1);
+      const ir2 = claudeAgent.commandToIR(claude);
+      const result = cursorAgent.commandFromIR(ir2);
+
+      expect(result.content).toBe("Round-trip body content");
     });
   });
 });

@@ -1,0 +1,1 @@
+This is a basic Cursor command with instructions for the AI assistant.

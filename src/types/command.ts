@@ -62,3 +62,11 @@ export interface CopilotCommand {
   content: string;
   filePath: string;
 }
+
+/**
+ * Cursor command format (plain Markdown, no frontmatter)
+ */
+export interface CursorCommand {
+  content: string;
+  filePath: string;
+}

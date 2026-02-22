@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ClaudeAgent } from "../../src/agents/claude.js";
 import { CodexAgent } from "../../src/agents/codex.js";
 import { CopilotAgent } from "../../src/agents/copilot.js";
+import { CursorAgent } from "../../src/agents/cursor.js";
 import { GeminiAgent } from "../../src/agents/gemini.js";
 import { OpenCodeAgent } from "../../src/agents/opencode.js";
 
@@ -10,6 +11,7 @@ const gemini = new GeminiAgent();
 const codex = new CodexAgent();
 const opencode = new OpenCodeAgent();
 const copilot = new CopilotAgent();
+const cursor = new CursorAgent();
 
 describe("Body Segment Utils", () => {
   describe("parseBody (Claude)", () => {
@@ -366,6 +368,41 @@ describe("Body Segment Utils", () => {
       const segments = claude.parseBody(claudeBody);
       const copilotBody = copilot.serializeBody(segments);
       expect(copilotBody).toBe("Run $ARGUMENTS for user $1");
+    });
+  });
+
+  describe("parseBody (Cursor)", () => {
+    it("should produce same result as Claude parseBody (shared patterns)", () => {
+      const input = "Run !`git status` with $ARGUMENTS and load @config.json for user $1";
+      expect(cursor.parseBody(input)).toEqual(claude.parseBody(input));
+    });
+  });
+
+  describe("serializeBody (Cursor)", () => {
+    it("should serialize all placeholder types using Claude syntax (best-effort)", () => {
+      const result = cursor.serializeBody([
+        "Run ",
+        { type: "shell-command", command: "git status" },
+        " with ",
+        { type: "arguments" },
+      ]);
+      expect(result).toBe("Run !`git status` with $ARGUMENTS");
+    });
+  });
+
+  describe("Cursor round-trip", () => {
+    it("should round-trip Cursor body through parse and serialize", () => {
+      const original = "Run !`git status` with $ARGUMENTS and load @config.json for user $1";
+      const segments = cursor.parseBody(original);
+      const result = cursor.serializeBody(segments);
+      expect(result).toBe(original);
+    });
+
+    it("should convert Claude to Cursor via segments", () => {
+      const claudeBody = "Run $ARGUMENTS for user $1";
+      const segments = claude.parseBody(claudeBody);
+      const cursorBody = cursor.serializeBody(segments);
+      expect(cursorBody).toBe("Run $ARGUMENTS for user $1");
     });
   });
 });
