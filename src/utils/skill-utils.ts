@@ -3,7 +3,7 @@
  */
 
 import { readdir, stat } from "node:fs/promises";
-import { extname, join, basename } from "node:path";
+import { basename, extname, join } from "node:path";
 import type { SupportFile } from "../types/skill.js";
 import { BINARY_EXTENSIONS, CONFIG_FILES, SKILL_CONSTANTS } from "./constants.js";
 

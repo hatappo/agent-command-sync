@@ -2,17 +2,17 @@
  * Codex CLI agent — unified parser, converter, and body handling
  */
 
-import { mkdir, writeFile as fsWriteFile, copyFile } from "node:fs/promises";
+import { copyFile, writeFile as fsWriteFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import matter from "gray-matter";
 import YAML from "yaml";
 import type { BodySegment, ContentPlaceholder } from "../types/body-segment.js";
-import type { CodexCommand, CodexSkill, CodexOpenAIConfig } from "../types/index.js";
+import type { CodexCommand, CodexOpenAIConfig, CodexSkill } from "../types/index.js";
 import { ParseError } from "../types/index.js";
 import type { ConverterOptions, SemanticIR } from "../types/semantic-ir.js";
 import { parseBody, serializeBody } from "../utils/body-segment-utils.js";
 import { FILE_EXTENSIONS, SKILL_CONSTANTS } from "../utils/constants.js";
-import { readFile, fileExists } from "../utils/file-utils.js";
+import { fileExists, readFile } from "../utils/file-utils.js";
 import { collectSupportFiles, getSkillName, isSkillDirectory } from "../utils/skill-utils.js";
 import { CLAUDE_SYNTAX_PATTERNS, CLAUDE_SYNTAX_SERIALIZERS } from "./_claude-syntax-body-patterns.js";
 import type { AgentDefinition } from "./agent-definition.js";
@@ -25,22 +25,20 @@ const CODEX_UNSUPPORTED: ReadonlySet<ContentPlaceholder["type"]> = new Set(["she
 /** Claude-specific command fields subject to removeUnsupported */
 const CLAUDE_COMMAND_FIELDS = ["allowed-tools", "argument-hint", "model"] as const;
 
-/** Claude-specific skill fields (original names, subject to _claude_ prefix) */
-const CLAUDE_SKILL_FIELDS = ["user-invocable", "allowed-tools", "argument-hint", "model", "context", "agent", "hooks"];
+/** Claude-specific skill fields subject to removeUnsupported */
+const CLAUDE_SKILL_FIELDS = [
+  "disable-model-invocation",
+  "user-invocable",
+  "allowed-tools",
+  "argument-hint",
+  "model",
+  "context",
+  "agent",
+  "hooks",
+];
 
 /** openai.yaml top-level keys that should be routed to openaiConfig */
 const OPENAI_YAML_KEYS = ["interface", "dependencies"] as const;
-
-const CLAUDE_PREFIX = "_claude_";
-const CLAUDE_MODEL_INVOCATION_KEY = `${CLAUDE_PREFIX}disable_model_invocation`;
-
-function unprefixClaudeKey(key: string): string {
-  return key.slice(CLAUDE_PREFIX.length).replace(/_/g, "-");
-}
-
-function prefixClaudeKey(key: string): string {
-  return `${CLAUDE_PREFIX}${key.replace(/-/g, "_")}`;
-}
 
 export class CodexAgent implements AgentDefinition {
   // ── AgentConfig ───────────────────────────────────────────────────
@@ -280,16 +278,12 @@ export class CodexAgent implements AgentDefinition {
     for (const [key, value] of Object.entries(source.frontmatter)) {
       if (key === "name" || key === "description") continue;
 
-      if (key === CLAUDE_MODEL_INVOCATION_KEY) {
+      if (key === "disable-model-invocation") {
         modelInvocationEnabled = typeof value === "boolean" ? !value : undefined;
         continue;
       }
 
-      if (key.startsWith(CLAUDE_PREFIX)) {
-        extras[unprefixClaudeKey(key)] = value;
-      } else {
-        extras[key] = value;
-      }
+      extras[key] = value;
     }
 
     if (source.openaiConfig) {
@@ -343,16 +337,13 @@ export class CodexAgent implements AgentDefinition {
     if (ir.semantic.description !== undefined) frontmatter.description = ir.semantic.description;
 
     if (ir.semantic.modelInvocationEnabled !== undefined && !options?.removeUnsupported) {
-      frontmatter[CLAUDE_MODEL_INVOCATION_KEY] = !ir.semantic.modelInvocationEnabled;
+      frontmatter["disable-model-invocation"] = !ir.semantic.modelInvocationEnabled;
     }
 
     for (const [key, value] of Object.entries(ir.extras)) {
       if ((OPENAI_YAML_KEYS as readonly string[]).includes(key)) continue;
-
-      if (CLAUDE_SKILL_FIELDS.includes(key)) {
-        if (options?.removeUnsupported) continue;
-        frontmatter[prefixClaudeKey(key)] = value;
-      } else {
+      if (options?.removeUnsupported && CLAUDE_SKILL_FIELDS.includes(key)) continue;
+      if (!(key in frontmatter)) {
         frontmatter[key] = value;
       }
     }

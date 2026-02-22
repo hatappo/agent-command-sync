@@ -338,6 +338,7 @@ Same as Commands:
 
 - `[A]` Created (Green) - New files created in target directory
 - `[M]` Modified (Yellow) - Existing files updated
+- `[=]` Unchanged (Blue) - File exists and converted content is identical
 - `[D]` Deleted (Red) - Files removed with `--sync-delete`
 - `[-]` Skipped (Gray) - Files skipped with `--no-overwrite`
 

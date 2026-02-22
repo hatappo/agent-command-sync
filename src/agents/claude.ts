@@ -2,7 +2,7 @@
  * Claude Code agent — unified parser, converter, and body handling
  */
 
-import { mkdir, writeFile as fsWriteFile, copyFile } from "node:fs/promises";
+import { copyFile, writeFile as fsWriteFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import matter from "gray-matter";
 import type { BodySegment } from "../types/body-segment.js";
@@ -11,7 +11,7 @@ import { ParseError } from "../types/index.js";
 import type { ConverterOptions, SemanticIR } from "../types/semantic-ir.js";
 import { parseBody, serializeBody } from "../utils/body-segment-utils.js";
 import { FILE_EXTENSIONS, SKILL_CONSTANTS } from "../utils/constants.js";
-import { readFile, fileExists } from "../utils/file-utils.js";
+import { fileExists, readFile } from "../utils/file-utils.js";
 import { collectSupportFiles, getSkillName, isSkillDirectory } from "../utils/skill-utils.js";
 import { validateClaudeCommand } from "../utils/validation.js";
 import { CLAUDE_SYNTAX_PATTERNS, CLAUDE_SYNTAX_SERIALIZERS } from "./_claude-syntax-body-patterns.js";

@@ -8,9 +8,9 @@ import { PRODUCT_TYPES } from "../types/intermediate.js";
 import type { ProductType } from "../types/intermediate.js";
 import type { ContentFilter } from "../types/skill.js";
 import { validateCLIOptions } from "./options.js";
+import type { CLIOptions } from "./options.js";
 import { showStatus } from "./status.js";
 import { syncCommands } from "./sync.js";
-import type { CLIOptions } from "./options.js";
 
 // Dynamically generated from PRODUCT_TYPES / AGENT_REGISTRY
 const displayNames = PRODUCT_TYPES.map((p) => AGENT_REGISTRY[p].displayName).join(", ");

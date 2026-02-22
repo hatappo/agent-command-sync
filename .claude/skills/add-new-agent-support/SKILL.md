@@ -172,14 +172,13 @@ export class NewAgentAgent
 
   skillToIR(source: NewAgentSkill, _options?: ConverterOptions): SemanticIR {
     // Similar to commandToIR, with additional handling for:
-    // - modelInvocationEnabled semantic property
-    // - _claude_ prefixed fields for round-trip fidelity
+    // - modelInvocationEnabled semantic property (from disable-model-invocation)
   }
 
   skillFromIR(ir: SemanticIR, options?: ConverterOptions): NewAgentSkill {
     // Similar to commandFromIR, with:
-    // - CLAUDE_SKILL_FIELDS for removeUnsupported
-    // - _claude_ prefix handling
+    // - CLAUDE_SKILL_FIELDS for removeUnsupported filtering
+    // - Extras are passed through as-is (no prefixing)
   }
 }
 
@@ -203,9 +202,8 @@ const CLAUDE_COMMAND_FIELDS = ["allowed-tools", "argument-hint"] as const;
 const CLAUDE_COMMAND_FIELDS = ["allowed-tools", "argument-hint", "model"] as const;
 ```
 
-**`CLAUDE_SKILL_FIELDS`:** List of Claude-specific skill fields not supported by the target. Additional considerations:
+**`CLAUDE_SKILL_FIELDS`:** List of Claude-specific skill fields not supported by the target. These fields are passed through as-is when `removeUnsupported=false` (default), and removed when `removeUnsupported=true`. Include `disable-model-invocation` in this list. Additional considerations:
 
-- **`_claude_` prefix**: Claude-specific fields are stored in frontmatter with `_claude_*` prefix (for round-trip fidelity)
 - **`modelInvocationEnabled`**: A semantic property. Bidirectionally converted with Claude's `disable-model-invocation` (inverted) and Codex's `allow_implicit_invocation`
 
 **Skill parser checklist:**

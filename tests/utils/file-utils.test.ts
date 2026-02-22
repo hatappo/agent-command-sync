@@ -1,9 +1,9 @@
-import { mkdir, rm, writeFile as fsWriteFile } from "node:fs/promises";
+import { writeFile as fsWriteFile, mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AGENT_REGISTRY } from "../../src/agents/registry.js";
 import { SKILL_CONSTANTS } from "../../src/utils/constants.js";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   autoCompleteExtension,
   deleteFile,

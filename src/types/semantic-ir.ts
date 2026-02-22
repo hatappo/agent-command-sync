@@ -5,8 +5,8 @@
  */
 
 import type { BodySegment } from "./body-segment.js";
-import type { ContentType, SupportFile } from "./skill.js";
 import type { ProductType } from "./intermediate.js";
+import type { ContentType, SupportFile } from "./skill.js";
 
 /**
  * Semantic properties shared across 2+ agents

@@ -1,6 +1,6 @@
 // File operation result
 export interface FileOperation {
-  type: "A" | "M" | "D" | "-";
+  type: "A" | "M" | "D" | "-" | "=";
   filePath: string;
   description: string;
 }
@@ -51,6 +51,7 @@ export interface ConversionResult {
     modified: number;
     deleted: number;
     skipped: number;
+    unchanged: number;
   };
 }
 

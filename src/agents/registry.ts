@@ -1,4 +1,5 @@
 import type { ProductType } from "../types/intermediate.js";
+import type { AgentDefinition } from "./agent-definition.js";
 import { createChimeraAgent } from "./chimera.js";
 import { createClaudeAgent } from "./claude.js";
 import { createCodexAgent } from "./codex.js";
@@ -6,7 +7,6 @@ import { createCopilotAgent } from "./copilot.js";
 import { createCursorAgent } from "./cursor.js";
 import { createGeminiAgent } from "./gemini.js";
 import { createOpenCodeAgent } from "./opencode.js";
-import type { AgentDefinition } from "./agent-definition.js";
 
 /**
  * Agent registry: maps each ProductType to its AgentDefinition.

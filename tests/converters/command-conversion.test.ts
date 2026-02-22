@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { ClaudeAgent } from "../../src/agents/claude.js";
+import { CodexAgent } from "../../src/agents/codex.js";
 import { CopilotAgent } from "../../src/agents/copilot.js";
 import { CursorAgent } from "../../src/agents/cursor.js";
 import { GeminiAgent } from "../../src/agents/gemini.js";
-import { CodexAgent } from "../../src/agents/codex.js";
 import { OpenCodeAgent } from "../../src/agents/opencode.js";
 import type {
   ClaudeCommand,
+  CodexCommand,
   CopilotCommand,
   CursorCommand,
   GeminiCommand,
-  CodexCommand,
   OpenCodeCommand,
 } from "../../src/types/index.js";
 

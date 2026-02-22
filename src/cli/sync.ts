@@ -1,20 +1,25 @@
 import { rm } from "node:fs/promises";
+import { join } from "node:path";
 import picocolors from "picocolors";
 import { AGENT_REGISTRY } from "../agents/registry.js";
-import { assertNever } from "../utils/assert-never.js";
 import type { ConversionResult, FileOperation, SemanticIR } from "../types/index.js";
+import { assertNever } from "../utils/assert-never.js";
+import { SKILL_CONSTANTS } from "../utils/constants.js";
+
+const { SKILL_FILE_NAME } = SKILL_CONSTANTS;
 import {
   deleteFile,
   directoryExists,
   fileExists,
   findAgentCommands,
   findAgentSkills,
-  resolveCommandDir,
-  resolveSkillDir,
   getCommandName,
   getFilePathFromCommandName,
   getSkillNameFromPath,
   getSkillPathFromName,
+  readFile,
+  resolveCommandDir,
+  resolveSkillDir,
   writeFile,
 } from "../utils/file-utils.js";
 
@@ -26,7 +31,7 @@ import type { CLIOptions } from "./options.js";
 export async function syncCommands(options: CLIOptions): Promise<ConversionResult> {
   const operations: FileOperation[] = [];
   const errors: Error[] = [];
-  const stats = { processed: 0, created: 0, modified: 0, deleted: 0, skipped: 0 };
+  const stats = { processed: 0, created: 0, modified: 0, deleted: 0, skipped: 0, unchanged: 0 };
 
   try {
     console.log(picocolors.cyan(`Starting ${options.source} → ${options.destination} conversion...`));
@@ -127,7 +132,7 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
  */
 function countStats(
   operations: FileOperation[],
-  stats: { created: number; modified: number; deleted: number; skipped: number },
+  stats: { created: number; modified: number; deleted: number; skipped: number; unchanged: number },
 ): void {
   for (const op of operations) {
     switch (op.type) {
@@ -142,6 +147,9 @@ function countStats(
         break;
       case "-":
         stats.skipped++;
+        break;
+      case "=":
+        stats.unchanged++;
         break;
       default:
         assertNever(op.type);
@@ -226,6 +234,18 @@ async function handleFileOperation(targetFile: string, content: string, options:
       filePath: targetFile,
       description: "Skipped (file exists and --no-overwrite specified)",
     };
+  }
+
+  // Check if content is unchanged
+  if (exists) {
+    const existingContent = await readFile(targetFile);
+    if (existingContent === content) {
+      return {
+        type: "=",
+        filePath: targetFile,
+        description: options.noop ? "Unchanged" : "Unchanged",
+      };
+    }
   }
 
   // In no-op mode
@@ -356,6 +376,29 @@ async function convertSingleSkill(
       }
     }
 
+    // Step 3: Convert from SemanticIR to target format
+    const targetSkill = dst.skillFromIR(ir, {
+      removeUnsupported: options.removeUnsupported,
+      existingTarget,
+    });
+
+    // Check if skill content is unchanged (compare SKILL.md)
+    if (targetExists) {
+      const newSkillContent = dst.stringifySkill(targetSkill);
+      const existingSkillMdPath = join(targetSkillDir, SKILL_FILE_NAME);
+      if (await fileExists(existingSkillMdPath)) {
+        const existingSkillContent = await readFile(existingSkillMdPath);
+        if (existingSkillContent === newSkillContent) {
+          operations.push({
+            type: "=",
+            filePath: targetSkillDir,
+            description: "Unchanged",
+          });
+          return { operations, errors };
+        }
+      }
+    }
+
     // In no-op mode
     if (options.noop) {
       operations.push({
@@ -366,11 +409,7 @@ async function convertSingleSkill(
       return { operations, errors };
     }
 
-    // Step 3: Convert from SemanticIR to target format and write
-    const targetSkill = dst.skillFromIR(ir, {
-      removeUnsupported: options.removeUnsupported,
-      existingTarget,
-    });
+    // Write skill to directory
     await dst.writeSkillToDirectory(targetSkill, skillDir, targetSkillDir);
 
     operations.push({
@@ -446,6 +485,7 @@ const operationStyles = {
   M: { prefix: picocolors.yellow("[M]"), color: picocolors.yellow },
   D: { prefix: picocolors.red("[D]"), color: picocolors.red },
   "-": { prefix: picocolors.gray("[-]"), color: picocolors.gray },
+  "=": { prefix: picocolors.blue("[=]"), color: picocolors.blue },
 } as const;
 
 /**
@@ -486,6 +526,7 @@ function displayResults(operations: FileOperation[], errors: Error[], options: C
     M: operations.filter((op) => op.type === "M").length,
     D: operations.filter((op) => op.type === "D").length,
     "-": operations.filter((op) => op.type === "-").length,
+    "=": operations.filter((op) => op.type === "=").length,
   };
 
   console.log(picocolors.bold("\nSummary:"));
@@ -493,6 +534,7 @@ function displayResults(operations: FileOperation[], errors: Error[], options: C
   if (stats.M > 0) console.log(`  ${picocolors.yellow("Modified:")} ${stats.M}`);
   if (stats.D > 0) console.log(`  ${picocolors.red("Deleted:")} ${stats.D}`);
   if (stats["-"] > 0) console.log(`  ${picocolors.gray("Skipped:")} ${stats["-"]}`);
+  if (stats["="] > 0) console.log(`  ${picocolors.blue("Unchanged:")} ${stats["="]}`);
 
   // Display errors
   if (errors.length > 0) {

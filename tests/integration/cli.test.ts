@@ -261,8 +261,8 @@ prompt = "This is a test command with {{args}}."`;
       // Create Gemini command with Claude-specific fields
       const geminiContent = `description = "Test command"
 prompt = "Test content"
-_claude_allowed_tools = "Bash(git status:*)"
-_claude_model = "sonnet"`;
+allowed-tools = "Bash(git status:*)"
+model = "sonnet"`;
 
       await writeFile(join(geminiDir, "restore.toml"), geminiContent);
 
@@ -289,7 +289,6 @@ _claude_model = "sonnet"`;
       const claudeContent = await readFile(join(claudeDir, "restore.md"));
       expect(claudeContent).toContain("description: Test command");
       // Verify Claude-specific fields are restored
-      // Current implementation may not correctly restore _claude_ prefixed fields
       expect(claudeContent).toContain("Test content");
     });
   });
@@ -992,6 +991,122 @@ custom-gemini = "gval"`;
       // Both agent sections should exist
       expect(content).toContain("claude");
       expect(content).toContain("gemini");
+    });
+  });
+
+  describe("Unchanged detection", () => {
+    it("should report unchanged when command content is identical", async () => {
+      // Create Claude command
+      const claudeContent = `---
+description: Test command
+---
+
+Test content`;
+
+      await writeFile(join(claudeDir, "unchanged.md"), claudeContent);
+
+      // First conversion: creates the file
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "gemini",
+        contentType: "commands",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
+      };
+
+      const firstResult = await syncCommands(options);
+      expect(firstResult.success).toBe(true);
+      expect(firstResult.summary.created).toBe(1);
+
+      // Second conversion: content is identical, should be unchanged
+      const secondResult = await syncCommands(options);
+      expect(secondResult.success).toBe(true);
+      expect(secondResult.summary.unchanged).toBe(1);
+      expect(secondResult.summary.modified).toBe(0);
+
+      const unchangedOp = secondResult.operations.find((op) => op.filePath.includes("unchanged.toml"));
+      expect(unchangedOp).toBeDefined();
+      expect(unchangedOp?.type).toBe("=");
+      expect(unchangedOp?.description).toBe("Unchanged");
+    });
+
+    it("should report unchanged in noop mode when content is identical", async () => {
+      const claudeContent = `---
+description: Noop unchanged test
+---
+
+Content`;
+
+      await writeFile(join(claudeDir, "noop-unchanged.md"), claudeContent);
+
+      // First: create the file
+      const createOptions: CLIOptions = {
+        source: "claude",
+        destination: "gemini",
+        contentType: "commands",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
+      };
+      await syncCommands(createOptions);
+
+      // Second: noop mode should still detect unchanged
+      const noopOptions: CLIOptions = {
+        ...createOptions,
+        noop: true,
+      };
+      const result = await syncCommands(noopOptions);
+      expect(result.success).toBe(true);
+      expect(result.summary.unchanged).toBe(1);
+
+      const op = result.operations.find((op) => op.filePath.includes("noop-unchanged.toml"));
+      expect(op?.type).toBe("=");
+    });
+
+    it("should report modified when content has changed", async () => {
+      // Create Claude command
+      const claudeContent = `---
+description: Original
+---
+
+Original content`;
+
+      await writeFile(join(claudeDir, "modified.md"), claudeContent);
+
+      // First conversion
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "gemini",
+        contentType: "commands",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
+      };
+      await syncCommands(options);
+
+      // Modify source
+      const updatedContent = `---
+description: Updated
+---
+
+Updated content`;
+      await writeFile(join(claudeDir, "modified.md"), updatedContent);
+
+      // Second conversion: content has changed
+      const secondResult = await syncCommands(options);
+      expect(secondResult.success).toBe(true);
+      expect(secondResult.summary.modified).toBe(1);
+      expect(secondResult.summary.unchanged).toBe(0);
     });
   });
 

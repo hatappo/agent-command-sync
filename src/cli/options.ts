@@ -1,5 +1,5 @@
-import { PRODUCT_TYPES } from "../types/intermediate.js";
 import type { IntermediateConversionOptions } from "../types/index.js";
+import { PRODUCT_TYPES } from "../types/intermediate.js";
 
 /**
  * CLI option type definition

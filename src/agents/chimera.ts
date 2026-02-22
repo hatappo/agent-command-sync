@@ -5,17 +5,17 @@
  * with a `_chimera` section in frontmatter to store per-agent extras.
  */
 
-import { mkdir, writeFile as fsWriteFile, copyFile } from "node:fs/promises";
+import { copyFile, writeFile as fsWriteFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import matter from "gray-matter";
 import type { BodySegment } from "../types/body-segment.js";
 import type { ChimeraCommand } from "../types/command.js";
-import type { ChimeraSkill } from "../types/skill.js";
 import { ParseError } from "../types/index.js";
 import type { ConverterOptions, SemanticIR } from "../types/semantic-ir.js";
+import type { ChimeraSkill } from "../types/skill.js";
 import { parseBody, serializeBody } from "../utils/body-segment-utils.js";
 import { FILE_EXTENSIONS, SKILL_CONSTANTS } from "../utils/constants.js";
-import { readFile, fileExists } from "../utils/file-utils.js";
+import { fileExists, readFile } from "../utils/file-utils.js";
 import { collectSupportFiles, getSkillName, isSkillDirectory } from "../utils/skill-utils.js";
 import { CLAUDE_SYNTAX_PATTERNS, CLAUDE_SYNTAX_SERIALIZERS } from "./_claude-syntax-body-patterns.js";
 import type { AgentDefinition } from "./agent-definition.js";

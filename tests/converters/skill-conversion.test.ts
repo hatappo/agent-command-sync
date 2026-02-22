@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { CodexAgent } from "../../src/agents/codex.js";
 import { ClaudeAgent } from "../../src/agents/claude.js";
+import { CodexAgent } from "../../src/agents/codex.js";
 import { CopilotAgent } from "../../src/agents/copilot.js";
 import { CursorAgent } from "../../src/agents/cursor.js";
 import { OpenCodeAgent } from "../../src/agents/opencode.js";
-import type { CodexSkill, ClaudeSkill, CopilotSkill, CursorSkill, OpenCodeSkill } from "../../src/types/index.js";
+import type { ClaudeSkill, CodexSkill, CopilotSkill, CursorSkill, OpenCodeSkill } from "../../src/types/index.js";
 
 describe("Skill Conversion", () => {
   describe("allow_implicit_invocation ↔ disable-model-invocation conversion", () => {
@@ -233,8 +233,8 @@ describe("Skill Conversion", () => {
         expect(opencodeSkill.frontmatter.description).toBe("Test");
         expect(opencodeSkill.frontmatter.model).toBe("sonnet");
         expect(opencodeSkill.frontmatter.agent).toBe("task");
-        // allowed-tools is Claude-specific, should be prefixed
-        expect(opencodeSkill.frontmatter._claude_allowed_tools).toBe("bash");
+        // allowed-tools is passed through as-is
+        expect(opencodeSkill.frontmatter["allowed-tools"]).toBe("bash");
       });
 
       it("should remove Claude-specific fields with removeUnsupported", () => {
@@ -254,9 +254,9 @@ describe("Skill Conversion", () => {
         const ir = claudeAgent.skillToIR(claudeSkill);
         const opencodeSkill = opencodeAgent.skillFromIR(ir, { removeUnsupported: true });
 
-        expect(opencodeSkill.frontmatter._claude_user_invocable).toBeUndefined();
-        expect(opencodeSkill.frontmatter._claude_allowed_tools).toBeUndefined();
-        expect(opencodeSkill.frontmatter._claude_context).toBeUndefined();
+        expect(opencodeSkill.frontmatter["user-invocable"]).toBeUndefined();
+        expect(opencodeSkill.frontmatter["allowed-tools"]).toBeUndefined();
+        expect(opencodeSkill.frontmatter.context).toBeUndefined();
       });
     });
 

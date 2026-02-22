@@ -2,7 +2,7 @@
  * Gemini CLI agent — unified parser, converter, and body handling
  */
 
-import { mkdir, writeFile as fsWriteFile, copyFile } from "node:fs/promises";
+import { copyFile, writeFile as fsWriteFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import * as TOML from "@iarna/toml";
 import matter from "gray-matter";
@@ -12,7 +12,7 @@ import { ParseError } from "../types/index.js";
 import type { ConverterOptions, SemanticIR } from "../types/semantic-ir.js";
 import { parseBody, serializeBody } from "../utils/body-segment-utils.js";
 import { FILE_EXTENSIONS, SKILL_CONSTANTS } from "../utils/constants.js";
-import { readFile, fileExists } from "../utils/file-utils.js";
+import { fileExists, readFile } from "../utils/file-utils.js";
 import { collectSupportFiles, getSkillName, isSkillDirectory } from "../utils/skill-utils.js";
 import { validateGeminiCommand } from "../utils/validation.js";
 import type { AgentDefinition } from "./agent-definition.js";
@@ -44,19 +44,17 @@ const GEMINI_UNSUPPORTED: ReadonlySet<ContentPlaceholder["type"]> = new Set(["in
 /** Claude-specific command fields subject to removeUnsupported */
 const CLAUDE_COMMAND_FIELDS = ["allowed-tools", "argument-hint", "model"] as const;
 
-/** Claude-specific skill fields (original names, subject to _claude_ prefix) */
-const CLAUDE_SKILL_FIELDS = ["user-invocable", "allowed-tools", "argument-hint", "model", "context", "agent", "hooks"];
-
-const CLAUDE_PREFIX = "_claude_";
-const CLAUDE_MODEL_INVOCATION_KEY = `${CLAUDE_PREFIX}disable_model_invocation`;
-
-function unprefixClaudeKey(key: string): string {
-  return key.slice(CLAUDE_PREFIX.length).replace(/_/g, "-");
-}
-
-function prefixClaudeKey(key: string): string {
-  return `${CLAUDE_PREFIX}${key.replace(/-/g, "_")}`;
-}
+/** Claude-specific skill fields subject to removeUnsupported */
+const CLAUDE_SKILL_FIELDS = [
+  "disable-model-invocation",
+  "user-invocable",
+  "allowed-tools",
+  "argument-hint",
+  "model",
+  "context",
+  "agent",
+  "hooks",
+];
 
 export class GeminiAgent implements AgentDefinition {
   // ── AgentConfig ───────────────────────────────────────────────────
@@ -295,16 +293,12 @@ export class GeminiAgent implements AgentDefinition {
     for (const [key, value] of Object.entries(source.frontmatter)) {
       if (key === "name" || key === "description") continue;
 
-      if (key === CLAUDE_MODEL_INVOCATION_KEY) {
+      if (key === "disable-model-invocation") {
         modelInvocationEnabled = typeof value === "boolean" ? !value : undefined;
         continue;
       }
 
-      if (key.startsWith(CLAUDE_PREFIX)) {
-        extras[unprefixClaudeKey(key)] = value;
-      } else {
-        extras[key] = value;
-      }
+      extras[key] = value;
     }
 
     return {
@@ -334,14 +328,12 @@ export class GeminiAgent implements AgentDefinition {
     if (ir.semantic.description !== undefined) frontmatter.description = ir.semantic.description;
 
     if (ir.semantic.modelInvocationEnabled !== undefined && !options?.removeUnsupported) {
-      frontmatter[CLAUDE_MODEL_INVOCATION_KEY] = !ir.semantic.modelInvocationEnabled;
+      frontmatter["disable-model-invocation"] = !ir.semantic.modelInvocationEnabled;
     }
 
     for (const [key, value] of Object.entries(ir.extras)) {
-      if (CLAUDE_SKILL_FIELDS.includes(key)) {
-        if (options?.removeUnsupported) continue;
-        frontmatter[prefixClaudeKey(key)] = value;
-      } else {
+      if (options?.removeUnsupported && CLAUDE_SKILL_FIELDS.includes(key)) continue;
+      if (!(key in frontmatter)) {
         frontmatter[key] = value;
       }
     }

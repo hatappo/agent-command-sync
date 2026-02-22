@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { CodexAgent } from "../../src/agents/codex.js";
 import { ClaudeAgent } from "../../src/agents/claude.js";
+import { CodexAgent } from "../../src/agents/codex.js";
 import { CopilotAgent } from "../../src/agents/copilot.js";
 import { CursorAgent } from "../../src/agents/cursor.js";
 import { GeminiAgent } from "../../src/agents/gemini.js";
@@ -8,7 +8,7 @@ import type { ClaudeSkill } from "../../src/types/index.js";
 
 describe("Skill Conversion (Safety Net)", () => {
   describe("Claude -> Gemini (removeUnsupported=false)", () => {
-    it("should preserve Claude-specific fields with _claude_ prefix", () => {
+    it("should preserve Claude-specific fields as-is", () => {
       const claude: ClaudeSkill = {
         name: "test-skill",
         description: "Test description",
@@ -35,13 +35,13 @@ describe("Skill Conversion (Safety Net)", () => {
 
       expect(gemini.frontmatter.name).toBe("test-skill");
       expect(gemini.frontmatter.description).toBe("Test description");
-      expect(gemini.frontmatter._claude_disable_model_invocation).toBe(true);
-      expect(gemini.frontmatter._claude_user_invocable).toBe(false);
-      expect(gemini.frontmatter._claude_allowed_tools).toBe("bash");
-      expect(gemini.frontmatter._claude_model).toBe("sonnet");
-      expect(gemini.frontmatter._claude_context).toBe("fork");
-      expect(gemini.frontmatter._claude_agent).toBe("task");
-      expect(gemini.frontmatter._claude_hooks).toEqual({ "pre-tool-execution": "echo test" });
+      expect(gemini.frontmatter["disable-model-invocation"]).toBe(true);
+      expect(gemini.frontmatter["user-invocable"]).toBe(false);
+      expect(gemini.frontmatter["allowed-tools"]).toBe("bash");
+      expect(gemini.frontmatter.model).toBe("sonnet");
+      expect(gemini.frontmatter.context).toBe("fork");
+      expect(gemini.frontmatter.agent).toBe("task");
+      expect(gemini.frontmatter.hooks).toEqual({ "pre-tool-execution": "echo test" });
       expect(gemini.content).toBe("Test content");
     });
   });
@@ -72,17 +72,17 @@ describe("Skill Conversion (Safety Net)", () => {
 
       expect(gemini.frontmatter.name).toBe("test-skill");
       expect(gemini.frontmatter.description).toBe("Test description");
-      expect(gemini.frontmatter._claude_disable_model_invocation).toBeUndefined();
-      expect(gemini.frontmatter._claude_user_invocable).toBeUndefined();
-      expect(gemini.frontmatter._claude_allowed_tools).toBeUndefined();
-      expect(gemini.frontmatter._claude_model).toBeUndefined();
-      expect(gemini.frontmatter._claude_context).toBeUndefined();
-      expect(gemini.frontmatter._claude_agent).toBeUndefined();
+      expect(gemini.frontmatter["disable-model-invocation"]).toBeUndefined();
+      expect(gemini.frontmatter["user-invocable"]).toBeUndefined();
+      expect(gemini.frontmatter["allowed-tools"]).toBeUndefined();
+      expect(gemini.frontmatter.model).toBeUndefined();
+      expect(gemini.frontmatter.context).toBeUndefined();
+      expect(gemini.frontmatter.agent).toBeUndefined();
     });
   });
 
   describe("Claude -> Codex (removeUnsupported=false)", () => {
-    it("should convert disable-model-invocation and preserve Claude fields with prefix", () => {
+    it("should convert disable-model-invocation and preserve Claude fields as-is", () => {
       const claude: ClaudeSkill = {
         name: "test-skill",
         content: "Test content",
@@ -104,10 +104,10 @@ describe("Skill Conversion (Safety Net)", () => {
       const codex = codexAgent.skillFromIR(ir, { removeUnsupported: false });
 
       expect(codex.openaiConfig?.policy?.allow_implicit_invocation).toBe(false);
-      expect(codex.frontmatter._claude_disable_model_invocation).toBe(true);
-      expect(codex.frontmatter._claude_user_invocable).toBe(false);
-      expect(codex.frontmatter._claude_allowed_tools).toBe("bash");
-      expect(codex.frontmatter._claude_context).toBe("fork");
+      expect(codex.frontmatter["disable-model-invocation"]).toBe(true);
+      expect(codex.frontmatter["user-invocable"]).toBe(false);
+      expect(codex.frontmatter["allowed-tools"]).toBe("bash");
+      expect(codex.frontmatter.context).toBe("fork");
     });
   });
 
@@ -136,10 +136,10 @@ describe("Skill Conversion (Safety Net)", () => {
       // model invocation conversion should always work
       expect(codex.openaiConfig?.policy?.allow_implicit_invocation).toBe(false);
       // Claude-specific fields should be removed
-      expect(codex.frontmatter._claude_disable_model_invocation).toBeUndefined();
-      expect(codex.frontmatter._claude_user_invocable).toBeUndefined();
-      expect(codex.frontmatter._claude_allowed_tools).toBeUndefined();
-      expect(codex.frontmatter._claude_context).toBeUndefined();
+      expect(codex.frontmatter["disable-model-invocation"]).toBeUndefined();
+      expect(codex.frontmatter["user-invocable"]).toBeUndefined();
+      expect(codex.frontmatter["allowed-tools"]).toBeUndefined();
+      expect(codex.frontmatter.context).toBeUndefined();
     });
   });
 

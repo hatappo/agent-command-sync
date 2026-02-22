@@ -3,8 +3,8 @@ import { ChimeraAgent } from "../../src/agents/chimera.js";
 import { ClaudeAgent } from "../../src/agents/claude.js";
 import { GeminiAgent } from "../../src/agents/gemini.js";
 import type { ChimeraCommand } from "../../src/types/command.js";
-import type { ChimeraSkill } from "../../src/types/skill.js";
 import type { ClaudeCommand } from "../../src/types/index.js";
+import type { ChimeraSkill } from "../../src/types/skill.js";
 
 describe("Chimera Conversion", () => {
   const chimera = new ChimeraAgent();
