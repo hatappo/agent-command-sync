@@ -60,7 +60,7 @@ acs sync -n -s claude -d gemini
 - **Fast Conversion** - Efficiently sync commands between Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor
 - **Bidirectional** - Convert in any direction (Claude ↔ Gemini ↔ Codex ↔ OpenCode ↔ Copilot ↔ Cursor)
 - **Safe by Default** - Preview changes with dry-run mode before applying
-- **Chimera Hub** - Lossless conversion via virtual agent that preserves all agent-specific settings
+- **Chimera Hub** - Lossless conversion via virtual agent that preserves all agent-specific settings ([details](docs/chimera-hub-workflow.md))
 - **Subcommands** - `import`, `apply`, `drift`, `plan` for Chimera hub workflow; `sync` for direct conversion
 - **Short Command** - Use `acs` instead of `agent-command-sync`
 - **Selective Sync** - Convert specific files or all commands at once

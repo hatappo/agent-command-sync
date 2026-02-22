@@ -60,7 +60,7 @@ acs sync -n -s claude -d gemini
 - **高速変換** - Claude Code、Gemini CLI、Codex CLI、OpenCode、GitHub Copilot、Cursor 間でコマンドを効率的に同期
 - **双方向対応** - 任意の方向への変換に対応（Claude ↔ Gemini ↔ Codex ↔ OpenCode ↔ Copilot ↔ Cursor）
 - **デフォルトで安全** - ドライランモードで適用前に変更をプレビュー
-- **Chimera ハブ** - 全エージェント固有設定を保持するロスレス変換ハブ（仮想エージェント）
+- **Chimera ハブ** - 全エージェント固有設定を保持するロスレス変換ハブ（仮想エージェント）（[詳細](docs/chimera-hub-workflow.md)）
 - **サブコマンド** - Chimera ハブワークフロー用の `import`, `apply`, `drift`, `plan` と直接変換用の `sync`
 - **短縮コマンド** - `agent-command-sync` の代わりに `acs` を使用可能
 - **選択的同期** - 特定のファイルまたは全コマンドを一括変換
