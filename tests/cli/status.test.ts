@@ -161,6 +161,12 @@ describe("showChimeraArt", () => {
     expect(output).toContain("Ghost");
   });
 
+  it("shows secret message", () => {
+    showChimeraArt(3);
+    const output = logs.join("\n");
+    expect(output).toContain("(secret)");
+  });
+
   it("does not include speech bubble or stats", () => {
     showChimeraArt(3);
     const output = logs.join("\n");

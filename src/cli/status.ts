@@ -251,6 +251,8 @@ export function showChimeraArt(lv: number): void {
   const level = Math.max(0, Math.min(lv, CHIMERA_ART.length - 1));
 
   console.log();
+  console.log(picocolors.dim("(secret) Chimera art viewer"));
+  console.log();
   console.log(picocolors.cyan(CHIMERA_ART[level]));
   console.log();
 
