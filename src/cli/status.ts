@@ -108,6 +108,8 @@ export interface StatusOptions {
   customDirs?: Partial<Record<ProductType, string>>;
   gitRoot?: string | null;
   global?: boolean;
+  /** Override chimera level for art display (hidden option) */
+  lv?: number;
 }
 
 /**
@@ -160,6 +162,12 @@ export function formatStatsLine(label: string, stats: AgentStats): string {
  * Display the status output
  */
 export async function showStatus(options: StatusOptions): Promise<void> {
+  // Hidden --lv option: show only art + Lv + Composition
+  if (options.lv != null) {
+    showChimeraArt(options.lv);
+    return;
+  }
+
   console.log();
 
   // Version and mode
@@ -233,5 +241,25 @@ export async function showStatus(options: StatusOptions): Promise<void> {
 
   // Flavor message
   console.log(picocolors.dim("  Your Chimera grows as you sync more agents. Keep collecting!"));
+  console.log();
+}
+
+/**
+ * Display only chimera ASCII art, Lv, and Composition for a given level
+ */
+export function showChimeraArt(lv: number): void {
+  const level = Math.max(0, Math.min(lv, CHIMERA_ART.length - 1));
+
+  console.log();
+  console.log(picocolors.cyan(CHIMERA_ART[level]));
+  console.log();
+
+  const activeParts = level === 0 ? CHIMERA_PARTS.slice(0, 1) : CHIMERA_PARTS.slice(1, level + 1);
+  const animalNames = activeParts
+    .map((a) => (a.trait ? `${a.emoji} ${a.name} (${a.trait})` : `${a.emoji} ${a.name}`))
+    .join(" + ");
+
+  console.log(picocolors.bold(`Chimera Lv.${level}`));
+  console.log(picocolors.dim(`  Composition: ${animalNames}`));
   console.log();
 }

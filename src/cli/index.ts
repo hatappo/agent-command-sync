@@ -322,13 +322,21 @@ async function main(): Promise<void> {
   const statusCmd = program.command("status").description("Show Chimera status and detected agents");
 
   registerCommonDirOptions(statusCmd);
+  statusCmd.option("--lv <level>", undefined /* hidden */);
 
   statusCmd.action(async (options) => {
     try {
+      const lv = options.lv != null ? Number.parseInt(options.lv, 10) : undefined;
+      if (lv != null && (Number.isNaN(lv) || lv < 0)) {
+        console.error("Error: --lv must be a non-negative integer");
+        process.exitCode = 1;
+        return;
+      }
       await showStatus({
         customDirs: buildCustomDirs(options),
         gitRoot,
         global: options.global,
+        lv,
       });
     } catch (error) {
       handleError(error);

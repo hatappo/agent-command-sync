@@ -1,9 +1,9 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AGENT_REGISTRY } from "../../src/agents/registry.js";
-import { type AgentStats, collectAgentStats, formatStatsLine } from "../../src/cli/status.js";
+import { type AgentStats, collectAgentStats, formatStatsLine, showChimeraArt } from "../../src/cli/status.js";
 
 describe("collectAgentStats", () => {
   let tempDir: string;
@@ -105,5 +105,67 @@ describe("formatStatsLine", () => {
   it("formats with zero counts", () => {
     const stats: AgentStats = { commandCount: 0, skillCount: 0, agentCount: 0, detectedAgents: new Set() };
     expect(formatStatsLine("User:", stats)).toBe("User: 0 commands, 0 skills (0 agents)");
+  });
+});
+
+describe("showChimeraArt", () => {
+  let logs: string[];
+  const origLog = console.log;
+
+  beforeEach(() => {
+    logs = [];
+    vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+      logs.push(args.map(String).join(" "));
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("shows Ghost for level 0", () => {
+    showChimeraArt(0);
+    const output = logs.join("\n");
+    expect(output).toContain("Lv.0");
+    expect(output).toContain("Ghost");
+    expect(output).toContain(">_<");
+  });
+
+  it("shows Cat for level 1", () => {
+    showChimeraArt(1);
+    const output = logs.join("\n");
+    expect(output).toContain("Lv.1");
+    expect(output).toContain("Cat");
+    expect(output).toContain("o.o");
+  });
+
+  it("shows Dragon for level 5", () => {
+    showChimeraArt(5);
+    const output = logs.join("\n");
+    expect(output).toContain("Lv.5");
+    expect(output).toContain("Dragon");
+    expect(output).toContain("~~~>o");
+  });
+
+  it("clamps to max level for values exceeding art count", () => {
+    showChimeraArt(999);
+    const output = logs.join("\n");
+    expect(output).toContain("Lv.10");
+    expect(output).toContain("Bee");
+  });
+
+  it("clamps negative values to 0", () => {
+    showChimeraArt(-5);
+    const output = logs.join("\n");
+    expect(output).toContain("Lv.0");
+    expect(output).toContain("Ghost");
+  });
+
+  it("does not include speech bubble or stats", () => {
+    showChimeraArt(3);
+    const output = logs.join("\n");
+    expect(output).not.toContain("commands");
+    expect(output).not.toContain("skills");
+    expect(output).not.toContain("User:");
   });
 });
