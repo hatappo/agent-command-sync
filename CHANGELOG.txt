@@ -1,5 +1,28 @@
 # Changelog
 
+## [4.2.0] - 2026-02-25
+
+### Added
+- **`_from` provenance tracking**: Commands and skills now record their origin in a `_from` frontmatter property (URL array)
+  - **Sync**: Automatically appends the source repository's GitHub remote URL (e.g., `https://github.com/owner/repo`) when syncing from a Git repository with a GitHub remote
+  - **Download**: Injects the download URL into `SKILL.md` frontmatter
+  - Stored as `semantic.from` in SemanticIR (preserved across conversions, not removed by `--remove-unsupported`)
+  - Supported by all agents (Cursor commands lose `_from` due to no frontmatter)
+- `getGitHubRemoteUrl()` utility for detecting GitHub remote from `.git/config`
+
+## [4.1.0] - 2026-02-25
+
+### Added
+- **`acs download <url>` subcommand**: Download skills directly from GitHub repositories
+  - Fetches all files from a GitHub skill directory via the Contents API
+  - Default: preserves URL path relative to project root (e.g., `.claude/skills/my-skill/`)
+  - With `-d <agent>`: places files in the specified agent's skill directory
+  - With `-g` (requires `-d`): uses user-level (global) directory
+  - Supports `--noop` for dry run preview
+  - Supports both `tree/` (directory) and `blob/` (file, auto-detects parent) GitHub URLs
+  - Handles text and binary files
+  - Uses `GITHUB_TOKEN` environment variable for authentication (optional)
+
 ## [4.0.0] - 2026-02-24
 
 ### BREAKING CHANGES

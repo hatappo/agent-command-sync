@@ -47,6 +47,9 @@ acs sync -n -s claude -d gemini
 
 # プロジェクトレベルではなくユーザーレベル（グローバル）ディレクトリを使用
 acs sync -s claude -d gemini -g
+
+# GitHub からスキルをダウンロード
+acs download https://github.com/owner/repo/tree/main/.claude/skills/my-skill
 ```
 
 ## スクリーンショット
@@ -66,6 +69,8 @@ acs sync -s claude -d gemini -g
 - **デフォルトで安全** - ドライランモードで適用前に変更をプレビュー
 - **Chimera ハブ** - 全エージェント固有設定を保持するロスレス変換ハブ（仮想エージェント）（[詳細](docs/chimera-hub-workflow.md)）
 - **サブコマンド** - Chimera ハブワークフロー用の `import`, `apply`, `drift`, `plan` と直接変換用の `sync`
+- **ダウンロード** - `acs download` で GitHub リポジトリからスキルを直接取得
+- **来歴トラッキング** - `_from` frontmatter プロパティでコマンド/スキルのコピー元を記録
 - **短縮コマンド** - `agent-command-sync` の代わりに `acs` を使用可能
 - **選択的同期** - 特定のファイルまたは全コマンドを一括変換
 
@@ -105,6 +110,15 @@ acs apply claude --remove-unsupported      # サポートされていないフ�
 
 ```bash
 acs plan gemini                            # 適用の変更をプレビュー
+```
+
+### `acs download <url>` — GitHub からスキルをダウンロード
+
+```bash
+acs download https://github.com/owner/repo/tree/main/.claude/skills/my-skill
+acs download <url> -d gemini               # Gemini のスキルディレクトリに配置
+acs download <url> -d claude -g            # グローバル Claude ディレクトリに配置
+acs download <url> -n                      # ダウンロードせずにプレビュー
 ```
 
 ## オプション（sync サブコマンド）
@@ -385,7 +399,7 @@ Source Format → Parser → toIR() → SemanticIR → fromIR() → Target Forma
 interface SemanticIR {
   contentType: "command" | "skill";
   body: BodySegment[];                  // トークン化されたボディコンテンツ
-  semantic: SemanticProperties;         // 共有プロパティ（description, name 等）
+  semantic: SemanticProperties;         // 共有プロパティ（description, name, from 等）
   extras: Record<string, unknown>;      // エージェント固有のパススループロパティ
   meta: SemanticMeta;                   // 変換コンテキスト（ソースパス、タイプ等）
 }

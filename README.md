@@ -47,6 +47,9 @@ acs sync -n -s claude -d gemini
 
 # Force user-level (global) directories instead of project-level
 acs sync -s claude -d gemini -g
+
+# Download a skill from GitHub
+acs download https://github.com/owner/repo/tree/main/.claude/skills/my-skill
 ```
 
 ## Screenshots
@@ -66,6 +69,8 @@ acs sync -s claude -d gemini -g
 - **Safe by Default** - Preview changes with dry-run mode before applying
 - **Chimera Hub** - Lossless conversion via virtual agent that preserves all agent-specific settings ([details](docs/chimera-hub-workflow.md))
 - **Subcommands** - `import`, `apply`, `drift`, `plan` for Chimera hub workflow; `sync` for direct conversion
+- **Download** - Fetch skills directly from GitHub repositories with `acs download`
+- **Provenance Tracking** - `_from` frontmatter property records where commands/skills were copied from
 - **Short Command** - Use `acs` instead of `agent-command-sync`
 - **Selective Sync** - Convert specific files or all commands at once
 
@@ -105,6 +110,15 @@ acs apply claude --remove-unsupported      # Remove unsupported fields
 
 ```bash
 acs plan gemini                            # Preview apply changes
+```
+
+### `acs download <url>` — Download a skill from GitHub
+
+```bash
+acs download https://github.com/owner/repo/tree/main/.claude/skills/my-skill
+acs download <url> -d gemini               # Place in Gemini skill directory
+acs download <url> -d claude -g            # Place in global Claude directory
+acs download <url> -n                      # Preview without downloading
 ```
 
 ## Options (sync subcommand)
@@ -385,7 +399,7 @@ Each agent has a single class implementing all interfaces (`AgentConfig`, `BodyP
 interface SemanticIR {
   contentType: "command" | "skill";
   body: BodySegment[];                  // Tokenized body content
-  semantic: SemanticProperties;         // Shared properties (description, name, etc.)
+  semantic: SemanticProperties;         // Shared properties (description, name, from, etc.)
   extras: Record<string, unknown>;      // Agent-specific passthrough properties
   meta: SemanticMeta;                   // Conversion context (source path, type, etc.)
 }
