@@ -1,16 +1,9 @@
-import { join } from "node:path";
-import matter from "gray-matter";
 import picocolors from "picocolors";
 import { version } from "../../package.json" assert { type: "json" };
 import { AGENT_REGISTRY } from "../agents/registry.js";
 import type { ProductType } from "../types/intermediate.js";
 import { PRODUCT_TYPES } from "../types/intermediate.js";
-import { type DirResolutionContext, findAgentCommands, findAgentSkills, readFile } from "../utils/file-utils.js";
-
-const CHIMERA_KEY = "_chimera";
-
-/** Chimera agent types to exclude from the "detected agents" list */
-const EXCLUDED_AGENTS = new Set<string>(["chimera"]);
+import { type DirResolutionContext, findAgentCommands, findAgentSkills } from "../utils/file-utils.js";
 
 /** Chimera parts indexed by level: Lv.0 = Ghost, Lv.1 = Cat, ... */
 const CHIMERA_PARTS: { name: string; emoji: string; trait?: string }[] = [
@@ -101,12 +94,14 @@ const CHIMERA_ART: string[] = [
 ];
 
 /**
- * Scan Chimera hub files and collect unique agent names from _chimera sections
+ * Aggregated stats across all non-chimera agents
  */
-interface ChimeraStats {
-  agents: Set<string>;
+export interface AgentStats {
   commandCount: number;
   skillCount: number;
+  agentCount: number;
+  /** Names of agents that have at least one command or skill */
+  detectedAgents: Set<string>;
 }
 
 export interface StatusOptions {
@@ -115,77 +110,56 @@ export interface StatusOptions {
   global?: boolean;
 }
 
-async function collectChimeraStats(options: StatusOptions): Promise<ChimeraStats> {
-  const agents = new Set<string>();
+/**
+ * Collect command/skill counts across all non-chimera agents for a given context
+ */
+export async function collectAgentStats(context: DirResolutionContext): Promise<AgentStats> {
   let commandCount = 0;
   let skillCount = 0;
-  const chimeraAgent = AGENT_REGISTRY.chimera;
+  let agentCount = 0;
+  const detectedAgents = new Set<string>();
 
-  const context: DirResolutionContext = {
-    customDir: options.customDirs?.chimera,
-    gitRoot: options.gitRoot,
-    global: options.global,
-  };
+  for (const name of PRODUCT_TYPES) {
+    if (name === "chimera") continue;
+    const agent = AGENT_REGISTRY[name];
+    let found = false;
 
-  // Scan command files
-  try {
-    const commandFiles = await findAgentCommands(chimeraAgent, undefined, context);
-    commandCount = commandFiles.length;
-    for (const filePath of commandFiles) {
-      try {
-        const content = await readFile(filePath);
-        const parsed = matter(content);
-        const chimeraSection = parsed.data[CHIMERA_KEY];
-        if (chimeraSection && typeof chimeraSection === "object") {
-          for (const key of Object.keys(chimeraSection)) {
-            if (!EXCLUDED_AGENTS.has(key)) {
-              agents.add(key);
-            }
-          }
-        }
-      } catch {
-        // Skip unparseable files
-      }
+    try {
+      const cmds = await findAgentCommands(agent, undefined, context);
+      commandCount += cmds.length;
+      if (cmds.length > 0) found = true;
+    } catch {
+      /* no dir */
     }
-  } catch {
-    // No command directory
+
+    try {
+      const skills = await findAgentSkills(agent, undefined, context);
+      skillCount += skills.length;
+      if (skills.length > 0) found = true;
+    } catch {
+      /* no dir */
+    }
+
+    if (found) {
+      agentCount++;
+      detectedAgents.add(name);
+    }
   }
 
-  // Scan skill files
-  try {
-    const skillDirs = await findAgentSkills(chimeraAgent, undefined, context);
-    skillCount = skillDirs.length;
-    for (const dirPath of skillDirs) {
-      try {
-        const skillFilePath = join(dirPath, "SKILL.md");
-        const content = await readFile(skillFilePath);
-        const parsed = matter(content);
-        const chimeraSection = parsed.data[CHIMERA_KEY];
-        if (chimeraSection && typeof chimeraSection === "object") {
-          for (const key of Object.keys(chimeraSection)) {
-            if (!EXCLUDED_AGENTS.has(key)) {
-              agents.add(key);
-            }
-          }
-        }
-      } catch {
-        // Skip unparseable skills
-      }
-    }
-  } catch {
-    // No skill directory
-  }
+  return { commandCount, skillCount, agentCount, detectedAgents };
+}
 
-  return { agents, commandCount, skillCount };
+/**
+ * Format a stats line for the speech bubble
+ */
+export function formatStatsLine(label: string, stats: AgentStats): string {
+  return `${label} ${stats.commandCount} commands, ${stats.skillCount} skills (${stats.agentCount} agents)`;
 }
 
 /**
  * Display the status output
  */
 export async function showStatus(options: StatusOptions): Promise<void> {
-  const { agents: detectedAgents, commandCount, skillCount } = await collectChimeraStats(options);
-  const agentCount = detectedAgents.size;
-
   console.log();
 
   // Version and mode
@@ -193,12 +167,38 @@ export async function showStatus(options: StatusOptions): Promise<void> {
   console.log(picocolors.dim(`acs v${version} [${modeLabel}]`));
   console.log();
 
-  // Speech bubble with command/skill counts
-  const speech = `${commandCount} commands, ${skillCount} skills`;
-  const pad = speech.length;
-  console.log(picocolors.cyan(`        .${"-".repeat(pad + 2)}.`));
-  console.log(picocolors.cyan(`       (  ${speech}  )`));
-  console.log(picocolors.cyan(`        '-.${"-".repeat(pad)}'`));
+  // Collect agent stats for user-level (always) and project-level (if in git repo)
+  const userStats = await collectAgentStats({ global: true });
+  const projectStats = options.gitRoot ? await collectAgentStats({ gitRoot: options.gitRoot, global: false }) : null;
+
+  // Chimera level is based on distinct agents detected at user level
+  const allDetectedAgents = new Set(userStats.detectedAgents);
+  if (projectStats) {
+    for (const a of projectStats.detectedAgents) {
+      allDetectedAgents.add(a);
+    }
+  }
+  const agentCount = allDetectedAgents.size;
+
+  // Build speech bubble lines
+  const lines: string[] = [];
+  if (projectStats) {
+    // 2-line: pad "User:" to match "Project:" width
+    const userLine = formatStatsLine("User:   ", userStats);
+    const projectLine = formatStatsLine("Project:", projectStats);
+    lines.push(userLine, projectLine);
+  } else {
+    lines.push(formatStatsLine("User:", userStats));
+  }
+
+  const maxLen = Math.max(...lines.map((l) => l.length));
+  const paddedLines = lines.map((l) => l.padEnd(maxLen));
+
+  console.log(picocolors.cyan(`        .${"\u2500".repeat(maxLen + 2)}.`));
+  for (const line of paddedLines) {
+    console.log(picocolors.cyan(`       (  ${line}  )`));
+  }
+  console.log(picocolors.cyan(`        '-.${"\u2500".repeat(maxLen)}'`));
   console.log(picocolors.cyan("          /"));
 
   // ASCII art: Lv.N = N animals, Lv.0 = Ghost
@@ -222,7 +222,7 @@ export async function showStatus(options: StatusOptions): Promise<void> {
     console.log(picocolors.dim("  No agents detected yet. Run `acs import <agent>` to start evolving!"));
   } else {
     // List detected agents
-    const agentList = [...detectedAgents].sort();
+    const agentList = [...allDetectedAgents].sort();
     const agentDisplayNames = agentList.map((a) => {
       const pt = a as ProductType;
       return PRODUCT_TYPES.includes(pt) ? AGENT_REGISTRY[pt].displayName : a;

@@ -1239,180 +1239,80 @@ Updated content`;
   });
 
   describe("status subcommand", () => {
-    let chimeraStatusBaseDir: string;
-    let chimeraStatusCmdDir: string;
-    let chimeraStatusSkillsDir: string;
-
-    beforeEach(async () => {
-      chimeraStatusBaseDir = join(testDir, ".config", "acsync-status");
-      chimeraStatusCmdDir = join(chimeraStatusBaseDir, "commands");
-      chimeraStatusSkillsDir = join(chimeraStatusBaseDir, "skills");
-      await ensureDirectory(chimeraStatusCmdDir);
-      await ensureDirectory(chimeraStatusSkillsDir);
-    });
-
-    it("should detect no agents when chimera hub is empty", async () => {
+    it("should display version and speech bubble", async () => {
       const logs: string[] = [];
       const origLog = console.log;
       console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
 
       try {
-        await showStatus({ customDirs: { chimera: chimeraStatusBaseDir } });
+        await showStatus({ gitRoot: testDir });
       } finally {
         console.log = origLog;
       }
 
       const output = logs.join("\n");
       expect(output).toContain(`v${version}`);
-      expect(output).toContain("Lv.0");
-      expect(output).toContain("Ghost");
-      expect(output).toContain("No agents detected yet");
+      // Speech bubble should contain User and Project lines
+      expect(output).toContain("User:");
+      expect(output).toContain("Project:");
+      expect(output).toContain("commands");
+      expect(output).toContain("skills");
+      expect(output).toContain("agents");
     });
 
-    it("should detect agents from _chimera sections in commands", async () => {
-      const content = `---
-description: Test
-_chimera:
-  claude:
-    model: opus-4
-  gemini:
-    custom: value
----
+    it("should show single line when no gitRoot", async () => {
+      const logs: string[] = [];
+      const origLog = console.log;
+      console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
 
-Body`;
+      try {
+        await showStatus({});
+      } finally {
+        console.log = origLog;
+      }
 
-      await writeFile(join(chimeraStatusCmdDir, "test.md"), content);
+      const output = logs.join("\n");
+      expect(output).toContain("User:");
+      expect(output).not.toContain("Project:");
+    });
+
+    it("should detect project-level agents from actual directories", async () => {
+      // testDir already has .claude/commands and .gemini/commands from beforeEach
+      await writeFile(join(claudeDir, "status-test.md"), "# Test");
+      await writeFile(join(geminiDir, "status-test.toml"), 'description = "test"');
 
       const logs: string[] = [];
       const origLog = console.log;
       console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
 
       try {
-        await showStatus({ customDirs: { chimera: chimeraStatusBaseDir } });
+        await showStatus({ gitRoot: testDir });
       } finally {
         console.log = origLog;
       }
 
       const output = logs.join("\n");
-      expect(output).toContain("Lv.2");
-      expect(output).toContain("Claude Code");
-      expect(output).toContain("Gemini CLI");
-      expect(output).toContain("Bird");
+      // Project line should reflect the files we placed
+      expect(output).toContain("Project:");
+      // Should detect at least claude and gemini
+      expect(output).toMatch(/Project:.*2 commands/);
     });
 
-    it("should detect agents from _chimera sections in skills", async () => {
-      const skillDir = join(chimeraStatusSkillsDir, "test-skill");
-      await ensureDirectory(skillDir);
-      await writeFile(
-        join(skillDir, "SKILL.md"),
-        `---
-name: test-skill
-description: Test
-_chimera:
-  codex:
-    some-field: value
----
-
-Skill body`,
-      );
-
+    it("should display chimera composition section", async () => {
       const logs: string[] = [];
       const origLog = console.log;
       console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
 
       try {
-        await showStatus({ customDirs: { chimera: chimeraStatusBaseDir } });
+        await showStatus({});
       } finally {
         console.log = origLog;
       }
 
       const output = logs.join("\n");
-      expect(output).toContain("Lv.1");
-      expect(output).toContain("Codex CLI");
-      expect(output).toContain("Cat");
-    });
-
-    it("should merge agents from both commands and skills", async () => {
-      await writeFile(
-        join(chimeraStatusCmdDir, "cmd.md"),
-        `---
-description: Cmd
-_chimera:
-  claude:
-    model: opus-4
----
-
-Body`,
-      );
-
-      const skillDir = join(chimeraStatusSkillsDir, "skill");
-      await ensureDirectory(skillDir);
-      await writeFile(
-        join(skillDir, "SKILL.md"),
-        `---
-name: skill
-description: Skill
-_chimera:
-  gemini:
-    custom: val
-  codex:
-    field: val
----
-
-Body`,
-      );
-
-      const logs: string[] = [];
-      const origLog = console.log;
-      console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
-
-      try {
-        await showStatus({ customDirs: { chimera: chimeraStatusBaseDir } });
-      } finally {
-        console.log = origLog;
-      }
-
-      const output = logs.join("\n");
-      expect(output).toContain("Lv.3");
-      expect(output).toContain("Fish");
-    });
-
-    it("should display chimera ASCII art matching agent count", async () => {
-      // Create a command with 5 agents
-      await writeFile(
-        join(chimeraStatusCmdDir, "multi.md"),
-        `---
-description: Multi
-_chimera:
-  claude:
-    m: v
-  gemini:
-    m: v
-  codex:
-    m: v
-  opencode:
-    m: v
-  copilot:
-    m: v
----
-
-Body`,
-      );
-
-      const logs: string[] = [];
-      const origLog = console.log;
-      console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
-
-      try {
-        await showStatus({ customDirs: { chimera: chimeraStatusBaseDir } });
-      } finally {
-        console.log = origLog;
-      }
-
-      const output = logs.join("\n");
-      expect(output).toContain("Lv.5");
-      expect(output).toContain("~~~>o");
-      expect(output).toContain("Dragon");
+      expect(output).toContain("Chimera Lv.");
+      expect(output).toContain("Composition:");
+      expect(output).toContain("Your Chimera grows");
     });
   });
 
