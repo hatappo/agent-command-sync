@@ -93,7 +93,12 @@ describe("collectAgentStats", () => {
 
 describe("formatStatsLine", () => {
   it("formats a stats line with label", () => {
-    const stats: AgentStats = { commandCount: 3, skillCount: 2, agentCount: 2, detectedAgents: new Set(["claude", "gemini"]) };
+    const stats: AgentStats = {
+      commandCount: 3,
+      skillCount: 2,
+      agentCount: 2,
+      detectedAgents: new Set(["claude", "gemini"]),
+    };
     expect(formatStatsLine("User:", stats)).toBe("User: 3 commands, 2 skills (2 agents)");
   });
 
