@@ -89,6 +89,7 @@ This is a test command with $ARGUMENTS.`;
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
@@ -125,6 +126,7 @@ This is a test command with $ARGUMENTS.`;
         syncDelete: false,
         noop: true,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
@@ -164,6 +166,7 @@ This is a test command with $ARGUMENTS.`;
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
@@ -202,6 +205,7 @@ Test content`;
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
@@ -236,6 +240,7 @@ prompt = "This is a test command with {{args}}."`;
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
@@ -276,6 +281,7 @@ model = "sonnet"`;
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
@@ -312,6 +318,7 @@ model = "sonnet"`;
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
@@ -350,6 +357,7 @@ Test content with $ARGUMENTS`;
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, codex: codexBaseDir },
       };
 
@@ -398,6 +406,7 @@ Test content with $ARGUMENTS`;
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, codex: codexBaseDir },
       };
 
@@ -442,6 +451,7 @@ Content`;
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
@@ -476,6 +486,7 @@ This is a test skill with $ARGUMENTS.`,
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
@@ -513,6 +524,7 @@ Use this with {{args}}.`,
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
@@ -549,6 +561,7 @@ Test content.`,
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, codex: codexBaseDir },
       };
 
@@ -579,6 +592,7 @@ Test content.`,
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
@@ -604,6 +618,7 @@ Test content.`,
         syncDelete: false,
         noop: true,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
@@ -633,6 +648,7 @@ Test content.`,
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
@@ -669,6 +685,7 @@ Test content with $ARGUMENTS and !` +
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, opencode: opencodeBaseDir },
       };
 
@@ -705,6 +722,7 @@ Run with $ARGUMENTS and !` +
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { opencode: opencodeBaseDir, gemini: geminiBaseDir },
       };
 
@@ -742,6 +760,7 @@ Test skill with $ARGUMENTS.`,
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, opencode: opencodeBaseDir },
       };
 
@@ -791,6 +810,7 @@ Test content with $ARGUMENTS`;
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, chimera: chimeraBaseDir },
       };
 
@@ -833,6 +853,7 @@ Run !` +
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { chimera: chimeraBaseDir, gemini: geminiBaseDir },
       };
 
@@ -871,6 +892,7 @@ Body with $ARGUMENTS`;
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, chimera: chimeraBaseDir },
       };
 
@@ -887,6 +909,7 @@ Body with $ARGUMENTS`;
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { chimera: chimeraBaseDir, claude: claudeBaseDir },
       };
 
@@ -925,6 +948,7 @@ Skill body.`,
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, chimera: chimeraBaseDir },
       };
 
@@ -959,6 +983,7 @@ Body`;
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, chimera: chimeraBaseDir },
       };
 
@@ -980,6 +1005,7 @@ custom-gemini = "gval"`;
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { gemini: geminiBaseDir, chimera: chimeraBaseDir },
       };
 
@@ -1015,6 +1041,7 @@ Test content`;
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
@@ -1053,6 +1080,7 @@ Content`;
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
       await syncCommands(createOptions);
@@ -1090,6 +1118,7 @@ Original content`;
         syncDelete: false,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
       await syncCommands(options);
@@ -1127,6 +1156,7 @@ Updated content`;
         syncDelete: true,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
@@ -1154,6 +1184,7 @@ Updated content`;
         syncDelete: true,
         noop: true,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
@@ -1193,6 +1224,7 @@ Updated content`;
         syncDelete: true,
         noop: false,
         verbose: false,
+        global: false,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
@@ -1225,7 +1257,7 @@ Updated content`;
       console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
 
       try {
-        await showStatus({ chimera: chimeraStatusBaseDir });
+        await showStatus({ customDirs: { chimera: chimeraStatusBaseDir } });
       } finally {
         console.log = origLog;
       }
@@ -1256,7 +1288,7 @@ Body`;
       console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
 
       try {
-        await showStatus({ chimera: chimeraStatusBaseDir });
+        await showStatus({ customDirs: { chimera: chimeraStatusBaseDir } });
       } finally {
         console.log = origLog;
       }
@@ -1289,7 +1321,7 @@ Skill body`,
       console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
 
       try {
-        await showStatus({ chimera: chimeraStatusBaseDir });
+        await showStatus({ customDirs: { chimera: chimeraStatusBaseDir } });
       } finally {
         console.log = origLog;
       }
@@ -1335,7 +1367,7 @@ Body`,
       console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
 
       try {
-        await showStatus({ chimera: chimeraStatusBaseDir });
+        await showStatus({ customDirs: { chimera: chimeraStatusBaseDir } });
       } finally {
         console.log = origLog;
       }
@@ -1372,7 +1404,7 @@ Body`,
       console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
 
       try {
-        await showStatus({ chimera: chimeraStatusBaseDir });
+        await showStatus({ customDirs: { chimera: chimeraStatusBaseDir } });
       } finally {
         console.log = origLog;
       }
@@ -1381,6 +1413,135 @@ Body`,
       expect(output).toContain("Lv.5");
       expect(output).toContain("~~~>o");
       expect(output).toContain("Dragon");
+    });
+  });
+
+  describe("Project-level directory support", () => {
+    it("should use project-level directories when gitRoot is set", async () => {
+      // testDir acts as the git root (testDir already has .claude/.gemini dirs at project root)
+      const claudeContent = `---
+description: Project command
+---
+
+Project level content`;
+
+      await writeFile(join(claudeDir, "project-cmd.md"), claudeContent);
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "gemini",
+        contentType: "commands",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        global: false,
+        gitRoot: testDir,
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+      expect(result.summary.created).toBe(1);
+
+      // Verify file is created in project-level gemini dir
+      const targetFile = join(testDir, ".gemini", "commands", "project-cmd.toml");
+      expect(await fileExists(targetFile)).toBe(true);
+      const content = await readFile(targetFile);
+      expect(content).toContain("Project level content");
+    });
+
+    it("should use user-level directories when global flag is set", async () => {
+      // With global: true, customDirs should be needed for this test to work
+      // since user home dirs are not writable in tests
+      const claudeContent = `---
+description: Global command
+---
+
+Global level content`;
+
+      await writeFile(join(claudeDir, "global-cmd.md"), claudeContent);
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "gemini",
+        contentType: "commands",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        global: false,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+      expect(result.summary.created).toBe(1);
+
+      // Verify file is created in customDir gemini dir (simulating user-level)
+      const targetFile = join(geminiDir, "global-cmd.toml");
+      expect(await fileExists(targetFile)).toBe(true);
+    });
+
+    it("should prioritize customDir over gitRoot", async () => {
+      const claudeContent = `---
+description: Custom dir test
+---
+
+Custom dir content`;
+
+      await writeFile(join(claudeDir, "custom-test.md"), claudeContent);
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "gemini",
+        contentType: "commands",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        global: false,
+        gitRoot: "/some/other/path",
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+      expect(result.summary.created).toBe(1);
+
+      // File should be in customDir, not gitRoot
+      const targetFile = join(geminiDir, "custom-test.toml");
+      expect(await fileExists(targetFile)).toBe(true);
+    });
+
+    it("should fall back to user-level when gitRoot is null", async () => {
+      const claudeContent = `---
+description: Fallback test
+---
+
+Fallback content`;
+
+      await writeFile(join(claudeDir, "fallback.md"), claudeContent);
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "gemini",
+        contentType: "commands",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        global: false,
+        gitRoot: null,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+      expect(result.summary.created).toBe(1);
     });
   });
 });

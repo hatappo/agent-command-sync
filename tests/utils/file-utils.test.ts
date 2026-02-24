@@ -18,6 +18,8 @@ import {
   getSkillNameFromPath,
   getSkillPathFromName,
   readFile,
+  resolveCommandDir,
+  resolveSkillDir,
   writeFile,
 } from "../../src/utils/file-utils.js";
 
@@ -240,14 +242,14 @@ describe("FileUtils", () => {
         await fsWriteFile(join(commandsDir, "test.md"), "# Test", "utf-8");
         await fsWriteFile(join(commandsDir, "deploy.md"), "# Deploy", "utf-8");
 
-        const result = await findAgentCommands(AGENT_REGISTRY.claude, undefined, testDir);
+        const result = await findAgentCommands(AGENT_REGISTRY.claude, undefined, { customDir: testDir });
         expect(result).toHaveLength(2);
         expect(result).toContain(join(commandsDir, "deploy.md"));
         expect(result).toContain(join(commandsDir, "test.md"));
       });
 
       it("should return empty array for non-existent directory", async () => {
-        const result = await findAgentCommands(AGENT_REGISTRY.claude, undefined, "/non/existent/path");
+        const result = await findAgentCommands(AGENT_REGISTRY.claude, undefined, { customDir: "/non/existent/path" });
         expect(result).toEqual([]);
       });
 
@@ -257,7 +259,7 @@ describe("FileUtils", () => {
         await fsWriteFile(join(commandsDir, "target.md"), "# Target", "utf-8");
         await fsWriteFile(join(commandsDir, "other.md"), "# Other", "utf-8");
 
-        const result = await findAgentCommands(AGENT_REGISTRY.claude, "target", testDir);
+        const result = await findAgentCommands(AGENT_REGISTRY.claude, "target", { customDir: testDir });
         expect(result).toHaveLength(1);
         expect(result[0]).toBe(join(commandsDir, "target.md"));
       });
@@ -269,13 +271,13 @@ describe("FileUtils", () => {
         await mkdir(commandsDir, { recursive: true });
         await fsWriteFile(join(commandsDir, "test.toml"), "[prompt]\ncontent = 'test'", "utf-8");
 
-        const result = await findAgentCommands(AGENT_REGISTRY.gemini, undefined, testDir);
+        const result = await findAgentCommands(AGENT_REGISTRY.gemini, undefined, { customDir: testDir });
         expect(result).toHaveLength(1);
         expect(result[0]).toBe(join(commandsDir, "test.toml"));
       });
 
       it("should return empty array for non-existent directory", async () => {
-        const result = await findAgentCommands(AGENT_REGISTRY.gemini, undefined, "/non/existent/path");
+        const result = await findAgentCommands(AGENT_REGISTRY.gemini, undefined, { customDir: "/non/existent/path" });
         expect(result).toEqual([]);
       });
     });
@@ -286,7 +288,7 @@ describe("FileUtils", () => {
         await mkdir(promptsDir, { recursive: true });
         await fsWriteFile(join(promptsDir, "review.md"), "# Review", "utf-8");
 
-        const result = await findAgentCommands(AGENT_REGISTRY.codex, undefined, testDir);
+        const result = await findAgentCommands(AGENT_REGISTRY.codex, undefined, { customDir: testDir });
         expect(result).toHaveLength(1);
         expect(result[0]).toBe(join(promptsDir, "review.md"));
       });
@@ -298,13 +300,13 @@ describe("FileUtils", () => {
         await mkdir(commandsDir, { recursive: true });
         await fsWriteFile(join(commandsDir, "review.md"), "# Review", "utf-8");
 
-        const result = await findAgentCommands(AGENT_REGISTRY.opencode, undefined, testDir);
+        const result = await findAgentCommands(AGENT_REGISTRY.opencode, undefined, { customDir: testDir });
         expect(result).toHaveLength(1);
         expect(result[0]).toBe(join(commandsDir, "review.md"));
       });
 
       it("should return empty array for non-existent directory", async () => {
-        const result = await findAgentCommands(AGENT_REGISTRY.opencode, undefined, "/non/existent/path");
+        const result = await findAgentCommands(AGENT_REGISTRY.opencode, undefined, { customDir: "/non/existent/path" });
         expect(result).toEqual([]);
       });
     });
@@ -316,7 +318,7 @@ describe("FileUtils", () => {
         await fsWriteFile(join(promptsDir, "test.prompt.md"), "# Test", "utf-8");
         await fsWriteFile(join(promptsDir, "deploy.prompt.md"), "# Deploy", "utf-8");
 
-        const result = await findAgentCommands(AGENT_REGISTRY.copilot, undefined, testDir);
+        const result = await findAgentCommands(AGENT_REGISTRY.copilot, undefined, { customDir: testDir });
         expect(result).toHaveLength(2);
         expect(result).toContain(join(promptsDir, "deploy.prompt.md"));
         expect(result).toContain(join(promptsDir, "test.prompt.md"));
@@ -328,13 +330,13 @@ describe("FileUtils", () => {
         await fsWriteFile(join(promptsDir, "test.prompt.md"), "# Test", "utf-8");
         await fsWriteFile(join(promptsDir, "plain.md"), "# Plain", "utf-8");
 
-        const result = await findAgentCommands(AGENT_REGISTRY.copilot, undefined, testDir);
+        const result = await findAgentCommands(AGENT_REGISTRY.copilot, undefined, { customDir: testDir });
         expect(result).toHaveLength(1);
         expect(result[0]).toBe(join(promptsDir, "test.prompt.md"));
       });
 
       it("should return empty array for non-existent directory", async () => {
-        const result = await findAgentCommands(AGENT_REGISTRY.copilot, undefined, "/non/existent/path");
+        const result = await findAgentCommands(AGENT_REGISTRY.copilot, undefined, { customDir: "/non/existent/path" });
         expect(result).toEqual([]);
       });
     });
@@ -351,7 +353,7 @@ describe("FileUtils", () => {
         await fsWriteFile(join(skillA, SKILL_CONSTANTS.SKILL_FILE_NAME), "# Skill A", "utf-8");
         await fsWriteFile(join(skillB, SKILL_CONSTANTS.SKILL_FILE_NAME), "# Skill B", "utf-8");
 
-        const result = await findAgentSkills(AGENT_REGISTRY.claude, undefined, testDir);
+        const result = await findAgentSkills(AGENT_REGISTRY.claude, undefined, { customDir: testDir });
         expect(result).toHaveLength(2);
         expect(result).toContain(skillA);
         expect(result).toContain(skillB);
@@ -363,7 +365,7 @@ describe("FileUtils", () => {
         await mkdir(skillA, { recursive: true });
         await fsWriteFile(join(skillA, SKILL_CONSTANTS.SKILL_FILE_NAME), "# Skill A", "utf-8");
 
-        const result = await findAgentSkills(AGENT_REGISTRY.claude, "skill-a", testDir);
+        const result = await findAgentSkills(AGENT_REGISTRY.claude, "skill-a", { customDir: testDir });
         expect(result).toHaveLength(1);
         expect(result[0]).toBe(skillA);
       });
@@ -372,7 +374,7 @@ describe("FileUtils", () => {
         const skillsDir = join(testDir, "skills");
         await mkdir(skillsDir, { recursive: true });
 
-        const result = await findAgentSkills(AGENT_REGISTRY.claude, "non-existent", testDir);
+        const result = await findAgentSkills(AGENT_REGISTRY.claude, "non-existent", { customDir: testDir });
         expect(result).toEqual([]);
       });
 
@@ -385,7 +387,7 @@ describe("FileUtils", () => {
         await fsWriteFile(join(withSkill, SKILL_CONSTANTS.SKILL_FILE_NAME), "# Skill", "utf-8");
         await fsWriteFile(join(withoutSkill, "README.md"), "# Not a skill", "utf-8");
 
-        const result = await findAgentSkills(AGENT_REGISTRY.claude, undefined, testDir);
+        const result = await findAgentSkills(AGENT_REGISTRY.claude, undefined, { customDir: testDir });
         expect(result).toHaveLength(1);
         expect(result[0]).toBe(withSkill);
       });
@@ -398,7 +400,7 @@ describe("FileUtils", () => {
         await mkdir(skill, { recursive: true });
         await fsWriteFile(join(skill, SKILL_CONSTANTS.SKILL_FILE_NAME), "# Skill", "utf-8");
 
-        const result = await findAgentSkills(AGENT_REGISTRY.opencode, undefined, testDir);
+        const result = await findAgentSkills(AGENT_REGISTRY.opencode, undefined, { customDir: testDir });
         expect(result).toHaveLength(1);
         expect(result[0]).toBe(skill);
       });
@@ -407,7 +409,7 @@ describe("FileUtils", () => {
         const skillsDir = join(testDir, "skills");
         await mkdir(skillsDir, { recursive: true });
 
-        const result = await findAgentSkills(AGENT_REGISTRY.opencode, "non-existent", testDir);
+        const result = await findAgentSkills(AGENT_REGISTRY.opencode, "non-existent", { customDir: testDir });
         expect(result).toEqual([]);
       });
     });
@@ -430,6 +432,63 @@ describe("FileUtils", () => {
 
     it("should handle skill name with separators", () => {
       expect(getSkillPathFromName("category/my-skill", "/base/skills")).toBe("/base/skills/category/my-skill");
+    });
+  });
+
+  describe("resolveCommandDir priority", () => {
+    const claude = AGENT_REGISTRY.claude;
+    const homeDirPath = require("node:os").homedir();
+
+    it("should use user-level when no context is provided", () => {
+      const result = resolveCommandDir(claude);
+      expect(result).toBe(join(homeDirPath, ".claude", "commands"));
+    });
+
+    it("should use user-level when global is true even with gitRoot", () => {
+      const result = resolveCommandDir(claude, { gitRoot: "/repo", global: true });
+      expect(result).toBe(join(homeDirPath, ".claude", "commands"));
+    });
+
+    it("should use project-level when gitRoot is set and not global", () => {
+      const result = resolveCommandDir(claude, { gitRoot: "/repo" });
+      expect(result).toBe("/repo/.claude/commands");
+    });
+
+    it("should use customDir with highest priority", () => {
+      const result = resolveCommandDir(claude, {
+        customDir: "/custom",
+        gitRoot: "/repo",
+        global: false,
+      });
+      expect(result).toBe("/custom/commands");
+    });
+
+    it("should use user-level when gitRoot is null", () => {
+      const result = resolveCommandDir(claude, { gitRoot: null });
+      expect(result).toBe(join(homeDirPath, ".claude", "commands"));
+    });
+  });
+
+  describe("resolveSkillDir priority", () => {
+    const claude = AGENT_REGISTRY.claude;
+    const homeDirPath = require("node:os").homedir();
+
+    it("should use project-level when gitRoot is set", () => {
+      const result = resolveSkillDir(claude, { gitRoot: "/repo" });
+      expect(result).toBe("/repo/.claude/skills");
+    });
+
+    it("should use customDir over gitRoot", () => {
+      const result = resolveSkillDir(claude, {
+        customDir: "/custom",
+        gitRoot: "/repo",
+      });
+      expect(result).toBe("/custom/skills");
+    });
+
+    it("should use user-level when global is true", () => {
+      const result = resolveSkillDir(claude, { gitRoot: "/repo", global: true });
+      expect(result).toBe(join(homeDirPath, ".claude", "skills"));
     });
   });
 });

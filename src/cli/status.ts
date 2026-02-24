@@ -5,7 +5,7 @@ import { version } from "../../package.json" assert { type: "json" };
 import { AGENT_REGISTRY } from "../agents/registry.js";
 import type { ProductType } from "../types/intermediate.js";
 import { PRODUCT_TYPES } from "../types/intermediate.js";
-import { findAgentCommands, findAgentSkills, readFile } from "../utils/file-utils.js";
+import { type DirResolutionContext, findAgentCommands, findAgentSkills, readFile } from "../utils/file-utils.js";
 
 const CHIMERA_KEY = "_chimera";
 
@@ -109,15 +109,27 @@ interface ChimeraStats {
   skillCount: number;
 }
 
-async function collectChimeraStats(customDirs?: Partial<Record<ProductType, string>>): Promise<ChimeraStats> {
+export interface StatusOptions {
+  customDirs?: Partial<Record<ProductType, string>>;
+  gitRoot?: string | null;
+  global?: boolean;
+}
+
+async function collectChimeraStats(options: StatusOptions): Promise<ChimeraStats> {
   const agents = new Set<string>();
   let commandCount = 0;
   let skillCount = 0;
   const chimeraAgent = AGENT_REGISTRY.chimera;
 
+  const context: DirResolutionContext = {
+    customDir: options.customDirs?.chimera,
+    gitRoot: options.gitRoot,
+    global: options.global,
+  };
+
   // Scan command files
   try {
-    const commandFiles = await findAgentCommands(chimeraAgent, undefined, customDirs?.chimera);
+    const commandFiles = await findAgentCommands(chimeraAgent, undefined, context);
     commandCount = commandFiles.length;
     for (const filePath of commandFiles) {
       try {
@@ -141,7 +153,7 @@ async function collectChimeraStats(customDirs?: Partial<Record<ProductType, stri
 
   // Scan skill files
   try {
-    const skillDirs = await findAgentSkills(chimeraAgent, undefined, customDirs?.chimera);
+    const skillDirs = await findAgentSkills(chimeraAgent, undefined, context);
     skillCount = skillDirs.length;
     for (const dirPath of skillDirs) {
       try {
@@ -170,14 +182,16 @@ async function collectChimeraStats(customDirs?: Partial<Record<ProductType, stri
 /**
  * Display the status output
  */
-export async function showStatus(customDirs?: Partial<Record<ProductType, string>>): Promise<void> {
-  const { agents: detectedAgents, commandCount, skillCount } = await collectChimeraStats(customDirs);
+export async function showStatus(options: StatusOptions): Promise<void> {
+  const { agents: detectedAgents, commandCount, skillCount } = await collectChimeraStats(options);
   const agentCount = detectedAgents.size;
 
   console.log();
 
-  // Version
-  console.log(picocolors.dim(`acs v${version}`));
+  // Version and mode
+  const modeLabel =
+    options.gitRoot && !options.global ? `project: ${options.gitRoot}` : "global";
+  console.log(picocolors.dim(`acs v${version} [${modeLabel}]`));
   console.log();
 
   // Speech bubble with command/skill counts

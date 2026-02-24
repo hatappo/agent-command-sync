@@ -44,6 +44,9 @@ acs sync -s claude -d gemini -t commands
 
 # 直接変換のプレビュー
 acs sync -n -s claude -d gemini
+
+# プロジェクトレベルではなくユーザーレベル（グローバル）ディレクトリを使用
+acs sync -s claude -d gemini -g
 ```
 
 ## スクリーンショット
@@ -56,6 +59,7 @@ acs sync -n -s claude -d gemini
 
 ## 機能
 
+- **プロジェクトレベルがデフォルト** - Git リポジトリ内で実行時、プロジェクトレベルのディレクトリ（例: `<repo>/.claude`）を自動的に使用
 - **カラフルな出力** - 色分けされたステータスインジケータによる明確なビジュアルフィードバック
 - **高速変換** - Claude Code、Gemini CLI、Codex CLI、OpenCode、GitHub Copilot、Cursor 間でコマンドを効率的に同期
 - **双方向対応** - 任意の方向への変換に対応（Claude ↔ Gemini ↔ Codex ↔ OpenCode ↔ Copilot ↔ Cursor）
@@ -65,6 +69,8 @@ acs sync -n -s claude -d gemini
 - **短縮コマンド** - `agent-command-sync` の代わりに `acs` を使用可能
 - **選択的同期** - 特定のファイルまたは全コマンドを一括変換
 
+> **v3 からのアップグレード？** v4.0.0 ではデフォルトのディレクトリスコープが変更されました。破壊的変更は [CHANGELOG_ja.txt](CHANGELOG_ja.txt) をご確認ください。
+>
 > **v2 からのアップグレード？** [マイグレーションガイド](docs/migration-v2-to-v3_ja.md)をご確認ください。
 
 ## サブコマンド
@@ -109,6 +115,7 @@ acs plan gemini                            # 適用の変更をプレビュー
 | `-d, --dest <product>`      | **必須。** 宛先製品: `claude`、`gemini`、`codex`、`opencode`、`copilot`、`cursor`、または `chimera` |
 | `-t, --type <type>`         | コンテンツタイプ: `commands`、`skills`、または `both`（デフォルト: `both`）  |
 | `-f, --file <filename>`     | 特定のファイルのみ変換（`.md`, `.toml` 拡張子をサポート）                    |
+| `-g, --global`              | プロジェクトレベルではなくユーザーレベル（グローバル）ディレクトリを使用        |
 | `-n, --noop`                | 変更を適用せずにプレビュー                                                 |
 | `-v, --verbose`             | 詳細なデバッグ情報を表示                                                  |
 | `--claude-dir <path>`       | Claude ベースディレクトリ（デフォルト: ~/.claude）                          |
@@ -147,25 +154,38 @@ acs sync -s claude -d gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
 acs sync -s claude -d gemini -v
 ```
 
-## デフォルトのファイルの場所
+## ディレクトリ解決
 
-### Commands
-- **Claude Code**: `~/.claude/commands/*.md`
-- **Gemini CLI**: `~/.gemini/commands/*.toml`
-- **Codex CLI**: `~/.codex/prompts/*.md`
-- **OpenCode**: `~/.config/opencode/commands/*.md`
-- **GitHub Copilot**: `~/.copilot/prompts/*.prompt.md`
-- **Cursor**: `~/.cursor/commands/*.md`
-- **Chimera**: `~/.config/acsync/commands/*.md`
+Git リポジトリ内で実行すると、`acs` はデフォルトで**プロジェクトレベル**のディレクトリ（例: `<repo>/.claude`、`<repo>/.gemini`）を使用します。ユーザーレベルのディレクトリを使用するには `-g`/`--global` を指定してください。
 
-### Skills
-- **Claude Code**: `~/.claude/skills/<skill-name>/SKILL.md`
-- **Gemini CLI**: `~/.gemini/skills/<skill-name>/SKILL.md`
-- **Codex CLI**: `~/.codex/skills/<skill-name>/SKILL.md`
-- **OpenCode**: `~/.config/opencode/skills/<skill-name>/SKILL.md`
-- **GitHub Copilot**: `~/.copilot/skills/<skill-name>/SKILL.md`
-- **Cursor**: `~/.cursor/skills/<skill-name>/SKILL.md`
-- **Chimera**: `~/.config/acsync/skills/<skill-name>/SKILL.md`
+**優先順位:**
+1. `--{agent}-dir`（カスタムディレクトリ） — 常に最優先
+2. **プロジェクトレベル** — Git リポジトリ内でのデフォルト
+3. **ユーザーレベル** — Git リポジトリ外でのデフォルト、または `-g` 指定時
+
+### プロジェクトレベル（Git リポジトリ内のデフォルト）
+
+| エージェント | Commands | Skills |
+| ----------- | -------- | ------ |
+| **Claude Code** | `<repo>/.claude/commands/*.md` | `<repo>/.claude/skills/<name>/SKILL.md` |
+| **Gemini CLI** | `<repo>/.gemini/commands/*.toml` | `<repo>/.gemini/skills/<name>/SKILL.md` |
+| **Codex CLI** | `<repo>/.codex/prompts/*.md` | `<repo>/.codex/skills/<name>/SKILL.md` |
+| **OpenCode** | `<repo>/.config/opencode/commands/*.md` | `<repo>/.config/opencode/skills/<name>/SKILL.md` |
+| **GitHub Copilot** | `<repo>/.copilot/prompts/*.prompt.md` | `<repo>/.copilot/skills/<name>/SKILL.md` |
+| **Cursor** | `<repo>/.cursor/commands/*.md` | `<repo>/.cursor/skills/<name>/SKILL.md` |
+| **Chimera** | `<repo>/.config/acsync/commands/*.md` | `<repo>/.config/acsync/skills/<name>/SKILL.md` |
+
+### ユーザーレベル（`-g` 指定時または Git リポジトリ外）
+
+| エージェント | Commands | Skills |
+| ----------- | -------- | ------ |
+| **Claude Code** | `~/.claude/commands/*.md` | `~/.claude/skills/<name>/SKILL.md` |
+| **Gemini CLI** | `~/.gemini/commands/*.toml` | `~/.gemini/skills/<name>/SKILL.md` |
+| **Codex CLI** | `~/.codex/prompts/*.md` | `~/.codex/skills/<name>/SKILL.md` |
+| **OpenCode** | `~/.config/opencode/commands/*.md` | `~/.config/opencode/skills/<name>/SKILL.md` |
+| **GitHub Copilot** | `~/.copilot/prompts/*.prompt.md` | `~/.copilot/skills/<name>/SKILL.md` |
+| **Cursor** | `~/.cursor/commands/*.md` | `~/.cursor/skills/<name>/SKILL.md` |
+| **Chimera** | `~/.config/acsync/commands/*.md` | `~/.config/acsync/skills/<name>/SKILL.md` |
 
 ## 形式比較と変換仕様
 
@@ -174,7 +194,7 @@ acs sync -s claude -d gemini -v
 | 観点 | Commands | Skills |
 | ---- | -------- | ------ |
 | 構造 | 単一ファイル（`.md`, `.toml`） | ディレクトリ（`SKILL.md` + サポートファイル） |
-| 場所 | `~/.{tool}/commands/` | `~/.{tool}/skills/<name>/` |
+| 場所 | `{base}/{tool}/commands/` | `{base}/{tool}/skills/<name>/` |
 | 用途 | シンプルなプロンプト | 複数ファイルを伴う複雑なタスク |
 
 ---
