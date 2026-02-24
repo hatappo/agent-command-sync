@@ -21,8 +21,8 @@ import { CLAUDE_SYNTAX_PATTERNS, CLAUDE_SYNTAX_SERIALIZERS } from "./_claude-syn
 import type { AgentDefinition } from "./agent-definition.js";
 
 const CHIMERA_KEY = "_chimera";
-const SEMANTIC_COMMAND_FIELDS = ["description"] as const;
-const SEMANTIC_SKILL_FIELDS = ["name", "description", "disable-model-invocation"] as const;
+const SEMANTIC_COMMAND_FIELDS = ["description", "_from"] as const;
+const SEMANTIC_SKILL_FIELDS = ["name", "description", "disable-model-invocation", "_from"] as const;
 
 /** Filter out undefined/null values from a record (YAML serializer cannot handle undefined) */
 function filterUndefined(obj: Record<string, unknown>): Record<string, unknown> {
@@ -110,11 +110,13 @@ export class ChimeraAgent implements AgentDefinition {
   commandToIR(source: ChimeraCommand, options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     let description: string | undefined;
+    let from: string[] | undefined;
 
     for (const [key, value] of Object.entries(source.frontmatter)) {
       if (key === CHIMERA_KEY) continue;
       if ((SEMANTIC_COMMAND_FIELDS as readonly string[]).includes(key)) {
         if (key === "description") description = value as string | undefined;
+        if (key === "_from") from = Array.isArray(value) ? value : undefined;
       } else {
         extras[key] = value;
       }
@@ -132,7 +134,7 @@ export class ChimeraAgent implements AgentDefinition {
     return {
       contentType: "command",
       body: this.parseBody(source.content),
-      semantic: { description },
+      semantic: { description, from },
       extras: resolvedExtras,
       meta: {
         sourcePath: source.filePath,
@@ -147,6 +149,9 @@ export class ChimeraAgent implements AgentDefinition {
     // Set semantic fields at top level
     if (ir.semantic.description !== undefined) {
       frontmatter.description = ir.semantic.description;
+    }
+    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+      frontmatter._from = ir.semantic.from;
     }
 
     // Build _chimera section by merging with existing target
@@ -279,9 +284,14 @@ export class ChimeraAgent implements AgentDefinition {
   skillToIR(source: ChimeraSkill, options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     const fm = source.frontmatter;
+    let from: string[] | undefined;
 
     for (const [key, value] of Object.entries(fm)) {
       if (key === CHIMERA_KEY) continue;
+      if (key === "_from") {
+        from = Array.isArray(value) ? value : undefined;
+        continue;
+      }
       if (!(SEMANTIC_SKILL_FIELDS as readonly string[]).includes(key)) {
         extras[key] = value;
       }
@@ -304,6 +314,7 @@ export class ChimeraAgent implements AgentDefinition {
         description: fm.description,
         modelInvocationEnabled:
           typeof fm["disable-model-invocation"] === "boolean" ? !fm["disable-model-invocation"] : undefined,
+        from,
       },
       extras: resolvedExtras,
       meta: {
@@ -326,6 +337,9 @@ export class ChimeraAgent implements AgentDefinition {
     if (ir.semantic.description !== undefined) frontmatter.description = ir.semantic.description;
     if (ir.semantic.modelInvocationEnabled !== undefined) {
       frontmatter["disable-model-invocation"] = !ir.semantic.modelInvocationEnabled;
+    }
+    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+      frontmatter._from = ir.semantic.from;
     }
 
     // Build _chimera section by merging with existing target

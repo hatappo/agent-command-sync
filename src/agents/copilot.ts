@@ -116,10 +116,13 @@ export class CopilotAgent implements AgentDefinition {
   commandToIR(source: CopilotCommand, _options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     let description: string | undefined;
+    let from: string[] | undefined;
 
     for (const [key, value] of Object.entries(source.frontmatter)) {
       if (key === "description") {
         description = value as string | undefined;
+      } else if (key === "_from") {
+        from = Array.isArray(value) ? value : undefined;
       } else {
         extras[key] = value;
       }
@@ -128,7 +131,7 @@ export class CopilotAgent implements AgentDefinition {
     return {
       contentType: "command",
       body: this.parseBody(source.content),
-      semantic: { description },
+      semantic: { description, from },
       extras,
       meta: {
         sourcePath: source.filePath,
@@ -148,6 +151,10 @@ export class CopilotAgent implements AgentDefinition {
       if (key === "prompt") continue;
       if (options?.removeUnsupported && (CLAUDE_COMMAND_FIELDS as readonly string[]).includes(key)) continue;
       frontmatter[key] = value;
+    }
+
+    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+      frontmatter._from = ir.semantic.from;
     }
 
     let filePath = ir.meta.sourcePath || "";
@@ -267,9 +274,15 @@ export class CopilotAgent implements AgentDefinition {
   skillToIR(source: CopilotSkill, _options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     const fm = source.frontmatter;
+    let from: string[] | undefined;
 
     for (const [key, value] of Object.entries(fm)) {
       if ((SEMANTIC_SKILL_FIELDS as readonly string[]).includes(key)) continue;
+
+      if (key === "_from") {
+        from = Array.isArray(value) ? value : undefined;
+        continue;
+      }
 
       // Normalize Copilot's "user-invokable" (k) to Claude's "user-invocable" (c) in extras
       if (key === "user-invokable") {
@@ -287,6 +300,7 @@ export class CopilotAgent implements AgentDefinition {
         description: fm.description,
         modelInvocationEnabled:
           typeof fm["disable-model-invocation"] === "boolean" ? !fm["disable-model-invocation"] : undefined,
+        from,
       },
       extras,
       meta: {
@@ -320,6 +334,10 @@ export class CopilotAgent implements AgentDefinition {
       } else if (!(key in frontmatter)) {
         frontmatter[key] = value;
       }
+    }
+
+    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+      frontmatter._from = ir.semantic.from;
     }
 
     return {

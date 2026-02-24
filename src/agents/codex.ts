@@ -109,10 +109,13 @@ export class CodexAgent implements AgentDefinition {
     const fm = source.frontmatter || {};
     const extras: Record<string, unknown> = {};
     let description: string | undefined;
+    let from: string[] | undefined;
 
     for (const [key, value] of Object.entries(fm)) {
       if (key === "description") {
         description = String(value);
+      } else if (key === "_from") {
+        from = Array.isArray(value) ? value : undefined;
       } else {
         extras[key] = value;
       }
@@ -121,7 +124,7 @@ export class CodexAgent implements AgentDefinition {
     return {
       contentType: "command",
       body: this.parseBody(source.content),
-      semantic: { description },
+      semantic: { description, from },
       extras,
       meta: {
         sourcePath: source.filePath,
@@ -145,6 +148,10 @@ export class CodexAgent implements AgentDefinition {
     for (const [key, value] of Object.entries(ir.extras)) {
       if (options?.removeUnsupported && (CLAUDE_COMMAND_FIELDS as readonly string[]).includes(key)) continue;
       frontmatter[key] = value;
+    }
+
+    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+      frontmatter._from = ir.semantic.from;
     }
 
     const shouldPreserveFrontmatter = Object.keys(frontmatter).length > 0;
@@ -274,12 +281,18 @@ export class CodexAgent implements AgentDefinition {
   skillToIR(source: CodexSkill, _options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     let modelInvocationEnabled: boolean | undefined;
+    let from: string[] | undefined;
 
     for (const [key, value] of Object.entries(source.frontmatter)) {
       if (key === "name" || key === "description") continue;
 
       if (key === "disable-model-invocation") {
         modelInvocationEnabled = typeof value === "boolean" ? !value : undefined;
+        continue;
+      }
+
+      if (key === "_from") {
+        from = Array.isArray(value) ? value : undefined;
         continue;
       }
 
@@ -304,6 +317,7 @@ export class CodexAgent implements AgentDefinition {
         name: source.frontmatter.name,
         description: source.frontmatter.description,
         modelInvocationEnabled,
+        from,
       },
       extras,
       meta: {
@@ -346,6 +360,10 @@ export class CodexAgent implements AgentDefinition {
       if (!(key in frontmatter)) {
         frontmatter[key] = value;
       }
+    }
+
+    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+      frontmatter._from = ir.semantic.from;
     }
 
     return {

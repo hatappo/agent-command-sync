@@ -6,6 +6,7 @@ import type { ConversionResult, FileOperation, SemanticIR } from "../types/index
 import type { ProductType } from "../types/intermediate.js";
 import { assertNever } from "../utils/assert-never.js";
 import { SKILL_CONSTANTS } from "../utils/constants.js";
+import { getGitHubRemoteUrl } from "../utils/git-utils.js";
 
 const { SKILL_FILE_NAME } = SKILL_CONSTANTS;
 import {
@@ -55,6 +56,12 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
       console.log(picocolors.yellow("NOOP MODE - No files will be modified"));
     }
 
+    // Detect source repository GitHub URL for provenance tracking
+    let sourceRepoUrl: string | null = null;
+    if (options.gitRoot) {
+      sourceRepoUrl = await getGitHubRemoteUrl(options.gitRoot);
+    }
+
     // Process commands if contentType includes commands
     if (options.contentType === "commands" || options.contentType === "both") {
       const sourceFiles = await getSourceFiles(options);
@@ -63,7 +70,7 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
       // Convert each command file
       for (const sourceFile of sourceFiles) {
         try {
-          const result = await convertSingleFile(sourceFile, options);
+          const result = await convertSingleFile(sourceFile, options, sourceRepoUrl);
           operations.push(...result.operations);
           errors.push(...result.errors);
           countStats(result.operations, stats);
@@ -90,7 +97,7 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
       // Convert each skill
       for (const skillDir of sourceSkills) {
         try {
-          const result = await convertSingleSkill(skillDir, options);
+          const result = await convertSingleSkill(skillDir, options, sourceRepoUrl);
           operations.push(...result.operations);
           errors.push(...result.errors);
           countStats(result.operations, stats);
@@ -143,6 +150,17 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
 }
 
 /**
+ * Append a URL to ir.semantic.from (provenance tracking), avoiding duplicates.
+ */
+function appendFromUrl(ir: SemanticIR, url: string): void {
+  if (!ir.semantic.from) {
+    ir.semantic.from = [url];
+  } else if (!ir.semantic.from.includes(url)) {
+    ir.semantic.from.push(url);
+  }
+}
+
+/**
  * Count operation statistics
  */
 function countStats(
@@ -186,6 +204,7 @@ async function getSourceFiles(options: CLIOptions): Promise<string[]> {
 async function convertSingleFile(
   sourceFile: string,
   options: CLIOptions,
+  sourceRepoUrl?: string | null,
 ): Promise<{ operations: FileOperation[]; errors: Error[] }> {
   const operations: FileOperation[] = [];
   const errors: Error[] = [];
@@ -196,6 +215,11 @@ async function convertSingleFile(
     const dst = AGENT_REGISTRY[options.destination];
     const command = await src.parseCommand(sourceFile);
     const ir: SemanticIR = src.commandToIR(command, { destinationType: options.destination });
+
+    // Append source repository URL to provenance tracking
+    if (sourceRepoUrl) {
+      appendFromUrl(ir, sourceRepoUrl);
+    }
 
     // Determine target file path
     const sourceDir = resolveCommandDir(src, buildContext(options, options.source));
@@ -350,6 +374,7 @@ async function getSourceSkills(options: CLIOptions): Promise<string[]> {
 async function convertSingleSkill(
   skillDir: string,
   options: CLIOptions,
+  sourceRepoUrl?: string | null,
 ): Promise<{ operations: FileOperation[]; errors: Error[] }> {
   const operations: FileOperation[] = [];
   const errors: Error[] = [];
@@ -360,6 +385,11 @@ async function convertSingleSkill(
     const dst = AGENT_REGISTRY[options.destination];
     const skill = await src.parseSkill(skillDir);
     const ir: SemanticIR = src.skillToIR(skill, { destinationType: options.destination });
+
+    // Append source repository URL to provenance tracking
+    if (sourceRepoUrl) {
+      appendFromUrl(ir, sourceRepoUrl);
+    }
 
     // Get skill directories
     const sourceDir = resolveSkillDir(src, buildContext(options, options.source));

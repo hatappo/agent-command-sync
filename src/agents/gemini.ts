@@ -137,11 +137,14 @@ export class GeminiAgent implements AgentDefinition {
   commandToIR(source: GeminiCommand, _options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     let description: string | undefined;
+    let from: string[] | undefined;
 
     for (const [key, value] of Object.entries(source)) {
       if (key === "prompt" || key === "filePath") continue;
       if (key === "description") {
         description = String(value);
+      } else if (key === "_from") {
+        from = Array.isArray(value) ? value : undefined;
       } else {
         extras[key] = value;
       }
@@ -150,7 +153,7 @@ export class GeminiAgent implements AgentDefinition {
     return {
       contentType: "command",
       body: this.parseBody(source.prompt),
-      semantic: { description },
+      semantic: { description, from },
       extras,
       meta: {
         sourcePath: source.filePath,
@@ -173,6 +176,10 @@ export class GeminiAgent implements AgentDefinition {
       if (key === "description") continue;
       if (options?.removeUnsupported && (CLAUDE_COMMAND_FIELDS as readonly string[]).includes(key)) continue;
       result[key] = value;
+    }
+
+    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+      result._from = ir.semantic.from;
     }
 
     let filePath = ir.meta.sourcePath || "";
@@ -289,12 +296,18 @@ export class GeminiAgent implements AgentDefinition {
   skillToIR(source: GeminiSkill, _options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     let modelInvocationEnabled: boolean | undefined;
+    let from: string[] | undefined;
 
     for (const [key, value] of Object.entries(source.frontmatter)) {
       if (key === "name" || key === "description") continue;
 
       if (key === "disable-model-invocation") {
         modelInvocationEnabled = typeof value === "boolean" ? !value : undefined;
+        continue;
+      }
+
+      if (key === "_from") {
+        from = Array.isArray(value) ? value : undefined;
         continue;
       }
 
@@ -308,6 +321,7 @@ export class GeminiAgent implements AgentDefinition {
         name: source.frontmatter.name,
         description: source.frontmatter.description,
         modelInvocationEnabled,
+        from,
       },
       extras,
       meta: {
@@ -336,6 +350,10 @@ export class GeminiAgent implements AgentDefinition {
       if (!(key in frontmatter)) {
         frontmatter[key] = value;
       }
+    }
+
+    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+      frontmatter._from = ir.semantic.from;
     }
 
     return {

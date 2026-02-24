@@ -18,7 +18,7 @@ import { CLAUDE_SYNTAX_PATTERNS, CLAUDE_SYNTAX_SERIALIZERS } from "./_claude-syn
 import type { AgentDefinition } from "./agent-definition.js";
 
 /** Fields that map to semantic properties (shared across 2+ agents) */
-const SEMANTIC_SKILL_FIELDS = ["name", "description", "disable-model-invocation"] as const;
+const SEMANTIC_SKILL_FIELDS = ["name", "description", "disable-model-invocation", "_from"] as const;
 
 export class ClaudeAgent implements AgentDefinition {
   // ── AgentConfig ───────────────────────────────────────────────────
@@ -100,10 +100,13 @@ export class ClaudeAgent implements AgentDefinition {
   commandToIR(source: ClaudeCommand, _options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     let description: string | undefined;
+    let from: string[] | undefined;
 
     for (const [key, value] of Object.entries(source.frontmatter)) {
       if (key === "description") {
         description = value as string | undefined;
+      } else if (key === "_from") {
+        from = Array.isArray(value) ? value : undefined;
       } else {
         extras[key] = value;
       }
@@ -112,7 +115,7 @@ export class ClaudeAgent implements AgentDefinition {
     return {
       contentType: "command",
       body: this.parseBody(source.content),
-      semantic: { description },
+      semantic: { description, from },
       extras,
       meta: {
         sourcePath: source.filePath,
@@ -132,6 +135,10 @@ export class ClaudeAgent implements AgentDefinition {
       if (key !== "prompt") {
         frontmatter[key] = value;
       }
+    }
+
+    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+      frontmatter._from = ir.semantic.from;
     }
 
     let filePath = ir.meta.sourcePath || "";
@@ -262,6 +269,8 @@ export class ClaudeAgent implements AgentDefinition {
       }
     }
 
+    const fromValue = fm._from;
+
     return {
       contentType: "skill",
       body: this.parseBody(source.content),
@@ -270,6 +279,7 @@ export class ClaudeAgent implements AgentDefinition {
         description: fm.description,
         modelInvocationEnabled:
           typeof fm["disable-model-invocation"] === "boolean" ? !fm["disable-model-invocation"] : undefined,
+        from: Array.isArray(fromValue) ? fromValue : undefined,
       },
       extras,
       meta: {
@@ -297,6 +307,10 @@ export class ClaudeAgent implements AgentDefinition {
       if (!(key in frontmatter)) {
         frontmatter[key] = value;
       }
+    }
+
+    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+      frontmatter._from = ir.semantic.from;
     }
 
     return {

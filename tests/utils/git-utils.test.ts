@@ -2,7 +2,7 @@ import { writeFile as fsWriteFile, mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { findGitRoot } from "../../src/utils/git-utils.js";
+import { findGitRoot, getGitHubRemoteUrl } from "../../src/utils/git-utils.js";
 
 describe("git-utils", () => {
   let tempDir: string;
@@ -59,6 +59,135 @@ describe("git-utils", () => {
       const result = await findGitRoot();
       // We're running tests from a git repo, so it should find something
       expect(typeof result === "string" || result === null).toBe(true);
+    });
+  });
+
+  describe("getGitHubRemoteUrl", () => {
+    it("should return HTTPS URL for SSH remote", async () => {
+      await mkdir(join(tempDir, ".git"));
+      await fsWriteFile(
+        join(tempDir, ".git", "config"),
+        [
+          '[core]',
+          '\trepositoryformatversion = 0',
+          '[remote "origin"]',
+          '\turl = git@github.com:owner/repo.git',
+          '\tfetch = +refs/heads/*:refs/remotes/origin/*',
+        ].join("\n"),
+      );
+      const result = await getGitHubRemoteUrl(tempDir);
+      expect(result).toBe("https://github.com/owner/repo");
+    });
+
+    it("should return HTTPS URL for HTTPS remote with .git suffix", async () => {
+      await mkdir(join(tempDir, ".git"));
+      await fsWriteFile(
+        join(tempDir, ".git", "config"),
+        [
+          '[remote "origin"]',
+          '\turl = https://github.com/owner/repo.git',
+          '\tfetch = +refs/heads/*:refs/remotes/origin/*',
+        ].join("\n"),
+      );
+      const result = await getGitHubRemoteUrl(tempDir);
+      expect(result).toBe("https://github.com/owner/repo");
+    });
+
+    it("should return HTTPS URL for HTTPS remote without .git suffix", async () => {
+      await mkdir(join(tempDir, ".git"));
+      await fsWriteFile(
+        join(tempDir, ".git", "config"),
+        [
+          '[remote "origin"]',
+          '\turl = https://github.com/owner/repo',
+        ].join("\n"),
+      );
+      const result = await getGitHubRemoteUrl(tempDir);
+      expect(result).toBe("https://github.com/owner/repo");
+    });
+
+    it("should return null for non-GitHub remote", async () => {
+      await mkdir(join(tempDir, ".git"));
+      await fsWriteFile(
+        join(tempDir, ".git", "config"),
+        [
+          '[remote "origin"]',
+          '\turl = git@gitlab.com:owner/repo.git',
+        ].join("\n"),
+      );
+      const result = await getGitHubRemoteUrl(tempDir);
+      expect(result).toBeNull();
+    });
+
+    it("should return null when no origin remote exists", async () => {
+      await mkdir(join(tempDir, ".git"));
+      await fsWriteFile(
+        join(tempDir, ".git", "config"),
+        [
+          '[remote "upstream"]',
+          '\turl = git@github.com:owner/repo.git',
+        ].join("\n"),
+      );
+      const result = await getGitHubRemoteUrl(tempDir);
+      expect(result).toBeNull();
+    });
+
+    it("should return null when .git directory does not exist", async () => {
+      const result = await getGitHubRemoteUrl(tempDir);
+      expect(result).toBeNull();
+    });
+
+    it("should handle worktree .git file", async () => {
+      // Create a fake worktree structure
+      const mainGitDir = join(tempDir, "main-repo", ".git");
+      await mkdir(mainGitDir, { recursive: true });
+      await fsWriteFile(
+        join(mainGitDir, "config"),
+        [
+          '[remote "origin"]',
+          '\turl = git@github.com:owner/repo.git',
+        ].join("\n"),
+      );
+
+      // Create worktree directory with .git file pointing to main
+      const worktreeDir = join(tempDir, "worktree");
+      await mkdir(worktreeDir, { recursive: true });
+      await fsWriteFile(join(worktreeDir, ".git"), `gitdir: ${mainGitDir}/worktrees/test`);
+
+      // Create the worktrees directory structure
+      const worktreeGitDir = join(mainGitDir, "worktrees", "test");
+      await mkdir(worktreeGitDir, { recursive: true });
+      // The worktree git dir should have a reference to the common dir
+      await fsWriteFile(join(worktreeGitDir, "commondir"), "../..");
+      // Config is read from the main .git/config, so we need to resolve the actual git dir
+      // For worktrees, config lives in the main .git directory
+      await fsWriteFile(
+        join(worktreeGitDir, "config"),
+        [
+          '[remote "origin"]',
+          '\turl = git@github.com:owner/repo.git',
+        ].join("\n"),
+      );
+
+      const result = await getGitHubRemoteUrl(worktreeDir);
+      expect(result).toBe("https://github.com/owner/repo");
+    });
+
+    it("should handle multiple remotes and pick origin", async () => {
+      await mkdir(join(tempDir, ".git"));
+      await fsWriteFile(
+        join(tempDir, ".git", "config"),
+        [
+          '[remote "upstream"]',
+          '\turl = git@github.com:upstream/repo.git',
+          '[remote "origin"]',
+          '\turl = git@github.com:owner/repo.git',
+          '[remote "fork"]',
+          '\turl = git@github.com:fork/repo.git',
+        ].join("\n"),
+      );
+      const result = await getGitHubRemoteUrl(tempDir);
+      expect(result).toBe("https://github.com/owner/repo");
     });
   });
 });

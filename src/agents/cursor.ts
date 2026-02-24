@@ -33,7 +33,7 @@ const CURSOR_UNSUPPORTED: ReadonlySet<ContentPlaceholder["type"]> = new Set([
 const CLAUDE_SKILL_FIELDS = ["context", "hooks", "model", "agent", "argument-hint"] as const;
 
 /** Semantic skill fields (not passed to extras) */
-const SEMANTIC_SKILL_FIELDS = ["name", "description", "disable-model-invocation"] as const;
+const SEMANTIC_SKILL_FIELDS = ["name", "description", "disable-model-invocation", "_from"] as const;
 
 export class CursorAgent implements AgentDefinition {
   // ── AgentConfig ───────────────────────────────────────────────────
@@ -222,6 +222,8 @@ export class CursorAgent implements AgentDefinition {
       extras[key] = value;
     }
 
+    const fromValue = fm._from;
+
     return {
       contentType: "skill",
       body: this.parseBody(source.content),
@@ -230,6 +232,7 @@ export class CursorAgent implements AgentDefinition {
         description: fm.description,
         modelInvocationEnabled:
           typeof fm["disable-model-invocation"] === "boolean" ? !fm["disable-model-invocation"] : undefined,
+        from: Array.isArray(fromValue) ? fromValue : undefined,
       },
       extras,
       meta: {
@@ -258,6 +261,10 @@ export class CursorAgent implements AgentDefinition {
       if (!(key in frontmatter)) {
         frontmatter[key] = value;
       }
+    }
+
+    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+      frontmatter._from = ir.semantic.from;
     }
 
     return {

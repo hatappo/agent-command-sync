@@ -91,7 +91,10 @@ describe("download command", () => {
 
     // Check files were created at the URL path relative to gitRoot
     const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
-    expect(skillMd).toBe("---\ndescription: My Skill\n---\n# My Skill");
+    // SKILL.md should have _from injected
+    expect(skillMd).toContain("_from:");
+    expect(skillMd).toContain(testUrl);
+    expect(skillMd).toContain("description: My Skill");
 
     const helperTs = await readFile(join(tempDir, ".claude/skills/my-skill/helper.ts"), "utf-8");
     expect(helperTs).toBe("export function helper() {}");
@@ -112,7 +115,8 @@ describe("download command", () => {
 
     // With -d gemini and customDir=tempDir, files go to tempDir/skills/my-skill/
     const skillMd = await readFile(join(tempDir, "skills/my-skill/SKILL.md"), "utf-8");
-    expect(skillMd).toBe("---\ndescription: My Skill\n---\n# My Skill");
+    expect(skillMd).toContain("description: My Skill");
+    expect(skillMd).toContain(testUrl);
   });
 
   it("should not write files in noop mode", async () => {
@@ -172,11 +176,66 @@ describe("download command", () => {
     expect(output).toContain("Updated");
   });
 
-  it("should show [=] for unchanged files", async () => {
-    // Pre-create existing file with same content
+  it("should inject _from into SKILL.md with GitHub URL", async () => {
+    setupBasicMocks();
+
+    await downloadSkill({
+      url: testUrl,
+      global: false,
+      noop: false,
+      verbose: false,
+      gitRoot: tempDir,
+    });
+
+    const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
+    // Verify _from array contains the download URL
+    const matter = await import("gray-matter");
+    const parsed = matter.default(skillMd);
+    expect(parsed.data._from).toEqual([testUrl]);
+  });
+
+  it("should preserve existing _from entries when re-downloading", async () => {
+    // Pre-create SKILL.md with existing _from
     const skillDir = join(tempDir, ".claude/skills/my-skill");
     await mkdir(skillDir, { recursive: true });
-    await fsWriteFile(join(skillDir, "SKILL.md"), "---\ndescription: My Skill\n---\n# My Skill", "utf-8");
+    // Note: the downloaded content already has _from injected, so we test
+    // that the injection function handles existing _from in the downloaded content
+
+    const newUrl = "https://github.com/other/repo/tree/main/.claude/skills/other-skill";
+
+    mockFetch
+      .mockResolvedValueOnce(
+        mockDirectoryListing([
+          { name: "SKILL.md", type: "file" },
+        ]),
+      )
+      .mockResolvedValueOnce(
+        mockFileContent(`---\ndescription: My Skill\n_from:\n  - ${testUrl}\n---\n# My Skill`),
+      );
+
+    await downloadSkill({
+      url: newUrl,
+      global: false,
+      noop: false,
+      verbose: false,
+      gitRoot: tempDir,
+    });
+
+    const skillMd = await readFile(join(tempDir, ".claude/skills/other-skill/SKILL.md"), "utf-8");
+    const matter = await import("gray-matter");
+    const parsed = matter.default(skillMd);
+    // Should have both URLs
+    expect(parsed.data._from).toEqual([testUrl, newUrl]);
+  });
+
+  it("should show [=] for unchanged files", async () => {
+    // Pre-create existing file with same content (including _from)
+    const skillDir = join(tempDir, ".claude/skills/my-skill");
+    await mkdir(skillDir, { recursive: true });
+    // The SKILL.md needs to already include _from to be truly unchanged after injection
+    const matterLib = await import("gray-matter");
+    const expectedContent = matterLib.default.stringify("# My Skill", { description: "My Skill", _from: [testUrl] });
+    await fsWriteFile(join(skillDir, "SKILL.md"), expectedContent, "utf-8");
     await fsWriteFile(join(skillDir, "helper.ts"), "export function helper() {}", "utf-8");
 
     setupBasicMocks();
@@ -219,9 +278,10 @@ describe("download command", () => {
       gitRoot: tempDir,
     });
 
-    // Check text file
+    // Check text file (SKILL.md gets _from injected)
     const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
-    expect(skillMd).toBe("# Skill with icon");
+    expect(skillMd).toContain("# Skill with icon");
+    expect(skillMd).toContain(testUrl);
 
     // Check binary file
     const iconPng = await readFile(join(tempDir, ".claude/skills/my-skill/icon.png"));
@@ -301,6 +361,7 @@ describe("download command", () => {
 
     // Should still download to the skill directory (parent of SKILL.md)
     const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
-    expect(skillMd).toBe("---\ndescription: My Skill\n---\n# My Skill");
+    expect(skillMd).toContain("description: My Skill");
+    expect(skillMd).toContain(blobUrl);
   });
 });

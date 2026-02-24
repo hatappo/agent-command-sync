@@ -1,8 +1,10 @@
 import { promises as fs } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, relative } from "node:path";
+import matter from "gray-matter";
 import picocolors from "picocolors";
 import { AGENT_REGISTRY } from "../agents/registry.js";
+import { SKILL_CONSTANTS } from "../utils/constants.js";
 import type { ProductType } from "../types/intermediate.js";
 import { type DirResolutionContext, ensureDirectory, fileExists, readFile, resolveSkillDir } from "../utils/file-utils.js";
 import {
@@ -107,6 +109,20 @@ async function writeDownloadedFile(filePath: string, file: DownloadedFile): Prom
   }
 }
 
+/**
+ * Inject _from provenance URL into a SKILL.md text content.
+ * Parses frontmatter, appends URL to _from array, and re-serializes.
+ */
+function injectFromUrl(content: string, url: string): string {
+  const parsed = matter(content);
+  const fromArray: string[] = Array.isArray(parsed.data._from) ? [...parsed.data._from] : [];
+  if (!fromArray.includes(url)) {
+    fromArray.push(url);
+  }
+  parsed.data._from = fromArray;
+  return matter.stringify(parsed.content, parsed.data);
+}
+
 // ── Main ────────────────────────────────────────────────────────
 
 /**
@@ -146,7 +162,14 @@ export async function downloadSkill(options: DownloadOptions): Promise<void> {
     console.log(`DEBUG: Target directory: ${targetDir}`);
   }
 
-  // 5. Write files and display results
+  // 5. Inject _from provenance into SKILL.md
+  for (const file of files) {
+    if (file.relativePath === SKILL_CONSTANTS.SKILL_FILE_NAME && typeof file.content === "string") {
+      file.content = injectFromUrl(file.content, options.url);
+    }
+  }
+
+  // 6. Write files and display results
   const stats = { A: 0, M: 0, "=": 0 };
 
   for (const file of files) {
@@ -171,7 +194,7 @@ export async function downloadSkill(options: DownloadOptions): Promise<void> {
     }
   }
 
-  // 6. Summary
+  // 7. Summary
   console.log("");
   if (options.noop) {
     console.log(picocolors.dim("Dry run complete. Use without --noop to download."));
