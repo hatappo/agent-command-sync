@@ -121,27 +121,44 @@ export function resolvePath(path: string): string {
 }
 
 /**
- * Resolve command directory paths for an agent
+ * Context for directory resolution.
+ * Priority: customDir > project-level (gitRoot && !global) > user-level
  */
-export function resolveCommandDir(agent: AgentDefinition, customDir?: string): { project: string; user: string } {
-  return {
-    project: join(process.cwd(), agent.dirs.projectBase, agent.dirs.commandSubdir),
-    user: customDir
-      ? join(resolvePath(customDir), agent.dirs.commandSubdir)
-      : join(homedir(), agent.dirs.userDefault, agent.dirs.commandSubdir),
-  };
+export interface DirResolutionContext {
+  /** Explicit custom directory (--{agent}-dir) */
+  customDir?: string;
+  /** Git repository root (null = not in a repo) */
+  gitRoot?: string | null;
+  /** Force global (user-level) mode (-g/--global) */
+  global?: boolean;
 }
 
 /**
- * Resolve skill directory paths for an agent
+ * Resolve the effective command directory for an agent.
+ * Priority: customDir > project-level (in git repo, not --global) > user-level
  */
-export function resolveSkillDir(agent: AgentDefinition, customDir?: string): { project: string; user: string } {
-  return {
-    project: join(process.cwd(), agent.dirs.projectBase, agent.dirs.skillSubdir),
-    user: customDir
-      ? join(resolvePath(customDir), agent.dirs.skillSubdir)
-      : join(homedir(), agent.dirs.userDefault, agent.dirs.skillSubdir),
-  };
+export function resolveCommandDir(agent: AgentDefinition, context?: DirResolutionContext): string {
+  if (context?.customDir) {
+    return join(resolvePath(context.customDir), agent.dirs.commandSubdir);
+  }
+  if (context?.gitRoot && !context?.global) {
+    return join(context.gitRoot, agent.dirs.projectBase, agent.dirs.commandSubdir);
+  }
+  return join(homedir(), agent.dirs.userDefault, agent.dirs.commandSubdir);
+}
+
+/**
+ * Resolve the effective skill directory for an agent.
+ * Priority: customDir > project-level (in git repo, not --global) > user-level
+ */
+export function resolveSkillDir(agent: AgentDefinition, context?: DirResolutionContext): string {
+  if (context?.customDir) {
+    return join(resolvePath(context.customDir), agent.dirs.skillSubdir);
+  }
+  if (context?.gitRoot && !context?.global) {
+    return join(context.gitRoot, agent.dirs.projectBase, agent.dirs.skillSubdir);
+  }
+  return join(homedir(), agent.dirs.userDefault, agent.dirs.skillSubdir);
 }
 
 /**
@@ -194,11 +211,10 @@ export async function findFiles(directory: string, options: FileSearchOptions): 
 export async function findAgentCommands(
   agent: AgentDefinition,
   specificFile?: string,
-  customDir?: string,
+  context?: DirResolutionContext,
 ): Promise<string[]> {
-  const dirs = resolveCommandDir(agent, customDir);
+  const directory = resolveCommandDir(agent, context);
   const extension = agent.fileExtension;
-  const directory = dirs.user;
 
   const searchOptions: FileSearchOptions = {
     extensions: [extension],
@@ -250,10 +266,9 @@ export async function findAgentCommands(
 export async function findAgentSkills(
   agent: AgentDefinition,
   specificSkill?: string,
-  customDir?: string,
+  context?: DirResolutionContext,
 ): Promise<string[]> {
-  const dirs = resolveSkillDir(agent, customDir);
-  const directory = dirs.user;
+  const directory = resolveSkillDir(agent, context);
 
   if (!(await directoryExists(directory))) {
     return [];

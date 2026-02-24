@@ -19,6 +19,7 @@ export const defaultCLIOptions: Partial<CLIOptions> = {
   noop: false,
   verbose: false,
   contentType: "both",
+  global: false,
 };
 
 /**

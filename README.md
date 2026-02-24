@@ -44,6 +44,9 @@ acs sync -s claude -d gemini -t commands
 
 # Preview direct conversion
 acs sync -n -s claude -d gemini
+
+# Force user-level (global) directories instead of project-level
+acs sync -s claude -d gemini -g
 ```
 
 ## Screenshots
@@ -56,6 +59,7 @@ acs sync -n -s claude -d gemini
 
 ## Features
 
+- **Project-level by Default** - Automatically uses project-level directories (e.g., `<repo>/.claude`) when running inside a Git repository
 - **Colorful Output** - Clear visual feedback with color-coded status indicators
 - **Fast Conversion** - Efficiently sync commands between Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor
 - **Bidirectional** - Convert in any direction (Claude ↔ Gemini ↔ Codex ↔ OpenCode ↔ Copilot ↔ Cursor)
@@ -65,6 +69,8 @@ acs sync -n -s claude -d gemini
 - **Short Command** - Use `acs` instead of `agent-command-sync`
 - **Selective Sync** - Convert specific files or all commands at once
 
+> **Upgrading from v3?** v4.0.0 changes the default directory scope. See [CHANGELOG.txt](CHANGELOG.txt) for breaking changes.
+>
 > **Upgrading from v2?** See the [Migration Guide](docs/migration-v2-to-v3.md).
 
 ## Subcommands
@@ -109,6 +115,7 @@ acs plan gemini                            # Preview apply changes
 | `-d, --dest <product>`      | **Required.** Destination product: `claude`, `gemini`, `codex`, `opencode`, `copilot`, `cursor`, or `chimera` |
 | `-t, --type <type>`         | Content type: `commands`, `skills`, or `both` (default: `both`)      |
 | `-f, --file <filename>`     | Convert specific file only (supports `.md`, `.toml` extensions)      |
+| `-g, --global`              | Use user-level (global) directories instead of project-level          |
 | `-n, --noop`                | Preview changes without applying them                                 |
 | `-v, --verbose`             | Show detailed debug information                                       |
 | `--claude-dir <path>`       | Claude base directory (default: ~/.claude)                            |
@@ -147,25 +154,38 @@ acs sync -s claude -d gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
 acs sync -s claude -d gemini -v
 ```
 
-## Default File Locations
+## Directory Resolution
 
-### Commands
-- **Claude Code**: `~/.claude/commands/*.md`
-- **Gemini CLI**: `~/.gemini/commands/*.toml`
-- **Codex CLI**: `~/.codex/prompts/*.md`
-- **OpenCode**: `~/.config/opencode/commands/*.md`
-- **GitHub Copilot**: `~/.copilot/prompts/*.prompt.md`
-- **Cursor**: `~/.cursor/commands/*.md`
-- **Chimera**: `~/.config/acsync/commands/*.md`
+When running inside a Git repository, `acs` defaults to **project-level** directories (e.g., `<repo>/.claude`, `<repo>/.gemini`). Use `-g`/`--global` to use user-level directories instead.
 
-### Skills
-- **Claude Code**: `~/.claude/skills/<skill-name>/SKILL.md`
-- **Gemini CLI**: `~/.gemini/skills/<skill-name>/SKILL.md`
-- **Codex CLI**: `~/.codex/skills/<skill-name>/SKILL.md`
-- **OpenCode**: `~/.config/opencode/skills/<skill-name>/SKILL.md`
-- **GitHub Copilot**: `~/.copilot/skills/<skill-name>/SKILL.md`
-- **Cursor**: `~/.cursor/skills/<skill-name>/SKILL.md`
-- **Chimera**: `~/.config/acsync/skills/<skill-name>/SKILL.md`
+**Priority order:**
+1. `--{agent}-dir` (custom directory) — always takes precedence
+2. **Project-level** — default when inside a Git repository
+3. **User-level** — default when outside a Git repository, or when `-g` is specified
+
+### Project-level (default inside Git repos)
+
+| Agent | Commands | Skills |
+| ----- | -------- | ------ |
+| **Claude Code** | `<repo>/.claude/commands/*.md` | `<repo>/.claude/skills/<name>/SKILL.md` |
+| **Gemini CLI** | `<repo>/.gemini/commands/*.toml` | `<repo>/.gemini/skills/<name>/SKILL.md` |
+| **Codex CLI** | `<repo>/.codex/prompts/*.md` | `<repo>/.codex/skills/<name>/SKILL.md` |
+| **OpenCode** | `<repo>/.config/opencode/commands/*.md` | `<repo>/.config/opencode/skills/<name>/SKILL.md` |
+| **GitHub Copilot** | `<repo>/.copilot/prompts/*.prompt.md` | `<repo>/.copilot/skills/<name>/SKILL.md` |
+| **Cursor** | `<repo>/.cursor/commands/*.md` | `<repo>/.cursor/skills/<name>/SKILL.md` |
+| **Chimera** | `<repo>/.config/acsync/commands/*.md` | `<repo>/.config/acsync/skills/<name>/SKILL.md` |
+
+### User-level (with `-g` or outside Git repos)
+
+| Agent | Commands | Skills |
+| ----- | -------- | ------ |
+| **Claude Code** | `~/.claude/commands/*.md` | `~/.claude/skills/<name>/SKILL.md` |
+| **Gemini CLI** | `~/.gemini/commands/*.toml` | `~/.gemini/skills/<name>/SKILL.md` |
+| **Codex CLI** | `~/.codex/prompts/*.md` | `~/.codex/skills/<name>/SKILL.md` |
+| **OpenCode** | `~/.config/opencode/commands/*.md` | `~/.config/opencode/skills/<name>/SKILL.md` |
+| **GitHub Copilot** | `~/.copilot/prompts/*.prompt.md` | `~/.copilot/skills/<name>/SKILL.md` |
+| **Cursor** | `~/.cursor/commands/*.md` | `~/.cursor/skills/<name>/SKILL.md` |
+| **Chimera** | `~/.config/acsync/commands/*.md` | `~/.config/acsync/skills/<name>/SKILL.md` |
 
 ## Format Comparison and Conversion Specification
 
@@ -174,7 +194,7 @@ acs sync -s claude -d gemini -v
 | Aspect | Commands | Skills |
 | ------ | -------- | ------ |
 | Structure | Single file (`.md`, `.toml`) | Directory (`SKILL.md` + support files) |
-| Location | `~/.{tool}/commands/` | `~/.{tool}/skills/<name>/` |
+| Location | `{base}/{tool}/commands/` | `{base}/{tool}/skills/<name>/` |
 | Use Case | Simple prompts | Complex tasks with multiple files |
 
 ---

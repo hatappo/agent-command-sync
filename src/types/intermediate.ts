@@ -35,4 +35,8 @@ export interface IntermediateConversionOptions {
   customDirs?: Partial<Record<ProductType, string>>;
   /** Content type filter: commands, skills, or both (default: both) */
   contentType: ContentFilter;
+  /** Force user-level (global) directories instead of project-level */
+  global: boolean;
+  /** Git repository root path (null if not in a git repo). Resolved at CLI startup. */
+  gitRoot?: string | null;
 }

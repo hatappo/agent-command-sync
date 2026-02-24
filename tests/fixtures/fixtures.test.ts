@@ -48,11 +48,11 @@ describe("Agent Slash Sync Tests", () => {
       const { resolveCommandDir } = await import("../../src/utils/file-utils.js");
       const { AGENT_REGISTRY } = await import("../../src/agents/registry.js");
 
-      const claudeDirs = resolveCommandDir(AGENT_REGISTRY.claude, "/custom/claude");
-      expect(claudeDirs.user).toBe("/custom/claude/commands");
+      const claudeDir = resolveCommandDir(AGENT_REGISTRY.claude, { customDir: "/custom/claude" });
+      expect(claudeDir).toBe("/custom/claude/commands");
 
-      const geminiDirs = resolveCommandDir(AGENT_REGISTRY.gemini, "/custom/gemini");
-      expect(geminiDirs.user).toBe("/custom/gemini/commands");
+      const geminiDir = resolveCommandDir(AGENT_REGISTRY.gemini, { customDir: "/custom/gemini" });
+      expect(geminiDir).toBe("/custom/gemini/commands");
     });
 
     it("should use default directories when custom directories not specified", async () => {
@@ -60,11 +60,11 @@ describe("Agent Slash Sync Tests", () => {
       const { AGENT_REGISTRY } = await import("../../src/agents/registry.js");
       const { homedir } = await import("node:os");
 
-      const claudeDirs = resolveCommandDir(AGENT_REGISTRY.claude);
-      expect(claudeDirs.user).toBe(join(homedir(), ".claude", "commands"));
+      const claudeDir = resolveCommandDir(AGENT_REGISTRY.claude);
+      expect(claudeDir).toBe(join(homedir(), ".claude", "commands"));
 
-      const geminiDirs = resolveCommandDir(AGENT_REGISTRY.gemini);
-      expect(geminiDirs.user).toBe(join(homedir(), ".gemini", "commands"));
+      const geminiDir = resolveCommandDir(AGENT_REGISTRY.gemini);
+      expect(geminiDir).toBe(join(homedir(), ".gemini", "commands"));
     });
 
     it("should handle tilde expansion in custom directories", async () => {
@@ -72,11 +72,11 @@ describe("Agent Slash Sync Tests", () => {
       const { AGENT_REGISTRY } = await import("../../src/agents/registry.js");
       const { homedir } = await import("node:os");
 
-      const claudeDirs = resolveCommandDir(AGENT_REGISTRY.claude, "~/custom-claude");
-      expect(claudeDirs.user).toBe(join(homedir(), "custom-claude", "commands"));
+      const claudeDir = resolveCommandDir(AGENT_REGISTRY.claude, { customDir: "~/custom-claude" });
+      expect(claudeDir).toBe(join(homedir(), "custom-claude", "commands"));
 
-      const geminiDirs = resolveCommandDir(AGENT_REGISTRY.gemini, "~/custom-gemini");
-      expect(geminiDirs.user).toBe(join(homedir(), "custom-gemini", "commands"));
+      const geminiDir = resolveCommandDir(AGENT_REGISTRY.gemini, { customDir: "~/custom-gemini" });
+      expect(geminiDir).toBe(join(homedir(), "custom-gemini", "commands"));
     });
   });
 

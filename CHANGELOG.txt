@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.0.0] - 2026-02-24
+
+### BREAKING CHANGES
+- **Project-level directories by default**: When running inside a Git repository, `acs` now uses project-level directories (e.g., `<repo>/.claude`, `<repo>/.gemini`) instead of user-level directories (e.g., `~/.claude`, `~/.gemini`). Use `-g`/`--global` to revert to user-level behavior.
+- **`resolveCommandDir` / `resolveSkillDir` return type changed**: These functions now return a single `string` (resolved path) instead of `{ project, user }` object. Callers using `.user` property access must update.
+
+### Added
+- **`-g` / `--global` option**: Available on all subcommands (sync, import, drift, apply, plan, status). Forces user-level (global) directory resolution.
+- **Git repository root detection**: Pure Node.js implementation that walks up from cwd to find `.git`. Supports normal repos, worktrees, and submodules.
+- **Mode indicator in output**: Sync and status commands now display `[project: /path/to/repo]` or `[global]` to indicate which directory mode is active.
+
 ## [3.4.0] - 2026-02-23
 
 ### Added

@@ -3,11 +3,13 @@ import { join } from "node:path";
 import picocolors from "picocolors";
 import { AGENT_REGISTRY } from "../agents/registry.js";
 import type { ConversionResult, FileOperation, SemanticIR } from "../types/index.js";
+import type { ProductType } from "../types/intermediate.js";
 import { assertNever } from "../utils/assert-never.js";
 import { SKILL_CONSTANTS } from "../utils/constants.js";
 
 const { SKILL_FILE_NAME } = SKILL_CONSTANTS;
 import {
+  type DirResolutionContext,
   deleteFile,
   directoryExists,
   fileExists,
@@ -26,6 +28,17 @@ import {
 import type { CLIOptions } from "./options.js";
 
 /**
+ * Build a DirResolutionContext for a specific agent from CLIOptions.
+ */
+function buildContext(options: CLIOptions, agent: ProductType): DirResolutionContext {
+  return {
+    customDir: options.customDirs?.[agent],
+    gitRoot: options.gitRoot,
+    global: options.global,
+  };
+}
+
+/**
  * Main function for command synchronization
  */
 export async function syncCommands(options: CLIOptions): Promise<ConversionResult> {
@@ -34,7 +47,9 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
   const stats = { processed: 0, created: 0, modified: 0, deleted: 0, skipped: 0, unchanged: 0 };
 
   try {
-    console.log(picocolors.cyan(`Starting ${options.source} → ${options.destination} conversion...`));
+    const modeLabel =
+      options.gitRoot && !options.global ? `project: ${options.gitRoot}` : "global";
+    console.log(picocolors.cyan(`Starting ${options.source} → ${options.destination} conversion... [${modeLabel}]`));
 
     if (options.noop) {
       console.log(picocolors.yellow("NOOP MODE - No files will be modified"));
@@ -162,7 +177,7 @@ function countStats(
  */
 async function getSourceFiles(options: CLIOptions): Promise<string[]> {
   const agent = AGENT_REGISTRY[options.source];
-  return findAgentCommands(agent, options.file, options.customDirs?.[options.source]);
+  return findAgentCommands(agent, options.file, buildContext(options, options.source));
 }
 
 /**
@@ -182,12 +197,12 @@ async function convertSingleFile(
     const command = await src.parseCommand(sourceFile);
     const ir: SemanticIR = src.commandToIR(command, { destinationType: options.destination });
 
-    // Determine target file path (user directory only)
-    const sourceDir = resolveCommandDir(src, options.customDirs?.[options.source]).user;
-    const targetDir = resolveCommandDir(dst, options.customDirs?.[options.destination]).user;
+    // Determine target file path
+    const sourceDir = resolveCommandDir(src, buildContext(options, options.source));
+    const targetDir = resolveCommandDir(dst, buildContext(options, options.destination));
 
     if (!sourceFile.startsWith(sourceDir)) {
-      throw new Error(`Source file ${sourceFile} is not in the ${options.source} user commands directory`);
+      throw new Error(`Source file ${sourceFile} is not in the ${options.source} commands directory`);
     }
 
     const commandName = getCommandName(sourceFile, sourceDir, src.fileExtension);
@@ -243,7 +258,7 @@ async function handleFileOperation(targetFile: string, content: string, options:
       return {
         type: "=",
         filePath: targetFile,
-        description: options.noop ? "Unchanged" : "Unchanged",
+        description: "Unchanged",
       };
     }
   }
@@ -280,12 +295,12 @@ async function handleSyncDelete(
   try {
     // Get target files
     const dst = AGENT_REGISTRY[options.destination];
-    const targetFiles = await findAgentCommands(dst, undefined, options.customDirs?.[options.destination]);
+    const targetFiles = await findAgentCommands(dst, undefined, buildContext(options, options.destination));
 
-    // Generate target file names corresponding to source (user directory only)
+    // Generate target file names corresponding to source
     const src = AGENT_REGISTRY[options.source];
-    const sourceDir = resolveCommandDir(src, options.customDirs?.[options.source]).user;
-    const targetDir = resolveCommandDir(dst, options.customDirs?.[options.destination]).user;
+    const sourceDir = resolveCommandDir(src, buildContext(options, options.source));
+    const targetDir = resolveCommandDir(dst, buildContext(options, options.destination));
     const targetExt = dst.fileExtension;
 
     const expectedTargetFiles = new Set(
@@ -326,7 +341,7 @@ async function handleSyncDelete(
  */
 async function getSourceSkills(options: CLIOptions): Promise<string[]> {
   const agent = AGENT_REGISTRY[options.source];
-  return findAgentSkills(agent, options.file, options.customDirs?.[options.source]);
+  return findAgentSkills(agent, options.file, buildContext(options, options.source));
 }
 
 /**
@@ -347,8 +362,8 @@ async function convertSingleSkill(
     const ir: SemanticIR = src.skillToIR(skill, { destinationType: options.destination });
 
     // Get skill directories
-    const sourceDir = resolveSkillDir(src, options.customDirs?.[options.source]).user;
-    const targetDir = resolveSkillDir(dst, options.customDirs?.[options.destination]).user;
+    const sourceDir = resolveSkillDir(src, buildContext(options, options.source));
+    const targetDir = resolveSkillDir(dst, buildContext(options, options.destination));
 
     const skillName = getSkillNameFromPath(skillDir, sourceDir);
     const targetSkillDir = getSkillPathFromName(skillName, targetDir);
@@ -437,12 +452,12 @@ async function handleSkillSyncDelete(
   try {
     // Get target skills
     const dst = AGENT_REGISTRY[options.destination];
-    const targetSkills = await findAgentSkills(dst, undefined, options.customDirs?.[options.destination]);
+    const targetSkills = await findAgentSkills(dst, undefined, buildContext(options, options.destination));
 
     // Generate target skill names corresponding to source
     const src = AGENT_REGISTRY[options.source];
-    const sourceDir = resolveSkillDir(src, options.customDirs?.[options.source]).user;
-    const targetDir = resolveSkillDir(dst, options.customDirs?.[options.destination]).user;
+    const sourceDir = resolveSkillDir(src, buildContext(options, options.source));
+    const targetDir = resolveSkillDir(dst, buildContext(options, options.destination));
 
     const expectedTargetSkills = new Set(
       sourceSkills.map((sourceSkill) => {
