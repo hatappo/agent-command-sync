@@ -204,14 +204,8 @@ describe("download command", () => {
     const newUrl = "https://github.com/other/repo/tree/main/.claude/skills/other-skill";
 
     mockFetch
-      .mockResolvedValueOnce(
-        mockDirectoryListing([
-          { name: "SKILL.md", type: "file" },
-        ]),
-      )
-      .mockResolvedValueOnce(
-        mockFileContent(`---\ndescription: My Skill\n_from:\n  - ${testUrl}\n---\n# My Skill`),
-      );
+      .mockResolvedValueOnce(mockDirectoryListing([{ name: "SKILL.md", type: "file" }]))
+      .mockResolvedValueOnce(mockFileContent(`---\ndescription: My Skill\n_from:\n  - ${testUrl}\n---\n# My Skill`));
 
     await downloadSkill({
       url: newUrl,

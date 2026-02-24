@@ -48,8 +48,7 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
   const stats = { processed: 0, created: 0, modified: 0, deleted: 0, skipped: 0, unchanged: 0 };
 
   try {
-    const modeLabel =
-      options.gitRoot && !options.global ? `project: ${options.gitRoot}` : "global";
+    const modeLabel = options.gitRoot && !options.global ? `project: ${options.gitRoot}` : "global";
     console.log(picocolors.cyan(`Starting ${options.source} → ${options.destination} conversion... [${modeLabel}]`));
 
     if (options.noop) {

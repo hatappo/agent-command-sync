@@ -365,12 +365,8 @@ async function main(): Promise<void> {
       "  $ acs plan gemini                            # Preview apply              (shorthand for: acs sync -s chimera -d gemini -n)",
     );
     console.log("  $ acs status                                       # Show Chimera status and detected agents");
-    console.log(
-      "  $ acs download <github-url>                        # Download a skill from GitHub",
-    );
-    console.log(
-      "  $ acs download <github-url> -d gemini              # Download and place in Gemini skill directory",
-    );
+    console.log("  $ acs download <github-url>                        # Download a skill from GitHub");
+    console.log("  $ acs download <github-url> -d gemini              # Download and place in Gemini skill directory");
     console.log("  $ acs sync -s claude -d gemini --remove-unsupported # Remove unsupported fields");
     console.log("  $ acs sync -s gemini -d claude --no-overwrite     # Skip existing files");
     console.log("  $ acs sync -s claude -d gemini --sync-delete      # Delete orphaned files");

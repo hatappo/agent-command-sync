@@ -6,7 +6,13 @@ import picocolors from "picocolors";
 import { AGENT_REGISTRY } from "../agents/registry.js";
 import { SKILL_CONSTANTS } from "../utils/constants.js";
 import type { ProductType } from "../types/intermediate.js";
-import { type DirResolutionContext, ensureDirectory, fileExists, readFile, resolveSkillDir } from "../utils/file-utils.js";
+import {
+  type DirResolutionContext,
+  ensureDirectory,
+  fileExists,
+  readFile,
+  resolveSkillDir,
+} from "../utils/file-utils.js";
 import {
   type DownloadedFile,
   type ParsedGitHubUrl,
@@ -76,10 +82,7 @@ function getModeLabel(options: DownloadOptions): string {
 /**
  * Determine the operation type for a file
  */
-async function determineOperation(
-  filePath: string,
-  newContent: string | Buffer,
-): Promise<OperationType> {
+async function determineOperation(filePath: string, newContent: string | Buffer): Promise<OperationType> {
   if (!(await fileExists(filePath))) {
     return "A";
   }
@@ -131,7 +134,9 @@ function injectFromUrl(content: string, url: string): string {
 export async function downloadSkill(options: DownloadOptions): Promise<void> {
   // 0. Validate: -g requires -d
   if (options.global && !options.destination) {
-    throw new Error("acs download with -g/--global requires -d/--dest <agent>.\nExample: acs download <url> -g -d claude");
+    throw new Error(
+      "acs download with -g/--global requires -d/--dest <agent>.\nExample: acs download <url> -g -d claude",
+    );
   }
 
   // 1. Parse URL

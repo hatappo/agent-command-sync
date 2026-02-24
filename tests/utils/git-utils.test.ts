@@ -68,11 +68,11 @@ describe("git-utils", () => {
       await fsWriteFile(
         join(tempDir, ".git", "config"),
         [
-          '[core]',
-          '\trepositoryformatversion = 0',
+          "[core]",
+          "\trepositoryformatversion = 0",
           '[remote "origin"]',
-          '\turl = git@github.com:owner/repo.git',
-          '\tfetch = +refs/heads/*:refs/remotes/origin/*',
+          "\turl = git@github.com:owner/repo.git",
+          "\tfetch = +refs/heads/*:refs/remotes/origin/*",
         ].join("\n"),
       );
       const result = await getGitHubRemoteUrl(tempDir);
@@ -85,8 +85,8 @@ describe("git-utils", () => {
         join(tempDir, ".git", "config"),
         [
           '[remote "origin"]',
-          '\turl = https://github.com/owner/repo.git',
-          '\tfetch = +refs/heads/*:refs/remotes/origin/*',
+          "\turl = https://github.com/owner/repo.git",
+          "\tfetch = +refs/heads/*:refs/remotes/origin/*",
         ].join("\n"),
       );
       const result = await getGitHubRemoteUrl(tempDir);
@@ -97,10 +97,7 @@ describe("git-utils", () => {
       await mkdir(join(tempDir, ".git"));
       await fsWriteFile(
         join(tempDir, ".git", "config"),
-        [
-          '[remote "origin"]',
-          '\turl = https://github.com/owner/repo',
-        ].join("\n"),
+        ['[remote "origin"]', "\turl = https://github.com/owner/repo"].join("\n"),
       );
       const result = await getGitHubRemoteUrl(tempDir);
       expect(result).toBe("https://github.com/owner/repo");
@@ -110,10 +107,7 @@ describe("git-utils", () => {
       await mkdir(join(tempDir, ".git"));
       await fsWriteFile(
         join(tempDir, ".git", "config"),
-        [
-          '[remote "origin"]',
-          '\turl = git@gitlab.com:owner/repo.git',
-        ].join("\n"),
+        ['[remote "origin"]', "\turl = git@gitlab.com:owner/repo.git"].join("\n"),
       );
       const result = await getGitHubRemoteUrl(tempDir);
       expect(result).toBeNull();
@@ -123,10 +117,7 @@ describe("git-utils", () => {
       await mkdir(join(tempDir, ".git"));
       await fsWriteFile(
         join(tempDir, ".git", "config"),
-        [
-          '[remote "upstream"]',
-          '\turl = git@github.com:owner/repo.git',
-        ].join("\n"),
+        ['[remote "upstream"]', "\turl = git@github.com:owner/repo.git"].join("\n"),
       );
       const result = await getGitHubRemoteUrl(tempDir);
       expect(result).toBeNull();
@@ -143,10 +134,7 @@ describe("git-utils", () => {
       await mkdir(mainGitDir, { recursive: true });
       await fsWriteFile(
         join(mainGitDir, "config"),
-        [
-          '[remote "origin"]',
-          '\turl = git@github.com:owner/repo.git',
-        ].join("\n"),
+        ['[remote "origin"]', "\turl = git@github.com:owner/repo.git"].join("\n"),
       );
 
       // Create worktree directory with .git file pointing to main
@@ -163,10 +151,7 @@ describe("git-utils", () => {
       // For worktrees, config lives in the main .git directory
       await fsWriteFile(
         join(worktreeGitDir, "config"),
-        [
-          '[remote "origin"]',
-          '\turl = git@github.com:owner/repo.git',
-        ].join("\n"),
+        ['[remote "origin"]', "\turl = git@github.com:owner/repo.git"].join("\n"),
       );
 
       const result = await getGitHubRemoteUrl(worktreeDir);
@@ -179,11 +164,11 @@ describe("git-utils", () => {
         join(tempDir, ".git", "config"),
         [
           '[remote "upstream"]',
-          '\turl = git@github.com:upstream/repo.git',
+          "\turl = git@github.com:upstream/repo.git",
           '[remote "origin"]',
-          '\turl = git@github.com:owner/repo.git',
+          "\turl = git@github.com:owner/repo.git",
           '[remote "fork"]',
-          '\turl = git@github.com:fork/repo.git',
+          "\turl = git@github.com:fork/repo.git",
         ].join("\n"),
       );
       const result = await getGitHubRemoteUrl(tempDir);

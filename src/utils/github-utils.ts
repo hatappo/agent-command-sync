@@ -133,9 +133,7 @@ async function githubApiRequest(url: string, token?: string): Promise<Response> 
   if (response.status === 403) {
     const rateLimitRemaining = response.headers.get("X-RateLimit-Remaining");
     if (rateLimitRemaining === "0") {
-      throw new Error(
-        "GitHub API rate limit exceeded. Set GITHUB_TOKEN env var for higher limits.",
-      );
+      throw new Error("GitHub API rate limit exceeded. Set GITHUB_TOKEN env var for higher limits.");
     }
     throw new Error("Access denied. For private repositories, set GITHUB_TOKEN env var.");
   }

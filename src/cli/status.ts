@@ -189,8 +189,7 @@ export async function showStatus(options: StatusOptions): Promise<void> {
   console.log();
 
   // Version and mode
-  const modeLabel =
-    options.gitRoot && !options.global ? `project: ${options.gitRoot}` : "global";
+  const modeLabel = options.gitRoot && !options.global ? `project: ${options.gitRoot}` : "global";
   console.log(picocolors.dim(`acs v${version} [${modeLabel}]`));
   console.log();
 

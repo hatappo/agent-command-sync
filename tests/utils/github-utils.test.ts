@@ -146,7 +146,8 @@ describe("github-utils", () => {
             type: item.type ?? "file",
             size: item.size ?? 100,
             sha: item.sha ?? "abc123",
-            download_url: item.download_url ?? `https://raw.githubusercontent.com/owner/repo/main/${parsed.path}/${item.name}`,
+            download_url:
+              item.download_url ?? `https://raw.githubusercontent.com/owner/repo/main/${parsed.path}/${item.name}`,
             ...item,
           })),
         headers: new Headers(),
@@ -253,9 +254,7 @@ describe("github-utils", () => {
       );
 
       // Mock file downloads (needed before the SKILL.md check)
-      mockFetch
-        .mockResolvedValueOnce(mockFileResponse("readme"))
-        .mockResolvedValueOnce(mockFileResponse("helper"));
+      mockFetch.mockResolvedValueOnce(mockFileResponse("readme")).mockResolvedValueOnce(mockFileResponse("helper"));
 
       await expect(fetchSkillDirectory(parsed)).rejects.toThrow("SKILL.md not found");
     });
