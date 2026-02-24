@@ -71,7 +71,7 @@ These are shorthand subcommands for working with the Chimera hub:
 
 ## Chimera Hub
 
-The Chimera hub is a virtual agent introduced in v3 that stores converted files at `~/.config/acsync/`. It preserves **all** agent-specific settings losslessly in `_chimera.{agent}` frontmatter sections.
+The Chimera hub is a virtual agent introduced in v3 that stores converted files at `~/.config/chimera-agent/`. It preserves **all** agent-specific settings losslessly in `_chimera.{agent}` frontmatter sections.
 
 ### Recommended workflow
 

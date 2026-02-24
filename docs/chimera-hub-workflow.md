@@ -9,7 +9,7 @@ Chimera is a virtual agent that acts as a lossless conversion hub. It preserves 
 ```
                         ┌──────────────────┐
                         │  Chimera (Hub)   │
-                        │ ~/.config/acsync │
+                        │ ~/.config/chimera-agent │
                         └────────┬─────────┘
                   ┌──────────────┴───────────────┐
                 ▲ │                              │ ▲

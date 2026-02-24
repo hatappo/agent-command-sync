@@ -124,7 +124,7 @@ acs plan gemini                            # 適用の変更をプレビュー
 | `--opencode-dir <path>`     | OpenCode ベースディレクトリ（デフォルト: ~/.config/opencode）               |
 | `--copilot-dir <path>`      | Copilot ベースディレクトリ（デフォルト: ~/.copilot）                        |
 | `--cursor-dir <path>`       | Cursor ベースディレクトリ（デフォルト: ~/.cursor）                          |
-| `--chimera-dir <path>`      | Chimera ベースディレクトリ（デフォルト: ~/.config/acsync）                  |
+| `--chimera-dir <path>`      | Chimera ベースディレクトリ（デフォルト: ~/.config/chimera-agent）           |
 | `--no-overwrite`            | ターゲットディレクトリの既存ファイルをスキップ                                |
 | `--sync-delete`             | ターゲットディレクトリの孤立ファイルを削除                                   |
 | `--remove-unsupported`      | ターゲット形式でサポートされていないフィールドを削除                           |
@@ -173,7 +173,7 @@ Git リポジトリ内で実行すると、`acs` はデフォルトで**プロ�
 | **OpenCode** | `<repo>/.config/opencode/commands/*.md` | `<repo>/.config/opencode/skills/<name>/SKILL.md` |
 | **GitHub Copilot** | `<repo>/.copilot/prompts/*.prompt.md` | `<repo>/.copilot/skills/<name>/SKILL.md` |
 | **Cursor** | `<repo>/.cursor/commands/*.md` | `<repo>/.cursor/skills/<name>/SKILL.md` |
-| **Chimera** | `<repo>/.config/acsync/commands/*.md` | `<repo>/.config/acsync/skills/<name>/SKILL.md` |
+| **Chimera** | `<repo>/.chimera-agent/commands/*.md` | `<repo>/.chimera-agent/skills/<name>/SKILL.md` |
 
 ### ユーザーレベル（`-g` 指定時または Git リポジトリ外）
 
@@ -185,7 +185,7 @@ Git リポジトリ内で実行すると、`acs` はデフォルトで**プロ�
 | **OpenCode** | `~/.config/opencode/commands/*.md` | `~/.config/opencode/skills/<name>/SKILL.md` |
 | **GitHub Copilot** | `~/.copilot/prompts/*.prompt.md` | `~/.copilot/skills/<name>/SKILL.md` |
 | **Cursor** | `~/.cursor/commands/*.md` | `~/.cursor/skills/<name>/SKILL.md` |
-| **Chimera** | `~/.config/acsync/commands/*.md` | `~/.config/acsync/skills/<name>/SKILL.md` |
+| **Chimera** | `~/.config/chimera-agent/commands/*.md` | `~/.config/chimera-agent/skills/<name>/SKILL.md` |
 
 ## 形式比較と変換仕様
 
