@@ -10,6 +10,7 @@ import type { ContentFilter } from "../types/skill.js";
 import { findGitRoot } from "../utils/git-utils.js";
 import type { CLIOptions } from "./options.js";
 import { validateCLIOptions } from "./options.js";
+import { downloadSkill } from "./download.js";
 import { showStatus } from "./status.js";
 import { syncCommands } from "./sync.js";
 
@@ -288,6 +289,34 @@ async function main(): Promise<void> {
     }
   });
 
+  // ── download subcommand ──────────────────────────────────────────
+
+  const downloadCmd = program
+    .command("download <url>")
+    .description("Download a skill from GitHub")
+    .option("-d, --dest <agent>", `Destination agent: ${productList}`)
+    .option("-n, --noop", "Preview files without downloading", false)
+    .option("-v, --verbose", "Show detailed debug information", false);
+
+  registerCommonDirOptions(downloadCmd);
+
+  downloadCmd.action(async (url: string, options) => {
+    try {
+      await downloadSkill({
+        url,
+        destination: options.dest as ProductType | undefined,
+        global: options.global,
+        githubToken: process.env.GITHUB_TOKEN,
+        noop: options.noop,
+        verbose: options.verbose,
+        gitRoot,
+        customDirs: buildCustomDirs(options),
+      });
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
   // ── status subcommand ────────────────────────────────────────────
 
   const statusCmd = program.command("status").description("Show Chimera status and detected agents");
@@ -336,6 +365,12 @@ async function main(): Promise<void> {
       "  $ acs plan gemini                            # Preview apply              (shorthand for: acs sync -s chimera -d gemini -n)",
     );
     console.log("  $ acs status                                       # Show Chimera status and detected agents");
+    console.log(
+      "  $ acs download <github-url>                        # Download a skill from GitHub",
+    );
+    console.log(
+      "  $ acs download <github-url> -d gemini              # Download and place in Gemini skill directory",
+    );
     console.log("  $ acs sync -s claude -d gemini --remove-unsupported # Remove unsupported fields");
     console.log("  $ acs sync -s gemini -d claude --no-overwrite     # Skip existing files");
     console.log("  $ acs sync -s claude -d gemini --sync-delete      # Delete orphaned files");

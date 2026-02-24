@@ -1,0 +1,306 @@
+import { mkdir, readFile, rm, writeFile as fsWriteFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { type Mock, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { downloadSkill } from "../../src/cli/download.js";
+import type { DownloadedFile, GitHubContentItem } from "../../src/utils/github-utils.js";
+
+describe("download command", () => {
+  let originalFetch: typeof globalThis.fetch;
+  let mockFetch: Mock;
+  let tempDir: string;
+  let consoleOutput: string[];
+
+  beforeEach(async () => {
+    // Set up temp directory
+    tempDir = join(tmpdir(), `download-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    await mkdir(tempDir, { recursive: true });
+
+    // Mock fetch
+    originalFetch = globalThis.fetch;
+    mockFetch = vi.fn();
+    globalThis.fetch = mockFetch;
+
+    // Capture console output
+    consoleOutput = [];
+    vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+      consoleOutput.push(args.join(" "));
+    });
+  });
+
+  afterEach(async () => {
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+    await rm(tempDir, { recursive: true, force: true });
+  });
+
+  const testUrl = "https://github.com/owner/repo/tree/main/.claude/skills/my-skill";
+
+  function mockDirectoryListing(items: Partial<GitHubContentItem>[]): Response {
+    return {
+      ok: true,
+      status: 200,
+      json: async () =>
+        items.map((item) => ({
+          name: item.name ?? "file.txt",
+          path: item.path ?? `.claude/skills/my-skill/${item.name}`,
+          type: item.type ?? "file",
+          size: item.size ?? 100,
+          sha: item.sha ?? "abc123",
+          download_url:
+            item.download_url ??
+            `https://raw.githubusercontent.com/owner/repo/main/.claude/skills/my-skill/${item.name}`,
+          ...item,
+        })),
+      headers: new Headers(),
+    } as Response;
+  }
+
+  function mockFileContent(content: string): Response {
+    return {
+      ok: true,
+      status: 200,
+      text: async () => content,
+      arrayBuffer: async () => new TextEncoder().encode(content).buffer,
+      headers: new Headers(),
+    } as Response;
+  }
+
+  function setupBasicMocks() {
+    mockFetch
+      .mockResolvedValueOnce(
+        mockDirectoryListing([
+          { name: "SKILL.md", type: "file" },
+          { name: "helper.ts", type: "file" },
+        ]),
+      )
+      .mockResolvedValueOnce(mockFileContent("---\ndescription: My Skill\n---\n# My Skill"))
+      .mockResolvedValueOnce(mockFileContent("export function helper() {}"));
+  }
+
+  it("should download skill to project-level path based on URL (default)", async () => {
+    setupBasicMocks();
+
+    await downloadSkill({
+      url: testUrl,
+      global: false,
+      noop: false,
+      verbose: false,
+      gitRoot: tempDir,
+    });
+
+    // Check files were created at the URL path relative to gitRoot
+    const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
+    expect(skillMd).toBe("---\ndescription: My Skill\n---\n# My Skill");
+
+    const helperTs = await readFile(join(tempDir, ".claude/skills/my-skill/helper.ts"), "utf-8");
+    expect(helperTs).toBe("export function helper() {}");
+  });
+
+  it("should download skill to agent-specific directory with -d option", async () => {
+    setupBasicMocks();
+
+    await downloadSkill({
+      url: testUrl,
+      destination: "gemini",
+      global: false,
+      noop: false,
+      verbose: false,
+      gitRoot: tempDir,
+      customDirs: { gemini: tempDir },
+    });
+
+    // With -d gemini and customDir=tempDir, files go to tempDir/skills/my-skill/
+    const skillMd = await readFile(join(tempDir, "skills/my-skill/SKILL.md"), "utf-8");
+    expect(skillMd).toBe("---\ndescription: My Skill\n---\n# My Skill");
+  });
+
+  it("should not write files in noop mode", async () => {
+    setupBasicMocks();
+
+    await downloadSkill({
+      url: testUrl,
+      global: false,
+      noop: true,
+      verbose: false,
+      gitRoot: tempDir,
+    });
+
+    // Directory should not exist
+    const { fileExists } = await import("../../src/utils/file-utils.js");
+    expect(await fileExists(join(tempDir, ".claude/skills/my-skill/SKILL.md"))).toBe(false);
+
+    // Should show dry run messages
+    const output = consoleOutput.join("\n");
+    expect(output).toContain("would create");
+    expect(output).toContain("Dry run complete");
+  });
+
+  it("should show [A] for new files", async () => {
+    setupBasicMocks();
+
+    await downloadSkill({
+      url: testUrl,
+      global: false,
+      noop: false,
+      verbose: false,
+      gitRoot: tempDir,
+    });
+
+    const output = consoleOutput.join("\n");
+    expect(output).toContain("Created");
+  });
+
+  it("should show [M] for modified files", async () => {
+    // Pre-create existing file with different content
+    const skillDir = join(tempDir, ".claude/skills/my-skill");
+    await mkdir(skillDir, { recursive: true });
+    await fsWriteFile(join(skillDir, "SKILL.md"), "old content", "utf-8");
+    await fsWriteFile(join(skillDir, "helper.ts"), "old helper", "utf-8");
+
+    setupBasicMocks();
+
+    await downloadSkill({
+      url: testUrl,
+      global: false,
+      noop: false,
+      verbose: false,
+      gitRoot: tempDir,
+    });
+
+    const output = consoleOutput.join("\n");
+    expect(output).toContain("Updated");
+  });
+
+  it("should show [=] for unchanged files", async () => {
+    // Pre-create existing file with same content
+    const skillDir = join(tempDir, ".claude/skills/my-skill");
+    await mkdir(skillDir, { recursive: true });
+    await fsWriteFile(join(skillDir, "SKILL.md"), "---\ndescription: My Skill\n---\n# My Skill", "utf-8");
+    await fsWriteFile(join(skillDir, "helper.ts"), "export function helper() {}", "utf-8");
+
+    setupBasicMocks();
+
+    await downloadSkill({
+      url: testUrl,
+      global: false,
+      noop: false,
+      verbose: false,
+      gitRoot: tempDir,
+    });
+
+    const output = consoleOutput.join("\n");
+    expect(output).toContain("Unchanged");
+  });
+
+  it("should handle binary files", async () => {
+    const binaryData = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]); // PNG header
+
+    mockFetch
+      .mockResolvedValueOnce(
+        mockDirectoryListing([
+          { name: "SKILL.md", type: "file" },
+          { name: "icon.png", type: "file" },
+        ]),
+      )
+      .mockResolvedValueOnce(mockFileContent("# Skill with icon"))
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        arrayBuffer: async () => binaryData.buffer,
+        headers: new Headers(),
+      } as Response);
+
+    await downloadSkill({
+      url: testUrl,
+      global: false,
+      noop: false,
+      verbose: false,
+      gitRoot: tempDir,
+    });
+
+    // Check text file
+    const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
+    expect(skillMd).toBe("# Skill with icon");
+
+    // Check binary file
+    const iconPng = await readFile(join(tempDir, ".claude/skills/my-skill/icon.png"));
+    expect(Buffer.from(iconPng).slice(0, 4)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+  });
+
+  it("should display verbose debug information when -v is set", async () => {
+    setupBasicMocks();
+
+    await downloadSkill({
+      url: testUrl,
+      global: false,
+      noop: false,
+      verbose: true,
+      gitRoot: tempDir,
+    });
+
+    const output = consoleOutput.join("\n");
+    expect(output).toContain("DEBUG:");
+  });
+
+  it("should throw when -g is used without -d", async () => {
+    await expect(
+      downloadSkill({
+        url: testUrl,
+        global: true,
+        noop: false,
+        verbose: false,
+        gitRoot: tempDir,
+      }),
+    ).rejects.toThrow("acs download with -g/--global requires -d/--dest");
+  });
+
+  it("should throw for invalid GitHub URLs", async () => {
+    await expect(
+      downloadSkill({
+        url: "https://gitlab.com/owner/repo",
+        global: false,
+        noop: false,
+        verbose: false,
+        gitRoot: tempDir,
+      }),
+    ).rejects.toThrow("Only GitHub URLs");
+  });
+
+  it("should propagate API errors", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      statusText: "Not Found",
+      headers: new Headers(),
+    } as Response);
+
+    await expect(
+      downloadSkill({
+        url: testUrl,
+        global: false,
+        noop: false,
+        verbose: false,
+        gitRoot: tempDir,
+      }),
+    ).rejects.toThrow("Not found");
+  });
+
+  it("should handle blob URL pointing to SKILL.md", async () => {
+    const blobUrl = "https://github.com/owner/repo/blob/main/.claude/skills/my-skill/SKILL.md";
+
+    setupBasicMocks();
+
+    await downloadSkill({
+      url: blobUrl,
+      global: false,
+      noop: false,
+      verbose: false,
+      gitRoot: tempDir,
+    });
+
+    // Should still download to the skill directory (parent of SKILL.md)
+    const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
+    expect(skillMd).toBe("---\ndescription: My Skill\n---\n# My Skill");
+  });
+});

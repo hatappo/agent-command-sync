@@ -42,8 +42,8 @@ export class ChimeraAgent implements AgentDefinition {
   readonly dirs = {
     commandSubdir: "commands",
     skillSubdir: "skills",
-    projectBase: ".config/acsync",
-    userDefault: ".config/acsync",
+    projectBase: ".chimera-agent",
+    userDefault: ".config/chimera-agent",
   };
   readonly fileExtension = ".md";
 

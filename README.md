@@ -124,7 +124,7 @@ acs plan gemini                            # Preview apply changes
 | `--opencode-dir <path>`     | OpenCode base directory (default: ~/.config/opencode)                 |
 | `--copilot-dir <path>`      | Copilot base directory (default: ~/.copilot)                          |
 | `--cursor-dir <path>`       | Cursor base directory (default: ~/.cursor)                            |
-| `--chimera-dir <path>`      | Chimera base directory (default: ~/.config/acsync)                    |
+| `--chimera-dir <path>`      | Chimera base directory (default: ~/.config/chimera-agent)             |
 | `--no-overwrite`            | Skip existing files in target directory                               |
 | `--sync-delete`             | Delete orphaned files in target directory                             |
 | `--remove-unsupported`      | Remove fields not supported by target format                          |
@@ -173,7 +173,7 @@ When running inside a Git repository, `acs` defaults to **project-level** direct
 | **OpenCode** | `<repo>/.config/opencode/commands/*.md` | `<repo>/.config/opencode/skills/<name>/SKILL.md` |
 | **GitHub Copilot** | `<repo>/.copilot/prompts/*.prompt.md` | `<repo>/.copilot/skills/<name>/SKILL.md` |
 | **Cursor** | `<repo>/.cursor/commands/*.md` | `<repo>/.cursor/skills/<name>/SKILL.md` |
-| **Chimera** | `<repo>/.config/acsync/commands/*.md` | `<repo>/.config/acsync/skills/<name>/SKILL.md` |
+| **Chimera** | `<repo>/.chimera-agent/commands/*.md` | `<repo>/.chimera-agent/skills/<name>/SKILL.md` |
 
 ### User-level (with `-g` or outside Git repos)
 
@@ -185,7 +185,7 @@ When running inside a Git repository, `acs` defaults to **project-level** direct
 | **OpenCode** | `~/.config/opencode/commands/*.md` | `~/.config/opencode/skills/<name>/SKILL.md` |
 | **GitHub Copilot** | `~/.copilot/prompts/*.prompt.md` | `~/.copilot/skills/<name>/SKILL.md` |
 | **Cursor** | `~/.cursor/commands/*.md` | `~/.cursor/skills/<name>/SKILL.md` |
-| **Chimera** | `~/.config/acsync/commands/*.md` | `~/.config/acsync/skills/<name>/SKILL.md` |
+| **Chimera** | `~/.config/chimera-agent/commands/*.md` | `~/.config/chimera-agent/skills/<name>/SKILL.md` |
 
 ## Format Comparison and Conversion Specification
 
