@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.4.0] - 2026-02-27
+## [5.0.0] - 2026-02-27
 
 ### BREAKING CHANGES
 - **CLI positional arguments for `sync`**: Replaced `-s/--src` and `-d/--dest` options with positional `<from>` and `<to>` arguments
@@ -9,6 +9,7 @@
 - **CLI positional argument for `download`**: Replaced `-d/--dest` option with optional positional `[to]` argument
   - Before: `acs download <url> -d gemini`
   - After: `acs download <url> gemini`
+- **Default content type changed**: `-t` default changed from `both` to `skills`. Use `-t both` or `-t commands` to include commands
 
 ## [4.2.0] - 2026-02-25
 
