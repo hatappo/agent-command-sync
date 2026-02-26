@@ -7,7 +7,7 @@ v3 is a major release that introduces a subcommand-based CLI, the Chimera lossle
 ### What's New in v3
 
 - **Subcommand CLI** — `acs sync`, `acs import`, `acs apply`, `acs drift`, `acs plan`, `acs status`, `acs version`
-- **Chimera Hub** — A virtual agent for lossless round-trip conversion ([details](chimera-hub-workflow.md))
+- **Chimera Hub** — A lossless conversion hub for round-trip fidelity ([details](chimera-hub-workflow.md))
 - **GitHub Copilot support** — `.prompt.md` with YAML frontmatter
 - **Cursor support** — Plain Markdown (no frontmatter)
 - **`acs status`** — Show Chimera hub status with ASCII art
@@ -71,7 +71,7 @@ These are shorthand subcommands for working with the Chimera hub:
 
 ## Chimera Hub
 
-The Chimera hub is a virtual agent introduced in v3 that stores converted files at `~/.config/chimera-agent/`. It preserves **all** agent-specific settings losslessly in `_chimera.{agent}` frontmatter sections.
+The Chimera Hub is a lossless conversion hub introduced in v3 that stores converted files at `~/.config/acs/`. It preserves **all** agent-specific settings losslessly in `_chimera.{agent}` frontmatter sections.
 
 ### Recommended workflow
 

@@ -67,7 +67,7 @@
 - Noop messages now reflect the subcommand used (e.g., "Use `acs import` to apply changes" for `drift`)
 
 ### Added
-- **Chimera virtual agent**: Lossless conversion hub that preserves all agent-specific settings in `_chimera` frontmatter sections
+- **Chimera Hub**: Lossless conversion hub that preserves all agent-specific settings in `_chimera` frontmatter sections
   - Import from any agent merges extras into per-agent namespaces
   - Apply to any agent restores agent-specific settings from stored extras
   - Supports both commands and skills

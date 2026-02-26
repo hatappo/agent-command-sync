@@ -2,14 +2,14 @@
 
 ## Overview
 
-Chimera is a virtual agent that acts as a lossless conversion hub. It preserves all agent-specific settings (e.g., `model`, `allowed-tools`) in `_chimera.{agent}` frontmatter sections, enabling round-trip fidelity across agents.
+Chimera Hub is a lossless conversion hub. It preserves all agent-specific settings (e.g., `model`, `allowed-tools`) in `_chimera.{agent}` frontmatter sections, enabling round-trip fidelity across agents.
 
 ## Architecture
 
 ```
                         ┌──────────────────┐
                         │  Chimera (Hub)   │
-                        │ ~/.config/chimera-agent │
+                        │    ~/.config/acs        │
                         └────────┬─────────┘
                   ┌──────────────┴───────────────┐
                 ▲ │                              │ ▲

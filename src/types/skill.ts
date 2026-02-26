@@ -154,7 +154,7 @@ export interface CursorSkill extends SkillBase {
 }
 
 /**
- * Chimera virtual agent skill format (Claude-based with _chimera extras)
+ * Chimera Hub skill format (internally a virtual agent, Claude-based with _chimera extras)
  */
 export interface ChimeraSkill extends SkillBase {
   frontmatter: {

@@ -7,7 +7,7 @@
 [![npm version](https://badge.fury.io/js/agent-command-sync.svg)](https://www.npmjs.com/package/agent-command-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Bidirectionally convert and sync Custom Slash Commands and Skills between Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor with intuitive visual feedback. Features a **Chimera** virtual agent as a lossless conversion hub.
+Bidirectionally convert and sync Custom Slash Commands and Skills between Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor with intuitive visual feedback. Features a **Chimera Hub** as a lossless conversion hub.
 
 ## CHANGELOG
 
@@ -67,7 +67,7 @@ acs download https://github.com/owner/repo/tree/main/.claude/skills/my-skill
 - **Fast Conversion** - Efficiently sync commands between Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor
 - **Bidirectional** - Convert in any direction (Claude ↔ Gemini ↔ Codex ↔ OpenCode ↔ Copilot ↔ Cursor)
 - **Safe by Default** - Preview changes with dry-run mode before applying
-- **Chimera Hub** - Lossless conversion via virtual agent that preserves all agent-specific settings ([details](docs/chimera-hub-workflow.md))
+- **Chimera Hub** - Lossless conversion hub that preserves all agent-specific settings ([details](docs/chimera-hub-workflow.md))
 - **Subcommands** - `import`, `apply`, `drift`, `plan` for Chimera hub workflow; `sync` for direct conversion
 - **Download** - Fetch skills directly from GitHub repositories with `acs download`
 - **Provenance Tracking** - `_from` frontmatter property records where commands/skills were copied from
@@ -138,7 +138,7 @@ acs download <url> -n                      # Preview without downloading
 | `--opencode-dir <path>`     | OpenCode base directory (default: ~/.config/opencode)                 |
 | `--copilot-dir <path>`      | Copilot base directory (default: ~/.copilot)                          |
 | `--cursor-dir <path>`       | Cursor base directory (default: ~/.cursor)                            |
-| `--chimera-dir <path>`      | Chimera base directory (default: ~/.config/chimera-agent)             |
+| `--chimera-dir <path>`      | Chimera Hub base directory (default: ~/.config/acs)                   |
 | `--no-overwrite`            | Skip existing files in target directory                               |
 | `--sync-delete`             | Delete orphaned files in target directory                             |
 | `--remove-unsupported`      | Remove fields not supported by target format                          |
@@ -187,7 +187,7 @@ When running inside a Git repository, `acs` defaults to **project-level** direct
 | **OpenCode** | `<repo>/.config/opencode/commands/*.md` | `<repo>/.config/opencode/skills/<name>/SKILL.md` |
 | **GitHub Copilot** | `<repo>/.copilot/prompts/*.prompt.md` | `<repo>/.copilot/skills/<name>/SKILL.md` |
 | **Cursor** | `<repo>/.cursor/commands/*.md` | `<repo>/.cursor/skills/<name>/SKILL.md` |
-| **Chimera** | `<repo>/.chimera-agent/commands/*.md` | `<repo>/.chimera-agent/skills/<name>/SKILL.md` |
+| **Chimera** | `<repo>/.acs/commands/*.md` | `<repo>/.acs/skills/<name>/SKILL.md` |
 
 ### User-level (with `-g` or outside Git repos)
 
@@ -199,7 +199,7 @@ When running inside a Git repository, `acs` defaults to **project-level** direct
 | **OpenCode** | `~/.config/opencode/commands/*.md` | `~/.config/opencode/skills/<name>/SKILL.md` |
 | **GitHub Copilot** | `~/.copilot/prompts/*.prompt.md` | `~/.copilot/skills/<name>/SKILL.md` |
 | **Cursor** | `~/.cursor/commands/*.md` | `~/.cursor/skills/<name>/SKILL.md` |
-| **Chimera** | `~/.config/chimera-agent/commands/*.md` | `~/.config/chimera-agent/skills/<name>/SKILL.md` |
+| **Chimera** | `~/.config/acs/commands/*.md` | `~/.config/acs/skills/<name>/SKILL.md` |
 
 ## Format Comparison and Conversion Specification
 

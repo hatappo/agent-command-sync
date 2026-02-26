@@ -7,7 +7,7 @@ v3 はサブコマンドベースの CLI、Chimera ロスレス変換ハブ、Gi
 ### v3 の主な変更点
 
 - **サブコマンド CLI** — `acs sync`, `acs import`, `acs apply`, `acs drift`, `acs plan`, `acs status`, `acs version`
-- **Chimera ハブ** — ロスレスなラウンドトリップ変換のための仮想エージェント（[詳細](chimera-hub-workflow.md)）
+- **Chimera Hub** — ロスレスなラウンドトリップ変換のためのハブ（[詳細](chimera-hub-workflow.md)）
 - **GitHub Copilot サポート** — `.prompt.md` + YAML フロントマター
 - **Cursor サポート** — プレーン Markdown（フロントマターなし）
 - **`acs status`** — Chimera ハブの状態を ASCII アート付きで表示
@@ -71,7 +71,7 @@ Chimera ハブ操作の省略形サブコマンドです:
 
 ## Chimera ハブ
 
-Chimera ハブは v3 で導入された仮想エージェントで、変換ファイルを `~/.config/chimera-agent/` に保存します。`_chimera.{agent}` フロントマターセクションにすべてのエージェント固有設定を**ロスレスに**保持します。
+Chimera Hub は v3 で導入されたロスレス変換ハブで、変換ファイルを `~/.config/acs/` に保存します。`_chimera.{agent}` フロントマターセクションにすべてのエージェント固有設定を**ロスレスに**保持します。
 
 ### 推奨ワークフロー
 

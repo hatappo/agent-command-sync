@@ -72,7 +72,7 @@ export interface CursorCommand {
 }
 
 /**
- * Chimera virtual agent command format (Claude-based with _chimera extras)
+ * Chimera Hub command format (internally a virtual agent, Claude-based with _chimera extras)
  */
 export interface ChimeraCommand {
   frontmatter: {

@@ -7,7 +7,7 @@
 [![npm version](https://badge.fury.io/js/agent-command-sync.svg)](https://www.npmjs.com/package/agent-command-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Claude Code、Gemini CLI、Codex CLI、OpenCode、GitHub Copilot、Cursor 間でカスタムスラッシュコマンドとスキル（Skills）を双方向に変換・同期する、直感的なビジュアルフィードバック付きのツールです。ロスレス変換ハブとして **Chimera** 仮想エージェントを搭載しています。
+Claude Code、Gemini CLI、Codex CLI、OpenCode、GitHub Copilot、Cursor 間でカスタムスラッシュコマンドとスキル（Skills）を双方向に変換・同期する、直感的なビジュアルフィードバック付きのツールです。ロスレス変換ハブとして **Chimera Hub** を搭載しています。
 
 ## CHANGELOG
 
@@ -67,7 +67,7 @@ acs download https://github.com/owner/repo/tree/main/.claude/skills/my-skill
 - **高速変換** - Claude Code、Gemini CLI、Codex CLI、OpenCode、GitHub Copilot、Cursor 間でコマンドを効率的に同期
 - **双方向対応** - 任意の方向への変換に対応（Claude ↔ Gemini ↔ Codex ↔ OpenCode ↔ Copilot ↔ Cursor）
 - **デフォルトで安全** - ドライランモードで適用前に変更をプレビュー
-- **Chimera ハブ** - 全エージェント固有設定を保持するロスレス変換ハブ（仮想エージェント）（[詳細](docs/chimera-hub-workflow.md)）
+- **Chimera Hub** - 全エージェント固有設定を保持するロスレス変換ハブ（[詳細](docs/chimera-hub-workflow.md)）
 - **サブコマンド** - Chimera ハブワークフロー用の `import`, `apply`, `drift`, `plan` と直接変換用の `sync`
 - **ダウンロード** - `acs download` で GitHub リポジトリからスキルを直接取得
 - **来歴トラッキング** - `_from` frontmatter プロパティでコマンド/スキルのコピー元を記録
@@ -138,7 +138,7 @@ acs download <url> -n                      # ダウンロードせずにプレ�
 | `--opencode-dir <path>`     | OpenCode ベースディレクトリ（デフォルト: ~/.config/opencode）               |
 | `--copilot-dir <path>`      | Copilot ベースディレクトリ（デフォルト: ~/.copilot）                        |
 | `--cursor-dir <path>`       | Cursor ベースディレクトリ（デフォルト: ~/.cursor）                          |
-| `--chimera-dir <path>`      | Chimera ベースディレクトリ（デフォルト: ~/.config/chimera-agent）           |
+| `--chimera-dir <path>`      | Chimera Hub ベースディレクトリ（デフォルト: ~/.config/acs）                 |
 | `--no-overwrite`            | ターゲットディレクトリの既存ファイルをスキップ                                |
 | `--sync-delete`             | ターゲットディレクトリの孤立ファイルを削除                                   |
 | `--remove-unsupported`      | ターゲット形式でサポートされていないフィールドを削除                           |
@@ -187,7 +187,7 @@ Git リポジトリ内で実行すると、`acs` はデフォルトで**プロ�
 | **OpenCode** | `<repo>/.config/opencode/commands/*.md` | `<repo>/.config/opencode/skills/<name>/SKILL.md` |
 | **GitHub Copilot** | `<repo>/.copilot/prompts/*.prompt.md` | `<repo>/.copilot/skills/<name>/SKILL.md` |
 | **Cursor** | `<repo>/.cursor/commands/*.md` | `<repo>/.cursor/skills/<name>/SKILL.md` |
-| **Chimera** | `<repo>/.chimera-agent/commands/*.md` | `<repo>/.chimera-agent/skills/<name>/SKILL.md` |
+| **Chimera** | `<repo>/.acs/commands/*.md` | `<repo>/.acs/skills/<name>/SKILL.md` |
 
 ### ユーザーレベル（`-g` 指定時または Git リポジトリ外）
 
@@ -199,7 +199,7 @@ Git リポジトリ内で実行すると、`acs` はデフォルトで**プロ�
 | **OpenCode** | `~/.config/opencode/commands/*.md` | `~/.config/opencode/skills/<name>/SKILL.md` |
 | **GitHub Copilot** | `~/.copilot/prompts/*.prompt.md` | `~/.copilot/skills/<name>/SKILL.md` |
 | **Cursor** | `~/.cursor/commands/*.md` | `~/.cursor/skills/<name>/SKILL.md` |
-| **Chimera** | `~/.config/chimera-agent/commands/*.md` | `~/.config/chimera-agent/skills/<name>/SKILL.md` |
+| **Chimera** | `~/.config/acs/commands/*.md` | `~/.config/acs/skills/<name>/SKILL.md` |
 
 ## 形式比較と変換仕様
 

@@ -1,5 +1,5 @@
 /**
- * Chimera virtual agent — lossless hub for cross-agent conversion
+ * Chimera Hub — lossless hub for cross-agent conversion (internally a virtual agent)
  *
  * File format: Claude-based (YAML frontmatter + Markdown body, Claude placeholder syntax)
  * with a `_chimera` section in frontmatter to store per-agent extras.
@@ -38,12 +38,12 @@ function filterUndefined(obj: Record<string, unknown>): Record<string, unknown> 
 export class ChimeraAgent implements AgentDefinition {
   // ── AgentConfig ───────────────────────────────────────────────────
 
-  readonly displayName = "Chimera";
+  readonly displayName = "Chimera Hub";
   readonly dirs = {
     commandSubdir: "commands",
     skillSubdir: "skills",
-    projectBase: ".chimera-agent",
-    userDefault: ".config/chimera-agent",
+    projectBase: ".acs",
+    userDefault: ".config/acs",
   };
   readonly fileExtension = ".md";
 

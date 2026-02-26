@@ -53,7 +53,7 @@ Outside a Git repository, behavior is unchanged (user-level).
 | OpenCode | `<repo>/.opencode/` | `~/.config/opencode/` |
 | Copilot | `<repo>/.github/` | `~/.copilot/` |
 | Cursor | `<repo>/.cursor/` | `~/.cursor/` |
-| Chimera | `<repo>/.chimera-agent/` | `~/.config/chimera-agent/` |
+| Chimera | `<repo>/.acs/` | `~/.config/acs/` |
 
 ### Mode Display
 

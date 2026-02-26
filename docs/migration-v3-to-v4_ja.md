@@ -53,7 +53,7 @@ Git リポジトリ外では、動作は変わりません（ユーザーレベ�
 | OpenCode | `<repo>/.opencode/` | `~/.config/opencode/` |
 | Copilot | `<repo>/.github/` | `~/.copilot/` |
 | Cursor | `<repo>/.cursor/` | `~/.cursor/` |
-| Chimera | `<repo>/.chimera-agent/` | `~/.config/chimera-agent/` |
+| Chimera | `<repo>/.acs/` | `~/.config/acs/` |
 
 ### モード表示
 
