@@ -37,7 +37,7 @@ export async function findGitRoot(startDir?: string): Promise<string | null> {
  * Resolve the actual .git directory path.
  * Handles worktrees/submodules where .git is a file containing "gitdir: <path>".
  */
-async function resolveGitDir(gitRoot: string): Promise<string | null> {
+export async function resolveGitDir(gitRoot: string): Promise<string | null> {
   const gitPath = join(gitRoot, ".git");
   try {
     const stats = await stat(gitPath);
@@ -57,6 +57,30 @@ async function resolveGitDir(gitRoot: string): Promise<string | null> {
     // .git not found
   }
   return null;
+}
+
+/**
+ * Get the current branch name from .git/HEAD.
+ * Returns the branch name for normal refs, or a short SHA for detached HEAD.
+ * Returns null if not in a git repository.
+ */
+export async function getCurrentBranch(gitRoot: string): Promise<string | null> {
+  const gitDir = await resolveGitDir(gitRoot);
+  if (!gitDir) return null;
+
+  let head: string;
+  try {
+    head = await readFile(join(gitDir, "HEAD"), "utf-8");
+  } catch {
+    return null;
+  }
+
+  const refMatch = head.trim().match(/^ref: refs\/heads\/(.+)$/);
+  if (refMatch) return refMatch[1];
+
+  // Detached HEAD: return short SHA
+  const sha = head.trim();
+  return /^[0-9a-f]{40}$/.test(sha) ? sha.slice(0, 7) : null;
 }
 
 /**

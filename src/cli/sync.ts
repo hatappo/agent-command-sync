@@ -1,12 +1,12 @@
 import { rm } from "node:fs/promises";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import picocolors from "picocolors";
 import { AGENT_REGISTRY } from "../agents/registry.js";
 import type { ConversionResult, FileOperation, SemanticIR } from "../types/index.js";
 import type { ProductType } from "../types/intermediate.js";
 import { assertNever } from "../utils/assert-never.js";
 import { SKILL_CONSTANTS } from "../utils/constants.js";
-import { getGitHubRemoteUrl } from "../utils/git-utils.js";
+import { getCurrentBranch, getGitHubRemoteUrl } from "../utils/git-utils.js";
 
 const { SKILL_FILE_NAME } = SKILL_CONSTANTS;
 import {
@@ -55,10 +55,14 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
       console.log(picocolors.yellow("NOOP MODE - No files will be modified"));
     }
 
-    // Detect source repository GitHub URL for provenance tracking
+    // Detect source repository GitHub URL and branch for provenance tracking
     let sourceRepoUrl: string | null = null;
+    let branch: string | null = null;
     if (options.gitRoot) {
       sourceRepoUrl = await getGitHubRemoteUrl(options.gitRoot);
+      if (sourceRepoUrl) {
+        branch = await getCurrentBranch(options.gitRoot);
+      }
     }
 
     // Process commands if contentType includes commands
@@ -69,7 +73,7 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
       // Convert each command file
       for (const sourceFile of sourceFiles) {
         try {
-          const result = await convertSingleFile(sourceFile, options, sourceRepoUrl);
+          const result = await convertSingleFile(sourceFile, options, sourceRepoUrl, branch);
           operations.push(...result.operations);
           errors.push(...result.errors);
           countStats(result.operations, stats);
@@ -96,7 +100,7 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
       // Convert each skill
       for (const skillDir of sourceSkills) {
         try {
-          const result = await convertSingleSkill(skillDir, options, sourceRepoUrl);
+          const result = await convertSingleSkill(skillDir, options, sourceRepoUrl, branch);
           operations.push(...result.operations);
           errors.push(...result.errors);
           countStats(result.operations, stats);
@@ -204,6 +208,7 @@ async function convertSingleFile(
   sourceFile: string,
   options: CLIOptions,
   sourceRepoUrl?: string | null,
+  branch?: string | null,
 ): Promise<{ operations: FileOperation[]; errors: Error[] }> {
   const operations: FileOperation[] = [];
   const errors: Error[] = [];
@@ -215,8 +220,11 @@ async function convertSingleFile(
     const command = await src.parseCommand(sourceFile);
     const ir: SemanticIR = src.commandToIR(command, { destinationType: options.destination });
 
-    // Append source repository URL to provenance tracking
-    if (sourceRepoUrl) {
+    // Append source file URL to provenance tracking
+    if (sourceRepoUrl && options.gitRoot && branch) {
+      const rel = relative(options.gitRoot, sourceFile);
+      appendFromUrl(ir, `${sourceRepoUrl}/blob/${branch}/${rel}`);
+    } else if (sourceRepoUrl) {
       appendFromUrl(ir, sourceRepoUrl);
     }
 
@@ -374,6 +382,7 @@ async function convertSingleSkill(
   skillDir: string,
   options: CLIOptions,
   sourceRepoUrl?: string | null,
+  branch?: string | null,
 ): Promise<{ operations: FileOperation[]; errors: Error[] }> {
   const operations: FileOperation[] = [];
   const errors: Error[] = [];
@@ -385,8 +394,11 @@ async function convertSingleSkill(
     const skill = await src.parseSkill(skillDir);
     const ir: SemanticIR = src.skillToIR(skill, { destinationType: options.destination });
 
-    // Append source repository URL to provenance tracking
-    if (sourceRepoUrl) {
+    // Append source skill URL to provenance tracking
+    if (sourceRepoUrl && options.gitRoot && branch) {
+      const rel = relative(options.gitRoot, skillDir);
+      appendFromUrl(ir, `${sourceRepoUrl}/tree/${branch}/${rel}`);
+    } else if (sourceRepoUrl) {
       appendFromUrl(ir, sourceRepoUrl);
     }
 

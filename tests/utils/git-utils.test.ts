@@ -2,7 +2,7 @@ import { writeFile as fsWriteFile, mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { findGitRoot, getGitHubRemoteUrl } from "../../src/utils/git-utils.js";
+import { findGitRoot, getCurrentBranch, getGitHubRemoteUrl } from "../../src/utils/git-utils.js";
 
 describe("git-utils", () => {
   let tempDir: string;
@@ -173,6 +173,60 @@ describe("git-utils", () => {
       );
       const result = await getGitHubRemoteUrl(tempDir);
       expect(result).toBe("https://github.com/owner/repo");
+    });
+  });
+
+  describe("getCurrentBranch", () => {
+    it("should return branch name for normal ref", async () => {
+      await mkdir(join(tempDir, ".git"));
+      await fsWriteFile(join(tempDir, ".git", "HEAD"), "ref: refs/heads/main\n");
+      const result = await getCurrentBranch(tempDir);
+      expect(result).toBe("main");
+    });
+
+    it("should return branch name with slashes", async () => {
+      await mkdir(join(tempDir, ".git"));
+      await fsWriteFile(join(tempDir, ".git", "HEAD"), "ref: refs/heads/feature/my-branch\n");
+      const result = await getCurrentBranch(tempDir);
+      expect(result).toBe("feature/my-branch");
+    });
+
+    it("should return short SHA for detached HEAD", async () => {
+      await mkdir(join(tempDir, ".git"));
+      await fsWriteFile(join(tempDir, ".git", "HEAD"), "abcdef1234567890abcdef1234567890abcdef12\n");
+      const result = await getCurrentBranch(tempDir);
+      expect(result).toBe("abcdef1");
+    });
+
+    it("should return null when .git does not exist", async () => {
+      const result = await getCurrentBranch(tempDir);
+      expect(result).toBeNull();
+    });
+
+    it("should return null when HEAD file is missing", async () => {
+      await mkdir(join(tempDir, ".git"));
+      // No HEAD file created
+      const result = await getCurrentBranch(tempDir);
+      expect(result).toBeNull();
+    });
+
+    it("should handle worktree .git file", async () => {
+      // Create main repo git dir with HEAD
+      const mainGitDir = join(tempDir, "main-repo", ".git");
+      await mkdir(mainGitDir, { recursive: true });
+
+      // Create worktree git dir structure
+      const worktreeGitDir = join(mainGitDir, "worktrees", "test");
+      await mkdir(worktreeGitDir, { recursive: true });
+      await fsWriteFile(join(worktreeGitDir, "HEAD"), "ref: refs/heads/feature-branch\n");
+
+      // Create worktree directory with .git file pointing to worktree git dir
+      const worktreeDir = join(tempDir, "worktree");
+      await mkdir(worktreeDir, { recursive: true });
+      await fsWriteFile(join(worktreeDir, ".git"), `gitdir: ${worktreeGitDir}`);
+
+      const result = await getCurrentBranch(worktreeDir);
+      expect(result).toBe("feature-branch");
     });
   });
 });
