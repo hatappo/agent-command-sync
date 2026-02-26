@@ -134,9 +134,7 @@ function injectFromUrl(content: string, url: string): string {
 export async function downloadSkill(options: DownloadOptions): Promise<void> {
   // 0. Validate: -g requires -d
   if (options.global && !options.destination) {
-    throw new Error(
-      "acs download with -g/--global requires [to] argument.\nExample: acs download <url> claude -g",
-    );
+    throw new Error("acs download with -g/--global requires [to] argument.\nExample: acs download <url> claude -g");
   }
 
   // 1. Parse URL
