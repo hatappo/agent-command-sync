@@ -24,13 +24,13 @@ npm install -g agent-command-sync
 ### GitHub からスキルをダウンロード
 
 ```bash
-# プロジェクトにスキルをダウンロード
-acs download https://github.com/owner/repo/tree/main/.claude/skills/my-skill
+# プロジェクトにスキルをダウンロード（この場合は 実行時のリポジトリの skill/skill-creator/ に DL）
+acs download https://github.com/anthropics/skills/tree/main/skills/skill-creator
 
-# 特定のエージェント用のディレクトリに配置
+# 特定のエージェント用のディレクトリに配置（この場合は、実行時のリポジトリの .gemini/skills/skill-creator/ に DL）
 acs download <url> gemini
 
-# ユーザーレベル（グローバル）ディレクトリにダウンロード
+# ユーザーレベル（グローバル）ディレクトリにダウンロード（この場合は ~/.claude/skills/skill-creator/ に DL）
 acs download <url> claude -g
 
 # ダウンロードせずにプレビュー
@@ -41,10 +41,13 @@ acs download <url> -n
 
 ```bash
 # Claude のスキルを Gemini 用の形式・配置先に変換
-acs sync claude gemini -t skills
+acs sync claude gemini
 
 # 逆方向にも変換可能
-acs sync gemini claude -t skills
+acs sync gemini claude
+
+# ユーザーレベル（グローバル）ディレクトリのスキルを変換
+acs sync gemini claude -g
 
 # 適用前に変更をプレビュー
 acs sync claude gemini -n
@@ -80,9 +83,9 @@ acs sync claude gemini -n
 ### `acs download <url> [to]` — GitHub からスキルをダウンロード
 
 ```bash
-acs download https://github.com/owner/repo/tree/main/.claude/skills/my-skill
+acs download https://github.com/anthropics/skills/tree/main/skills/skill-creator
 acs download <url> gemini                  # Gemini のスキルディレクトリに配置
-acs download <url> claude -g              # グローバル Claude ディレクトリに配置
+acs download <url> claude -g               # グローバル Claude ディレクトリに配置
 acs download <url> -n                      # ダウンロードせずにプレビュー
 ```
 
@@ -90,7 +93,7 @@ acs download <url> -n                      # ダウンロードせずにプレ�
 
 ```bash
 acs sync claude gemini                     # Claude → Gemini に変換
-acs sync claude gemini -t skills           # Skills のみ
+acs sync claude gemini -t commands          # Commands のみ
 ```
 
 ### `acs import <agent>` / `acs apply <agent>` — ロスレス変換のワークフロー

@@ -24,13 +24,13 @@ npm install -g agent-command-sync
 ### Download a skill from GitHub
 
 ```bash
-# Download a skill to your project
-acs download https://github.com/owner/repo/tree/main/.claude/skills/my-skill
+# Download a skill to your project (e.g., downloads to <repo>/skills/skill-creator/)
+acs download https://github.com/anthropics/skills/tree/main/skills/skill-creator
 
-# Download into a specific agent's skill directory
+# Download into a specific agent's skill directory (e.g., <repo>/.gemini/skills/skill-creator/)
 acs download <url> gemini
 
-# Download to user-level (global) directory
+# Download to user-level (global) directory (e.g., ~/.claude/skills/skill-creator/)
 acs download <url> claude -g
 
 # Preview without downloading
@@ -41,10 +41,13 @@ acs download <url> -n
 
 ```bash
 # Convert skill format and placement from Claude to Gemini
-acs sync claude gemini -t skills
+acs sync claude gemini
 
 # Convert in both directions
-acs sync gemini claude -t skills
+acs sync gemini claude
+
+# Convert skills in user-level (global) directories
+acs sync gemini claude -g
 
 # Preview changes before applying
 acs sync claude gemini -n
@@ -80,9 +83,9 @@ acs sync claude gemini -n
 ### `acs download <url> [to]` — Download a skill from GitHub
 
 ```bash
-acs download https://github.com/owner/repo/tree/main/.claude/skills/my-skill
+acs download https://github.com/anthropics/skills/tree/main/skills/skill-creator
 acs download <url> gemini                  # Place in Gemini skill directory
-acs download <url> claude -g              # Place in global Claude directory
+acs download <url> claude -g               # Place in global Claude directory
 acs download <url> -n                      # Preview without downloading
 ```
 
@@ -90,7 +93,7 @@ acs download <url> -n                      # Preview without downloading
 
 ```bash
 acs sync claude gemini                     # Convert Claude → Gemini
-acs sync claude gemini -t skills           # Skills only
+acs sync claude gemini -t commands          # Commands only
 ```
 
 ### `acs import <agent>` / `acs apply <agent>` — Lossless conversion workflow
