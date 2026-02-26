@@ -23,8 +23,8 @@ npm install -g agent-command-sync
 
 ```bash
 # Direct conversion between agents
-acs sync -s claude -d gemini
-acs sync -s gemini -d claude
+acs sync claude gemini
+acs sync gemini claude
 
 # Import into Chimera hub (lossless)
 acs import claude
@@ -39,14 +39,14 @@ acs drift claude          # Preview import
 acs plan gemini           # Preview apply
 
 # Convert Skills or Commands only
-acs sync -s claude -d gemini -t skills
-acs sync -s claude -d gemini -t commands
+acs sync claude gemini -t skills
+acs sync claude gemini -t commands
 
 # Preview direct conversion
-acs sync -n -s claude -d gemini
+acs sync claude gemini -n
 
 # Force user-level (global) directories instead of project-level
-acs sync -s claude -d gemini -g
+acs sync claude gemini -g
 
 # Download a skill from GitHub
 acs download https://github.com/owner/repo/tree/main/.claude/skills/my-skill
@@ -80,44 +80,44 @@ acs download https://github.com/owner/repo/tree/main/.claude/skills/my-skill
 
 ## Subcommands
 
-### `acs sync` — Direct conversion between agents
+### `acs sync <from> <to>` — Direct conversion between agents
 
 ```bash
-acs sync -s <source> -d <dest> [options]
+acs sync claude gemini                     # Convert Claude → Gemini
 ```
 
-### `acs import <agent>` — Import into Chimera hub (shorthand for `acs sync -s <agent> -d chimera`)
+### `acs import <agent>` — Import into Chimera hub (shorthand for `acs sync <agent> chimera`)
 
 ```bash
 acs import claude                          # Import all from Claude
 acs import gemini -t commands              # Import commands only
 ```
 
-### `acs drift <agent>` — Preview import (shorthand for `acs sync -s <agent> -d chimera -n`)
+### `acs drift <agent>` — Preview import (shorthand for `acs sync <agent> chimera -n`)
 
 ```bash
 acs drift claude                           # Preview import changes
 ```
 
-### `acs apply <agent>` — Apply Chimera hub to agent (shorthand for `acs sync -s chimera -d <agent>`)
+### `acs apply <agent>` — Apply Chimera hub to agent (shorthand for `acs sync chimera <agent>`)
 
 ```bash
 acs apply gemini                           # Apply to Gemini
 acs apply claude --remove-unsupported      # Remove unsupported fields
 ```
 
-### `acs plan <agent>` — Preview apply (shorthand for `acs sync -s chimera -d <agent> -n`)
+### `acs plan <agent>` — Preview apply (shorthand for `acs sync chimera <agent> -n`)
 
 ```bash
 acs plan gemini                            # Preview apply changes
 ```
 
-### `acs download <url>` — Download a skill from GitHub
+### `acs download <url> [to]` — Download a skill from GitHub
 
 ```bash
 acs download https://github.com/owner/repo/tree/main/.claude/skills/my-skill
-acs download <url> -d gemini               # Place in Gemini skill directory
-acs download <url> -d claude -g            # Place in global Claude directory
+acs download <url> gemini                  # Place in Gemini skill directory
+acs download <url> claude -g              # Place in global Claude directory
 acs download <url> -n                      # Preview without downloading
 ```
 
@@ -125,8 +125,8 @@ acs download <url> -n                      # Preview without downloading
 
 | Option                      | Description                                                           |
 | --------------------------- | --------------------------------------------------------------------- |
-| `-s, --src <product>`       | **Required.** Source product: `claude`, `gemini`, `codex`, `opencode`, `copilot`, `cursor`, or `chimera` |
-| `-d, --dest <product>`      | **Required.** Destination product: `claude`, `gemini`, `codex`, `opencode`, `copilot`, `cursor`, or `chimera` |
+| `<from>`                    | **Required.** Source agent: `claude`, `gemini`, `codex`, `opencode`, `copilot`, `cursor`, or `chimera` |
+| `<to>`                      | **Required.** Destination agent: `claude`, `gemini`, `codex`, `opencode`, `copilot`, `cursor`, or `chimera` |
 | `-t, --type <type>`         | Content type: `commands`, `skills`, or `both` (default: `both`)      |
 | `-f, --file <filename>`     | Convert specific file only (supports `.md`, `.toml` extensions)      |
 | `-g, --global`              | Use user-level (global) directories instead of project-level          |
@@ -147,10 +147,10 @@ acs download <url> -n                      # Preview without downloading
 
 ```bash
 # Direct conversion with preview
-acs sync -n -s claude -d gemini
+acs sync claude gemini -n
 
 # Convert specific file
-acs sync -s gemini -d claude -f analyze-code
+acs sync gemini claude -f analyze-code
 
 # Chimera hub workflow
 acs import claude                          # Import Claude → Chimera
@@ -159,13 +159,13 @@ acs apply claude                           # Apply Chimera → Claude (with Clau
 acs apply gemini                           # Apply Chimera → Gemini (with Gemini extras)
 
 # Full sync with cleanup
-acs sync -s claude -d gemini --sync-delete --remove-unsupported
+acs sync claude gemini --sync-delete --remove-unsupported
 
 # Use custom directories
-acs sync -s claude -d gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
+acs sync claude gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
 
 # Show verbose output for debugging
-acs sync -s claude -d gemini -v
+acs sync claude gemini -v
 ```
 
 ## Directory Resolution

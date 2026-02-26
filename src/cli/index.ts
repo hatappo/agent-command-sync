@@ -99,10 +99,8 @@ async function main(): Promise<void> {
   // ── sync subcommand ─────────────────────────────────────────────
 
   const syncCmd = program
-    .command("sync")
-    .description("Directly convert between two agents")
-    .requiredOption("-s, --src <product>", `Source product: ${productList}`)
-    .requiredOption("-d, --dest <product>", `Destination product: ${productList}`)
+    .command("sync <from> <to>")
+    .description("Convert commands/skills between two agents")
     .option("-t, --type <type>", "Content type: commands, skills, or both", "both")
     .option("--remove-unsupported", "Remove keys that are not supported in the target format", false)
     .option("--no-overwrite", "Skip conversion if a command with the same name exists in the target")
@@ -113,9 +111,9 @@ async function main(): Promise<void> {
 
   registerCommonDirOptions(syncCmd);
 
-  syncCmd.action(async (options) => {
+  syncCmd.action(async (from: string, to: string, options) => {
     try {
-      if (options.src === options.dest) {
+      if (from === to) {
         console.error(
           picocolors.red(picocolors.bold("Error:")),
           picocolors.red("Source and destination must be different"),
@@ -124,8 +122,8 @@ async function main(): Promise<void> {
       }
 
       const syncOptions: CLIOptions = {
-        source: options.src as ProductType,
-        destination: options.dest as ProductType,
+        source: from as ProductType,
+        destination: to as ProductType,
         contentType: options.type as ContentFilter,
         removeUnsupported: options.removeUnsupported,
         noOverwrite: !options.overwrite,
@@ -292,19 +290,18 @@ async function main(): Promise<void> {
   // ── download subcommand ──────────────────────────────────────────
 
   const downloadCmd = program
-    .command("download <url>")
+    .command("download <url> [to]")
     .description("Download a skill from GitHub")
-    .option("-d, --dest <agent>", `Destination agent: ${productList}`)
     .option("-n, --noop", "Preview files without downloading", false)
     .option("-v, --verbose", "Show detailed debug information", false);
 
   registerCommonDirOptions(downloadCmd);
 
-  downloadCmd.action(async (url: string, options) => {
+  downloadCmd.action(async (url: string, to: string | undefined, options) => {
     try {
       await downloadSkill({
         url,
-        destination: options.dest as ProductType | undefined,
+        destination: to as ProductType | undefined,
         global: options.global,
         githubToken: process.env.GITHUB_TOKEN,
         noop: options.noop,
@@ -357,28 +354,28 @@ async function main(): Promise<void> {
   program.on("--help", () => {
     console.log("");
     console.log("Examples:");
-    console.log("  $ acs sync -s claude -d gemini               # Direct conversion (project-level by default)");
-    console.log("  $ acs sync -s claude -d gemini -g             # Use global (user-level) directories");
-    console.log("  $ acs sync -s claude -d gemini -t commands   # Convert only commands");
+    console.log("  $ acs sync claude gemini                     # Direct conversion (project-level by default)");
+    console.log("  $ acs sync claude gemini -g                  # Use global (user-level) directories");
+    console.log("  $ acs sync claude gemini -t commands         # Convert only commands");
     console.log(
-      "  $ acs import claude                          # Import into Chimera hub    (shorthand for: acs sync -s claude -d chimera)",
+      "  $ acs import claude                          # Import into Chimera hub    (shorthand for: acs sync claude chimera)",
     );
     console.log(
-      "  $ acs drift claude                           # Preview import             (shorthand for: acs sync -s claude -d chimera -n)",
+      "  $ acs drift claude                           # Preview import             (shorthand for: acs sync claude chimera -n)",
     );
     console.log(
-      "  $ acs apply gemini                           # Apply Chimera hub to agent (shorthand for: acs sync -s chimera -d gemini)",
+      "  $ acs apply gemini                           # Apply Chimera hub to agent (shorthand for: acs sync chimera gemini)",
     );
     console.log(
-      "  $ acs plan gemini                            # Preview apply              (shorthand for: acs sync -s chimera -d gemini -n)",
+      "  $ acs plan gemini                            # Preview apply              (shorthand for: acs sync chimera gemini -n)",
     );
-    console.log("  $ acs status                                       # Show Chimera status and detected agents");
-    console.log("  $ acs download <github-url>                        # Download a skill from GitHub");
-    console.log("  $ acs download <github-url> -d gemini              # Download and place in Gemini skill directory");
-    console.log("  $ acs sync -s claude -d gemini --remove-unsupported # Remove unsupported fields");
-    console.log("  $ acs sync -s gemini -d claude --no-overwrite     # Skip existing files");
-    console.log("  $ acs sync -s claude -d gemini --sync-delete      # Delete orphaned files");
-    console.log("  $ acs sync -s claude -d gemini --verbose          # Show detailed debug information");
+    console.log("  $ acs status                                 # Show Chimera status and detected agents");
+    console.log("  $ acs download <github-url>                  # Download a skill from GitHub");
+    console.log("  $ acs download <github-url> gemini           # Download and place in Gemini skill directory");
+    console.log("  $ acs sync claude gemini --remove-unsupported # Remove unsupported fields");
+    console.log("  $ acs sync gemini claude --no-overwrite      # Skip existing files");
+    console.log("  $ acs sync claude gemini --sync-delete       # Delete orphaned files");
+    console.log("  $ acs sync claude gemini --verbose           # Show detailed debug information");
   });
 
   program.parse();

@@ -1,5 +1,15 @@
 # 変更履歴
 
+## [4.4.0] - 2026-02-27
+
+### 破壊的変更
+- **`sync` の CLI ポジショナル引数化**: `-s/--src` と `-d/--dest` オプションをポジショナル引数 `<from>` `<to>` に変更
+  - 変更前: `acs sync -s claude -d gemini`
+  - 変更後: `acs sync claude gemini`
+- **`download` の CLI ポジショナル引数化**: `-d/--dest` オプションをオプショナルポジショナル引数 `[to]` に変更
+  - 変更前: `acs download <url> -d gemini`
+  - 変更後: `acs download <url> gemini`
+
 ## [4.0.0] - 2026-02-24
 
 ### 破壊的変更

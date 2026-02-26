@@ -31,16 +31,16 @@ export function validateCLIOptions(options: Partial<CLIOptions>): string[] {
 
   // Validate source
   if (!options.source) {
-    errors.push("--src option is required");
+    errors.push("<from> argument is required");
   } else if (!(PRODUCT_TYPES as readonly string[]).includes(options.source)) {
-    errors.push(`--src must be one of ${productList}`);
+    errors.push(`<from> must be one of ${productList}`);
   }
 
   // Validate destination
   if (!options.destination) {
-    errors.push("--dest option is required");
+    errors.push("<to> argument is required");
   } else if (!(PRODUCT_TYPES as readonly string[]).includes(options.destination)) {
-    errors.push(`--dest must be one of ${productList}`);
+    errors.push(`<to> must be one of ${productList}`);
   }
 
   // Check if source and destination are the same

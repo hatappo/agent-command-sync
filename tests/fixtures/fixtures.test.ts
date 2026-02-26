@@ -170,7 +170,7 @@ describe("Agent Slash Sync Tests", () => {
 
       const errors = validateCLIOptions(invalidOptions);
       expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0]).toContain("--src must be one of");
+      expect(errors[0]).toContain("<from> must be one of");
     });
   });
 });

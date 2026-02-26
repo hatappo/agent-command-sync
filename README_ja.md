@@ -23,8 +23,8 @@ npm install -g agent-command-sync
 
 ```bash
 # エージェント間の直接変換
-acs sync -s claude -d gemini
-acs sync -s gemini -d claude
+acs sync claude gemini
+acs sync gemini claude
 
 # Chimera ハブにインポート（ロスレス）
 acs import claude
@@ -39,14 +39,14 @@ acs drift claude          # インポートのプレビュー
 acs plan gemini           # 適用のプレビュー
 
 # Skills または Commands のみ変換
-acs sync -s claude -d gemini -t skills
-acs sync -s claude -d gemini -t commands
+acs sync claude gemini -t skills
+acs sync claude gemini -t commands
 
 # 直接変換のプレビュー
-acs sync -n -s claude -d gemini
+acs sync claude gemini -n
 
 # プロジェクトレベルではなくユーザーレベル（グローバル）ディレクトリを使用
-acs sync -s claude -d gemini -g
+acs sync claude gemini -g
 
 # GitHub からスキルをダウンロード
 acs download https://github.com/owner/repo/tree/main/.claude/skills/my-skill
@@ -80,44 +80,44 @@ acs download https://github.com/owner/repo/tree/main/.claude/skills/my-skill
 
 ## サブコマンド
 
-### `acs sync` — エージェント間の直接変換
+### `acs sync <from> <to>` — エージェント間の直接変換
 
 ```bash
-acs sync -s <source> -d <dest> [options]
+acs sync claude gemini                     # Claude → Gemini に変換
 ```
 
-### `acs import <agent>` — Chimera ハブにインポート (shorthand for `acs sync -s <agent> -d chimera`)
+### `acs import <agent>` — Chimera ハブにインポート (`acs sync <agent> chimera` の省略形)
 
 ```bash
 acs import claude                          # Claude から全てインポート
 acs import gemini -t commands              # Commands のみインポート
 ```
 
-### `acs drift <agent>` — インポートのプレビュー (shorthand for `acs sync -s <agent> -d chimera -n`)
+### `acs drift <agent>` — インポートのプレビュー (`acs sync <agent> chimera -n` の省略形)
 
 ```bash
 acs drift claude                           # インポートの変更をプレビュー
 ```
 
-### `acs apply <agent>` — Chimera ハブからエージェントに適用 (shorthand for `acs sync -s chimera -d <agent>`)
+### `acs apply <agent>` — Chimera ハブからエージェントに適用 (`acs sync chimera <agent>` の省略形)
 
 ```bash
 acs apply gemini                           # Gemini に適用
 acs apply claude --remove-unsupported      # サポートされていないフィールドを削除
 ```
 
-### `acs plan <agent>` — 適用のプレビュー (shorthand for `acs sync -s chimera -d <agent> -n`)
+### `acs plan <agent>` — 適用のプレビュー (`acs sync chimera <agent> -n` の省略形)
 
 ```bash
 acs plan gemini                            # 適用の変更をプレビュー
 ```
 
-### `acs download <url>` — GitHub からスキルをダウンロード
+### `acs download <url> [to]` — GitHub からスキルをダウンロード
 
 ```bash
 acs download https://github.com/owner/repo/tree/main/.claude/skills/my-skill
-acs download <url> -d gemini               # Gemini のスキルディレクトリに配置
-acs download <url> -d claude -g            # グローバル Claude ディレクトリに配置
+acs download <url> gemini                  # Gemini のスキルディレクトリに配置
+acs download <url> claude -g              # グローバル Claude ディレクトリに配置
 acs download <url> -n                      # ダウンロードせずにプレビュー
 ```
 
@@ -125,8 +125,8 @@ acs download <url> -n                      # ダウンロードせずにプレ�
 
 | オプション                    | 説明                                                                     |
 | --------------------------- | ----------------------------------------------------------------------- |
-| `-s, --src <product>`       | **必須。** ソース製品: `claude`、`gemini`、`codex`、`opencode`、`copilot`、`cursor`、または `chimera` |
-| `-d, --dest <product>`      | **必須。** 宛先製品: `claude`、`gemini`、`codex`、`opencode`、`copilot`、`cursor`、または `chimera` |
+| `<from>`                    | **必須。** ソースエージェント: `claude`、`gemini`、`codex`、`opencode`、`copilot`、`cursor`、または `chimera` |
+| `<to>`                      | **必須。** 宛先エージェント: `claude`、`gemini`、`codex`、`opencode`、`copilot`、`cursor`、または `chimera` |
 | `-t, --type <type>`         | コンテンツタイプ: `commands`、`skills`、または `both`（デフォルト: `both`）  |
 | `-f, --file <filename>`     | 特定のファイルのみ変換（`.md`, `.toml` 拡張子をサポート）                    |
 | `-g, --global`              | プロジェクトレベルではなくユーザーレベル（グローバル）ディレクトリを使用        |
@@ -147,10 +147,10 @@ acs download <url> -n                      # ダウンロードせずにプレ�
 
 ```bash
 # プレビュー付きで直接変換
-acs sync -n -s claude -d gemini
+acs sync claude gemini -n
 
 # 特定のファイルを変換
-acs sync -s gemini -d claude -f analyze-code
+acs sync gemini claude -f analyze-code
 
 # Chimera ハブワークフロー
 acs import claude                          # Claude → Chimera にインポート
@@ -159,13 +159,13 @@ acs apply claude                           # Chimera → Claude に適用（Clau
 acs apply gemini                           # Chimera → Gemini に適用（Gemini extras 付き）
 
 # クリーンアップ付きの完全同期
-acs sync -s claude -d gemini --sync-delete --remove-unsupported
+acs sync claude gemini --sync-delete --remove-unsupported
 
 # カスタムディレクトリを使用（ベースディレクトリを指定、/commands と /skills は自動的に追加されます）
-acs sync -s claude -d gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
+acs sync claude gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
 
 # デバッグ用の詳細出力を表示
-acs sync -s claude -d gemini -v
+acs sync claude gemini -v
 ```
 
 ## ディレクトリ解決

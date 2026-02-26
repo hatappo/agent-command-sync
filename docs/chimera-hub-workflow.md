@@ -23,11 +23,11 @@ Chimera Hub is a lossless conversion hub. It preserves all agent-specific settin
   │   ~/.claude    │                           │  ~/.codex    │  │   │  │   │  │   │  ...
   └────────────────┘                           └──────────────┘  └───┘  └───┘  └───┘
 
-    ▲  acs import <agent>    agent → chimera            (shorthand for: acs sync -s <agent> -d chimera)
-    ▲  acs drift  <agent>    agent → chimera, dry run   (shorthand for: acs sync -s <agent> -d chimera -n)
-    ▼  acs apply  <agent>    chimera → agent            (shorthand for: acs sync -s chimera -d <agent>)
-    ▼  acs plan   <agent>    chimera → agent, dry run   (shorthand for: acs sync -s chimera -d <agent> -n)
-    ◄► acs sync -s X -d Y   direct conversion between agents
+    ▲  acs import <agent>    agent → chimera            (shorthand for: acs sync <agent> chimera)
+    ▲  acs drift  <agent>    agent → chimera, dry run   (shorthand for: acs sync <agent> chimera -n)
+    ▼  acs apply  <agent>    chimera → agent            (shorthand for: acs sync chimera <agent>)
+    ▼  acs plan   <agent>    chimera → agent, dry run   (shorthand for: acs sync chimera <agent> -n)
+    ◄► acs sync X Y          direct conversion between agents
 ```
 
 ## Commands
@@ -38,7 +38,7 @@ Chimera Hub is a lossless conversion hub. It preserves all agent-specific settin
 | `acs drift <agent>` | agent → chimera | Preview import changes (dry run) |
 | `acs apply <agent>` | chimera → agent | Apply hub commands/skills to an agent |
 | `acs plan <agent>` | chimera → agent | Preview apply changes (dry run) |
-| `acs sync -s X -d Y` | agent → agent | Direct conversion (bypasses hub) |
+| `acs sync X Y` | agent → agent | Direct conversion (bypasses hub) |
 
 ## Typical Workflow
 
