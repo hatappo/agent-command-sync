@@ -33,7 +33,7 @@ export interface IntermediateConversionOptions {
   verbose: boolean;
   /** Custom base directories per product type */
   customDirs?: Partial<Record<ProductType, string>>;
-  /** Content type filter: commands, skills, or both (default: both) */
+  /** Content type filter: skills, commands, or both (default: skills) */
   contentType: ContentFilter;
   /** Force user-level (global) directories instead of project-level */
   global: boolean;

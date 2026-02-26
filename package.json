@@ -1,7 +1,7 @@
 {
   "name": "agent-command-sync",
   "version": "4.3.0",
-  "description": "Bidirectionally convert and sync Custom Slash Commands between Claude Code and Gemini CLI with intuitive visual feedback",
+  "description": "A skill package manager for AI coding agents — download, convert, and sync Skills across Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor",
   "type": "module",
   "main": "dist/index.js",
   "bin": {

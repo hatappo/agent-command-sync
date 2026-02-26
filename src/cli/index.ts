@@ -101,7 +101,7 @@ async function main(): Promise<void> {
   const syncCmd = program
     .command("sync <from> <to>")
     .description("Convert commands/skills between two agents")
-    .option("-t, --type <type>", "Content type: commands, skills, or both", "both")
+    .option("-t, --type <type>", "Content type: skills, commands, or both", "skills")
     .option("--remove-unsupported", "Remove keys that are not supported in the target format", false)
     .option("--no-overwrite", "Skip conversion if a command with the same name exists in the target")
     .option("--sync-delete", "Delete commands in the target that don't exist in the source", false)
@@ -148,7 +148,7 @@ async function main(): Promise<void> {
   const importCmd = program
     .command("import <agent>")
     .description("Import commands/skills from an agent into Chimera hub")
-    .option("-t, --type <type>", "Content type: commands, skills, or both", "both")
+    .option("-t, --type <type>", "Content type: skills, commands, or both", "skills")
     .option("-f, --file <filename>", "Convert only the specified command/skill (without extension)")
     .option("-v, --verbose", "Show detailed debug information", false);
 
@@ -183,7 +183,7 @@ async function main(): Promise<void> {
   const driftCmd = program
     .command("drift <agent>")
     .description("Preview what would change when importing from an agent (dry run)")
-    .option("-t, --type <type>", "Content type: commands, skills, or both", "both")
+    .option("-t, --type <type>", "Content type: skills, commands, or both", "skills")
     .option("-f, --file <filename>", "Convert only the specified command/skill (without extension)")
     .option("-v, --verbose", "Show detailed debug information", false);
 
@@ -218,7 +218,7 @@ async function main(): Promise<void> {
   const applyCmd = program
     .command("apply <agent>")
     .description("Apply Chimera hub commands/skills to an agent")
-    .option("-t, --type <type>", "Content type: commands, skills, or both", "both")
+    .option("-t, --type <type>", "Content type: skills, commands, or both", "skills")
     .option("--remove-unsupported", "Remove keys that are not supported in the target format", false)
     .option("--no-overwrite", "Skip conversion if a command with the same name exists in the target")
     .option("--sync-delete", "Delete commands in the target that don't exist in the source", false)
@@ -256,7 +256,7 @@ async function main(): Promise<void> {
   const planCmd = program
     .command("plan <agent>")
     .description("Preview what would change when applying Chimera hub to an agent (dry run)")
-    .option("-t, --type <type>", "Content type: commands, skills, or both", "both")
+    .option("-t, --type <type>", "Content type: skills, commands, or both", "skills")
     .option("--remove-unsupported", "Remove keys that are not supported in the target format", false)
     .option("-f, --file <filename>", "Convert only the specified command/skill (without extension)")
     .option("-v, --verbose", "Show detailed debug information", false);

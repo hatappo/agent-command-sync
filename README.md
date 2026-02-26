@@ -7,7 +7,7 @@
 [![npm version](https://badge.fury.io/js/agent-command-sync.svg)](https://www.npmjs.com/package/agent-command-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Bidirectionally convert and sync Custom Slash Commands and Skills between Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor with intuitive visual feedback. Features a **Chimera Hub** as a lossless conversion hub.
+A skill package manager for AI coding agents — Easily download any Skill from GitHub and copy it in the right format across Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor.
 
 ## CHANGELOG
 
@@ -21,96 +21,61 @@ npm install -g agent-command-sync
 
 ## Quick Start
 
+### Download a skill from GitHub
+
 ```bash
-# Direct conversion between agents
-acs sync claude gemini
-acs sync gemini claude
-
-# Import into Chimera hub (lossless)
-acs import claude
-acs import gemini
-
-# Apply from Chimera hub to an agent
-acs apply gemini
-acs apply claude
-
-# Preview changes (dry run)
-acs drift claude          # Preview import
-acs plan gemini           # Preview apply
-
-# Convert Skills or Commands only
-acs sync claude gemini -t skills
-acs sync claude gemini -t commands
-
-# Preview direct conversion
-acs sync claude gemini -n
-
-# Force user-level (global) directories instead of project-level
-acs sync claude gemini -g
-
-# Download a skill from GitHub
+# Download a skill to your project
 acs download https://github.com/owner/repo/tree/main/.claude/skills/my-skill
+
+# Download into a specific agent's skill directory
+acs download <url> gemini
+
+# Download to user-level (global) directory
+acs download <url> claude -g
+
+# Preview without downloading
+acs download <url> -n
 ```
 
-## Screenshots
+### Reformat and relocate skills for other agents
 
-### Usage Example
-![agent-command-sync usage](https://raw.githubusercontent.com/hatappo/agent-command-sync/main/docs/acsync-usage.png)
+```bash
+# Convert skill format and placement from Claude to Gemini
+acs sync claude gemini -t skills
 
-### Conversion Example
-![agent-command-sync example](https://raw.githubusercontent.com/hatappo/agent-command-sync/main/docs/acsync-example.png)
+# Convert in both directions
+acs sync gemini claude -t skills
+
+# Preview changes before applying
+acs sync claude gemini -n
+```
+
+## Supported Agents
+
+| Agent | Skills | Commands | Placeholders |
+| ----- |:------:|:--------:|:------------:|
+| Claude Code | ✓ | ✓ | ✓ |
+| Gemini CLI | ✓ | ✓ | ✓ |
+| Codex CLI | ✓ | ✓ | ✓ |
+| OpenCode | ✓ | ✓ | ✓ |
+| GitHub Copilot | ✓ | ✓ | - |
+| Cursor | ✓ | ✓ | - |
+| Chimera Hub | ✓ | ✓ | ✓ |
 
 ## Features
 
-- **Project-level by Default** - Automatically uses project-level directories (e.g., `<repo>/.claude`) when running inside a Git repository
-- **Colorful Output** - Clear visual feedback with color-coded status indicators
-- **Fast Conversion** - Efficiently sync commands between Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor
-- **Bidirectional** - Convert in any direction (Claude ↔ Gemini ↔ Codex ↔ OpenCode ↔ Copilot ↔ Cursor)
-- **Safe by Default** - Preview changes with dry-run mode before applying
-- **Chimera Hub** - Lossless conversion hub that preserves all agent-specific settings ([details](docs/chimera-hub-workflow.md))
-- **Subcommands** - `import`, `apply`, `drift`, `plan` for Chimera hub workflow; `sync` for direct conversion
-- **Download** - Fetch skills directly from GitHub repositories with `acs download`
-- **Provenance Tracking** - `_from` frontmatter property records where commands/skills were copied from
-- **Short Command** - Use `acs` instead of `agent-command-sync`
-- **Selective Sync** - Convert specific files or all commands at once
+- **Download from GitHub** — Fetch skills directly from GitHub repositories with `acs download`
+- **Provenance Tracking** — Every download and sync records the source URL in `_from`. If a public skill is found to be compromised, trace affected local skills instantly
+- **Cross-Agent Conversion** — Convert skill formats and placement across 7 agents, absorbing format differences automatically
+- **Placeholder Conversion** — `$ARGUMENTS` ↔ `{{args}}`, file references, shell commands auto-converted
+- **Dry-Run Preview** — Preview changes with `-n` before applying them
+- **Chimera Hub** — Lossless conversion hub that preserves all agent-specific settings ([details](docs/chimera-hub-workflow.md))
 
 > **Upgrading from v3?** v4.0.0 changes the default directory scope. See [CHANGELOG.txt](CHANGELOG.txt) for breaking changes.
 >
 > **Upgrading from v2?** See the [Migration Guide](docs/migration-v2-to-v3.md).
 
 ## Subcommands
-
-### `acs sync <from> <to>` — Direct conversion between agents
-
-```bash
-acs sync claude gemini                     # Convert Claude → Gemini
-```
-
-### `acs import <agent>` — Import into Chimera hub (shorthand for `acs sync <agent> chimera`)
-
-```bash
-acs import claude                          # Import all from Claude
-acs import gemini -t commands              # Import commands only
-```
-
-### `acs drift <agent>` — Preview import (shorthand for `acs sync <agent> chimera -n`)
-
-```bash
-acs drift claude                           # Preview import changes
-```
-
-### `acs apply <agent>` — Apply Chimera hub to agent (shorthand for `acs sync chimera <agent>`)
-
-```bash
-acs apply gemini                           # Apply to Gemini
-acs apply claude --remove-unsupported      # Remove unsupported fields
-```
-
-### `acs plan <agent>` — Preview apply (shorthand for `acs sync chimera <agent> -n`)
-
-```bash
-acs plan gemini                            # Preview apply changes
-```
 
 ### `acs download <url> [to]` — Download a skill from GitHub
 
@@ -121,17 +86,43 @@ acs download <url> claude -g              # Place in global Claude directory
 acs download <url> -n                      # Preview without downloading
 ```
 
+### `acs sync <from> <to>` — Direct conversion between agents
+
+```bash
+acs sync claude gemini                     # Convert Claude → Gemini
+acs sync claude gemini -t skills           # Skills only
+```
+
+### `acs import <agent>` / `acs apply <agent>` — Lossless conversion workflow
+
+```bash
+acs import claude                          # Import Claude → Chimera Hub
+acs import gemini -t commands              # Import commands only
+acs apply gemini                           # Apply Chimera Hub → Gemini
+acs apply claude --remove-unsupported      # Remove unsupported fields
+```
+
+### `acs drift <agent>` / `acs plan <agent>` — Preview (dry run)
+
+```bash
+acs drift claude                           # Preview import changes
+acs plan gemini                            # Preview apply changes
+```
+
 ## Options (sync subcommand)
 
 | Option                      | Description                                                           |
 | --------------------------- | --------------------------------------------------------------------- |
 | `<from>`                    | **Required.** Source agent: `claude`, `gemini`, `codex`, `opencode`, `copilot`, `cursor`, or `chimera` |
 | `<to>`                      | **Required.** Destination agent: `claude`, `gemini`, `codex`, `opencode`, `copilot`, `cursor`, or `chimera` |
-| `-t, --type <type>`         | Content type: `commands`, `skills`, or `both` (default: `both`)      |
+| `-t, --type <type>`         | Content type: `skills`, `commands`, or `both` (default: `skills`)    |
 | `-f, --file <filename>`     | Convert specific file only (supports `.md`, `.toml` extensions)      |
 | `-g, --global`              | Use user-level (global) directories instead of project-level          |
 | `-n, --noop`                | Preview changes without applying them                                 |
 | `-v, --verbose`             | Show detailed debug information                                       |
+| `--no-overwrite`            | Skip existing files in target directory                               |
+| `--sync-delete`             | Delete orphaned files in target directory                             |
+| `--remove-unsupported`      | Remove fields not supported by target format                          |
 | `--claude-dir <path>`       | Claude base directory (default: ~/.claude)                            |
 | `--gemini-dir <path>`       | Gemini base directory (default: ~/.gemini)                            |
 | `--codex-dir <path>`        | Codex base directory (default: ~/.codex)                              |
@@ -139,9 +130,6 @@ acs download <url> -n                      # Preview without downloading
 | `--copilot-dir <path>`      | Copilot base directory (default: ~/.copilot)                          |
 | `--cursor-dir <path>`       | Cursor base directory (default: ~/.cursor)                            |
 | `--chimera-dir <path>`      | Chimera Hub base directory (default: ~/.config/acs)                   |
-| `--no-overwrite`            | Skip existing files in target directory                               |
-| `--sync-delete`             | Delete orphaned files in target directory                             |
-| `--remove-unsupported`      | Remove fields not supported by target format                          |
 
 ## Examples
 
@@ -200,53 +188,6 @@ When running inside a Git repository, `acs` defaults to **project-level** direct
 | **GitHub Copilot** | `~/.copilot/prompts/*.prompt.md` | `~/.copilot/skills/<name>/SKILL.md` |
 | **Cursor** | `~/.cursor/commands/*.md` | `~/.cursor/skills/<name>/SKILL.md` |
 | **Chimera** | `~/.config/acs/commands/*.md` | `~/.config/acs/skills/<name>/SKILL.md` |
-
-## Format Comparison and Conversion Specification
-
-### Commands vs Skills
-
-| Aspect | Commands | Skills |
-| ------ | -------- | ------ |
-| Structure | Single file (`.md`, `.toml`) | Directory (`SKILL.md` + support files) |
-| Location | `{base}/{tool}/commands/` | `{base}/{tool}/skills/<name>/` |
-| Use Case | Simple prompts | Complex tasks with multiple files |
-
----
-
-## Commands Format
-
-### File Structure and Metadata
-
-| Feature                                   | Claude Code   | Gemini CLI    | Codex CLI     | OpenCode      | Copilot       | Cursor        | Conversion Notes                             |
-| ----------------------------------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | -------------------------------------------- |
-| File format                               | Markdown      | TOML          | Markdown      | Markdown      | Markdown (`.prompt.md`) | Markdown | Automatically converted              |
-| Content field                             | Body content  | `prompt`      | Body content  | Body content  | Body content  | Body content  | Main command content                         |
-| Description metadata                      | `description` | `description` | `description` | `description` | `description` | -             | Lost when converting to Cursor (no frontmatter) |
-| `model`                                   | Supported     | -             | -             | Supported     | Supported     | -             | Preserved for Claude/OpenCode/Copilot        |
-| `tools` (YAML array)                      | -             | -             | -             | -             | Supported     | -             | Copilot-specific (passthrough via extras)    |
-| `allowed-tools`, `argument-hint`          | Supported     | -             | -             | -             | -             | -             | Claude-specific (use `--remove-unsupported`) |
-
-### Content Placeholders and Syntax
-
-| Feature               | Claude Code    | Gemini CLI     | Codex CLI      | OpenCode       | Copilot        | Cursor         | Conversion Behavior                    |
-| --------------------- | -------------- | -------------- | -------------- | -------------- | -------------- | -------------- | -------------------------------------- |
-| All arguments         | `$ARGUMENTS`   | `{{args}}`     | `$ARGUMENTS`   | `$ARGUMENTS`   | -              | -              | Converted between formats              |
-| Individual arguments  | `$1` ... `$9`  | -              | `$1` ... `$9`  | `$1` ... `$9`  | -              | -              | Preserved (not supported in Gemini/Copilot/Cursor) |
-| Shell command         | `` !`command` ``| `!{command}`  | -              | `` !`command` ``| -             | -              | Converted between formats              |
-| File reference        | `@path/to/file`| `@{path/to/file}` | -           | `@path/to/file`| -              | -              | Converted between formats              |
-
-#### Individual Arguments
-The placeholders `$1` through `$9` allow referencing individual command arguments. For example, `$1` refers to the first argument, `$2` to the second, and so on. This feature is supported in Claude Code, Codex CLI, and OpenCode, but not in Gemini CLI. During conversion, these placeholders are preserved as-is.
-
-#### File References
-File references allow embedding file contents inline within the command. The syntax differs between tools:
-- Claude Code / OpenCode uses `@path/to/file.txt`
-- Gemini CLI uses `@{path/to/file.txt}`
-- Codex CLI does not support this feature
-
-During conversion, the syntax is automatically converted between formats. When converting to/from Codex, the file reference syntax is preserved unchanged.
-
----
 
 ## Skills Format
 
@@ -344,7 +285,7 @@ Support files (scripts, configs, images, etc.) are copied as-is during conversio
 
 ### Placeholder Conversion (Skills)
 
-Same as Commands:
+Same as [Commands](docs/commands-reference.md):
 
 | Feature | Claude Code / Codex CLI / OpenCode | Gemini CLI | Copilot | Cursor |
 | ------- | ---------------------------------- | ---------- | ------- | ------ |
@@ -352,6 +293,28 @@ Same as Commands:
 | Individual arguments | `$1` ... `$9` | Not supported | Not supported | Not supported |
 | Shell command | `` !`command` `` | `!{command}` | Not supported | Not supported |
 | File reference | `@path/to/file` | `@{path/to/file}` | Not supported | Not supported |
+
+## Advanced: Chimera Hub
+
+Chimera Hub is a lossless conversion hub that preserves all agent-specific settings. Repeated direct conversions between agents may lose agent-specific fields (e.g., Claude's `allowed-tools`, Copilot's `tools`). Routing through Chimera Hub prevents this.
+
+```bash
+# Import from multiple agents (merges into hub)
+acs import claude
+acs import gemini
+
+# Preview and apply
+acs plan codex                             # Preview
+acs apply codex                            # Apply
+```
+
+Hub files are stored in `~/.config/acs/` (global) or `<repo>/.acs/` (project).
+
+For detailed workflow and examples, see [Chimera Hub Workflow](docs/chimera-hub-workflow.md).
+
+## Commands
+
+`acs` also supports converting single-file slash commands between agents. For command format details, metadata comparison, and placeholder syntax, see [Commands Reference](docs/commands-reference.md).
 
 ---
 

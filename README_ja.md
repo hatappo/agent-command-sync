@@ -7,7 +7,7 @@
 [![npm version](https://badge.fury.io/js/agent-command-sync.svg)](https://www.npmjs.com/package/agent-command-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Claude Code、Gemini CLI、Codex CLI、OpenCode、GitHub Copilot、Cursor 間でカスタムスラッシュコマンドとスキル（Skills）を双方向に変換・同期する、直感的なビジュアルフィードバック付きのツールです。ロスレス変換ハブとして **Chimera Hub** を搭載しています。
+AI コーディングエージェントの Skill パッケージマネージャー — GitHub から任意の Skill を簡単にダウンロードし、Claude Code、Gemini CLI、Codex CLI、OpenCode、GitHub Copilot、Cursor 間でフォーマット変換したコピーが可能です。
 
 ## CHANGELOG
 
@@ -21,96 +21,61 @@ npm install -g agent-command-sync
 
 ## クイックスタート
 
+### GitHub からスキルをダウンロード
+
 ```bash
-# エージェント間の直接変換
-acs sync claude gemini
-acs sync gemini claude
-
-# Chimera ハブにインポート（ロスレス）
-acs import claude
-acs import gemini
-
-# Chimera ハブからエージェントに適用
-acs apply gemini
-acs apply claude
-
-# 変更のプレビュー（ドライラン）
-acs drift claude          # インポートのプレビュー
-acs plan gemini           # 適用のプレビュー
-
-# Skills または Commands のみ変換
-acs sync claude gemini -t skills
-acs sync claude gemini -t commands
-
-# 直接変換のプレビュー
-acs sync claude gemini -n
-
-# プロジェクトレベルではなくユーザーレベル（グローバル）ディレクトリを使用
-acs sync claude gemini -g
-
-# GitHub からスキルをダウンロード
+# プロジェクトにスキルをダウンロード
 acs download https://github.com/owner/repo/tree/main/.claude/skills/my-skill
+
+# 特定のエージェント用のディレクトリに配置
+acs download <url> gemini
+
+# ユーザーレベル（グローバル）ディレクトリにダウンロード
+acs download <url> claude -g
+
+# ダウンロードせずにプレビュー
+acs download <url> -n
 ```
 
-## スクリーンショット
+### スキルの形式と配置先を他のエージェント用に変換
 
-### 使用例
-![agent-command-sync usage](https://raw.githubusercontent.com/hatappo/agent-command-sync/main/docs/acsync-usage.png)
+```bash
+# Claude のスキルを Gemini 用の形式・配置先に変換
+acs sync claude gemini -t skills
 
-### 変換例
-![agent-command-sync example](https://raw.githubusercontent.com/hatappo/agent-command-sync/main/docs/acsync-example.png)
+# 逆方向にも変換可能
+acs sync gemini claude -t skills
+
+# 適用前に変更をプレビュー
+acs sync claude gemini -n
+```
+
+## 対応エージェント
+
+| エージェント | Skills | Commands | プレースホルダー |
+| ----------- |:------:|:--------:|:------------:|
+| Claude Code | ✓ | ✓ | ✓ |
+| Gemini CLI | ✓ | ✓ | ✓ |
+| Codex CLI | ✓ | ✓ | ✓ |
+| OpenCode | ✓ | ✓ | ✓ |
+| GitHub Copilot | ✓ | ✓ | - |
+| Cursor | ✓ | ✓ | - |
+| Chimera Hub | ✓ | ✓ | ✓ |
 
 ## 機能
 
-- **プロジェクトレベルがデフォルト** - Git リポジトリ内で実行時、プロジェクトレベルのディレクトリ（例: `<repo>/.claude`）を自動的に使用
-- **カラフルな出力** - 色分けされたステータスインジケータによる明確なビジュアルフィードバック
-- **高速変換** - Claude Code、Gemini CLI、Codex CLI、OpenCode、GitHub Copilot、Cursor 間でコマンドを効率的に同期
-- **双方向対応** - 任意の方向への変換に対応（Claude ↔ Gemini ↔ Codex ↔ OpenCode ↔ Copilot ↔ Cursor）
-- **デフォルトで安全** - ドライランモードで適用前に変更をプレビュー
-- **Chimera Hub** - 全エージェント固有設定を保持するロスレス変換ハブ（[詳細](docs/chimera-hub-workflow.md)）
-- **サブコマンド** - Chimera ハブワークフロー用の `import`, `apply`, `drift`, `plan` と直接変換用の `sync`
-- **ダウンロード** - `acs download` で GitHub リポジトリからスキルを直接取得
-- **来歴トラッキング** - `_from` frontmatter プロパティでコマンド/スキルのコピー元を記録
-- **短縮コマンド** - `agent-command-sync` の代わりに `acs` を使用可能
-- **選択的同期** - 特定のファイルまたは全コマンドを一括変換
+- **GitHub からダウンロード** — `acs download` で GitHub リポジトリからスキルを直接取得
+- **来歴トラッキング** — ダウンロードや同期のたびにソース URL を `_from` に記録。公開スキルに問題が発見された場合、影響を受けるローカルスキルを即座に追跡可能
+- **エージェント間フォーマット変換** — 7エージェント間でフォーマット差異を吸収したスキル変換
+- **プレースホルダー変換** — `$ARGUMENTS` ↔ `{{args}}`、ファイル参照、シェルコマンドを自動変換
+- **ドライランプレビュー** — `-n` で適用前に変更内容を確認
+- **Chimera Hub** — 全エージェント固有設定を保持するロスレス変換ハブ（[詳細](docs/chimera-hub-workflow.md)）
 
 > **v3 からのアップグレード？** v4.0.0 ではデフォルトのディレクトリスコープが変更されました。破壊的変更は [CHANGELOG_ja.txt](CHANGELOG_ja.txt) をご確認ください。
 >
 > **v2 からのアップグレード？** [マイグレーションガイド](docs/migration-v2-to-v3_ja.md)をご確認ください。
 
 ## サブコマンド
-
-### `acs sync <from> <to>` — エージェント間の直接変換
-
-```bash
-acs sync claude gemini                     # Claude → Gemini に変換
-```
-
-### `acs import <agent>` — Chimera ハブにインポート (`acs sync <agent> chimera` の省略形)
-
-```bash
-acs import claude                          # Claude から全てインポート
-acs import gemini -t commands              # Commands のみインポート
-```
-
-### `acs drift <agent>` — インポートのプレビュー (`acs sync <agent> chimera -n` の省略形)
-
-```bash
-acs drift claude                           # インポートの変更をプレビュー
-```
-
-### `acs apply <agent>` — Chimera ハブからエージェントに適用 (`acs sync chimera <agent>` の省略形)
-
-```bash
-acs apply gemini                           # Gemini に適用
-acs apply claude --remove-unsupported      # サポートされていないフィールドを削除
-```
-
-### `acs plan <agent>` — 適用のプレビュー (`acs sync chimera <agent> -n` の省略形)
-
-```bash
-acs plan gemini                            # 適用の変更をプレビュー
-```
 
 ### `acs download <url> [to]` — GitHub からスキルをダウンロード
 
@@ -121,17 +86,43 @@ acs download <url> claude -g              # グローバル Claude ディレク�
 acs download <url> -n                      # ダウンロードせずにプレビュー
 ```
 
+### `acs sync <from> <to>` — エージェント間の直接変換
+
+```bash
+acs sync claude gemini                     # Claude → Gemini に変換
+acs sync claude gemini -t skills           # Skills のみ
+```
+
+### `acs import <agent>` / `acs apply <agent>` — ロスレス変換のワークフロー
+
+```bash
+acs import claude                          # Claude → Chimera Hub にインポート
+acs import gemini -t commands              # Commands のみインポート
+acs apply gemini                           # Chimera Hub → Gemini に適用
+acs apply claude --remove-unsupported      # サポートされていないフィールドを削除
+```
+
+### `acs drift <agent>` / `acs plan <agent>` — プレビュー（ドライラン）
+
+```bash
+acs drift claude                           # インポートの変更をプレビュー
+acs plan gemini                            # 適用の変更をプレビュー
+```
+
 ## オプション（sync サブコマンド）
 
 | オプション                    | 説明                                                                     |
 | --------------------------- | ----------------------------------------------------------------------- |
 | `<from>`                    | **必須。** ソースエージェント: `claude`、`gemini`、`codex`、`opencode`、`copilot`、`cursor`、または `chimera` |
 | `<to>`                      | **必須。** 宛先エージェント: `claude`、`gemini`、`codex`、`opencode`、`copilot`、`cursor`、または `chimera` |
-| `-t, --type <type>`         | コンテンツタイプ: `commands`、`skills`、または `both`（デフォルト: `both`）  |
+| `-t, --type <type>`         | コンテンツタイプ: `skills`、`commands`、または `both`（デフォルト: `skills`）  |
 | `-f, --file <filename>`     | 特定のファイルのみ変換（`.md`, `.toml` 拡張子をサポート）                    |
 | `-g, --global`              | プロジェクトレベルではなくユーザーレベル（グローバル）ディレクトリを使用        |
 | `-n, --noop`                | 変更を適用せずにプレビュー                                                 |
 | `-v, --verbose`             | 詳細なデバッグ情報を表示                                                  |
+| `--no-overwrite`            | 変換先ディレクトリの既存ファイルをスキップ                                |
+| `--sync-delete`             | 変換先ディレクトリの孤立ファイルを削除                                   |
+| `--remove-unsupported`      | 変換先形式でサポートされていないフィールドを削除                           |
 | `--claude-dir <path>`       | Claude ベースディレクトリ（デフォルト: ~/.claude）                          |
 | `--gemini-dir <path>`       | Gemini ベースディレクトリ（デフォルト: ~/.gemini）                          |
 | `--codex-dir <path>`        | Codex ベースディレクトリ（デフォルト: ~/.codex）                           |
@@ -139,9 +130,6 @@ acs download <url> -n                      # ダウンロードせずにプレ�
 | `--copilot-dir <path>`      | Copilot ベースディレクトリ（デフォルト: ~/.copilot）                        |
 | `--cursor-dir <path>`       | Cursor ベースディレクトリ（デフォルト: ~/.cursor）                          |
 | `--chimera-dir <path>`      | Chimera Hub ベースディレクトリ（デフォルト: ~/.config/acs）                 |
-| `--no-overwrite`            | ターゲットディレクトリの既存ファイルをスキップ                                |
-| `--sync-delete`             | ターゲットディレクトリの孤立ファイルを削除                                   |
-| `--remove-unsupported`      | ターゲット形式でサポートされていないフィールドを削除                           |
 
 ## 使用例
 
@@ -200,53 +188,6 @@ Git リポジトリ内で実行すると、`acs` はデフォルトで**プロ�
 | **GitHub Copilot** | `~/.copilot/prompts/*.prompt.md` | `~/.copilot/skills/<name>/SKILL.md` |
 | **Cursor** | `~/.cursor/commands/*.md` | `~/.cursor/skills/<name>/SKILL.md` |
 | **Chimera** | `~/.config/acs/commands/*.md` | `~/.config/acs/skills/<name>/SKILL.md` |
-
-## 形式比較と変換仕様
-
-### Commands と Skills の違い
-
-| 観点 | Commands | Skills |
-| ---- | -------- | ------ |
-| 構造 | 単一ファイル（`.md`, `.toml`） | ディレクトリ（`SKILL.md` + サポートファイル） |
-| 場所 | `{base}/{tool}/commands/` | `{base}/{tool}/skills/<name>/` |
-| 用途 | シンプルなプロンプト | 複数ファイルを伴う複雑なタスク |
-
----
-
-## Commands 形式
-
-### ファイル構造とメタデータ
-
-| 機能                                      | Claude Code   | Gemini CLI    | Codex CLI     | OpenCode      | Copilot       | Cursor        | 変換メモ                                      |
-| ----------------------------------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | -------------------------------------------- |
-| ファイル形式                               | Markdown      | TOML          | Markdown      | Markdown      | Markdown (`.prompt.md`) | Markdown | 自動変換                                |
-| コンテンツフィールド                        | 本文コンテンツ  | `prompt`      | 本文コンテンツ  | 本文コンテンツ  | 本文コンテンツ  | 本文コンテンツ  | メインコマンドの内容                           |
-| 説明メタデータ                            | `description` | `description` | `description` | `description` | `description` | -             | Cursorへの変換時に消失（frontmatterなし）        |
-| `model`                                   | サポート       | -             | -             | サポート       | サポート       | -             | Claude/OpenCode/Copilot間で保持               |
-| `tools`（YAML配列）                       | -             | -             | -             | -             | サポート       | -             | Copilot固有（extras経由でパススルー）           |
-| `allowed-tools`, `argument-hint`          | サポート       | -             | -             | -             | -             | -             | Claude固有（`--remove-unsupported`を使用して削除）|
-
-### コンテンツプレースホルダーと構文
-
-| 機能                  | Claude Code    | Gemini CLI     | Codex CLI      | OpenCode       | Copilot        | Cursor         | 変換動作                                    |
-| -------------------- | -------------- | -------------- | -------------- | -------------- | -------------- | -------------- | ------------------------------------------ |
-| すべての引数          | `$ARGUMENTS`   | `{{args}}`     | `$ARGUMENTS`   | `$ARGUMENTS`   | -              | -              | 形式間で変換                                |
-| 個別引数              | `$1` ... `$9`  | -              | `$1` ... `$9`  | `$1` ... `$9`  | -              | -              | そのまま保持（Gemini/Copilot/Cursorはサポートなし）  |
-| シェルコマンド        | `` !`command` ``| `!{command}`  | -              | `` !`command` ``| -             | -              | 形式間で変換                                |
-| ファイル参照          | `@path/to/file`| `@{path/to/file}` | -           | `@path/to/file`| -              | -              | 形式間で変換                                |
-
-#### 個別引数
-プレースホルダー `$1` から `$9` は、個々のコマンド引数を参照できます。例えば、`$1` は最初の引数、`$2` は2番目の引数を参照します。この機能はClaude Code、Codex CLI、OpenCodeでサポートされていますが、Gemini CLIではサポートされていません。変換時、これらのプレースホルダーはそのまま保持されます。
-
-#### ファイル参照
-ファイル参照を使用すると、コマンド内にファイルの内容をインラインで埋め込むことができます。ツール間で構文が異なります：
-- Claude Code / OpenCodeは `@path/to/file.txt` を使用
-- Gemini CLIは `@{path/to/file.txt}` を使用
-- Codex CLIはこの機能をサポートしていません
-
-変換時、構文は形式間で自動的に変換されます。Codexとの変換では、ファイル参照構文はそのまま保持されます。
-
----
 
 ## Skills 形式
 
@@ -340,11 +281,11 @@ Claude → Codex 変換時に `disable-model-invocation` が設定されてい�
 | ------------ | -- | ---- |
 | テキスト | `.sh`, `.py`, `.json`, `.yaml` | そのままコピー |
 | バイナリ | `.png`, `.jpg`, `.pdf` | そのままコピー |
-| 設定 | `openai.yaml` | Codex 固有、他のターゲットでは無視 |
+| 設定 | `openai.yaml` | Codex 固有、他の変換先では無視 |
 
 ### プレースホルダー変換（Skills）
 
-Commands と同様：
+[Commands](docs/commands-reference_ja.md) と同様：
 
 | 機能 | Claude Code / Codex CLI / OpenCode | Gemini CLI | Copilot | Cursor |
 | ---- | ---------------------------------- | ---------- | ------- | ------ |
@@ -352,6 +293,28 @@ Commands と同様：
 | 個別引数 | `$1` ... `$9` | サポートなし | サポートなし | サポートなし |
 | シェルコマンド | `` !`command` `` | `!{command}` | サポートなし | サポートなし |
 | ファイル参照 | `@path/to/file` | `@{path/to/file}` | サポートなし | サポートなし |
+
+## 上級: Chimera Hub
+
+Chimera Hub は全エージェント固有設定を保持するロスレス変換ハブです。エージェント間の直接変換を複数回行うとエージェントごとの固有フィールド（例: Claude の `allowed-tools`、Copilot の `tools`）が消失する可能性がありますが、Chimera Hub を経由することでこれを防ぎます。
+
+```bash
+# 複数エージェントからインポート（ハブにマージ）
+acs import claude
+acs import gemini
+
+# プレビューして適用
+acs plan codex                             # プレビュー
+acs apply codex                            # 適用
+```
+
+ハブファイルは `~/.config/acs/`（グローバル）または `<repo>/.acs/`（プロジェクト）に保存されます。
+
+詳細なワークフローと例については [Chimera Hub ワークフロー](docs/chimera-hub-workflow.md) を参照してください。
+
+## Commands
+
+`acs` はエージェント間での単一ファイルスラッシュコマンドの変換もサポートしています。コマンド形式の詳細、メタデータ比較、プレースホルダー構文については [Commands リファレンス](docs/commands-reference_ja.md) を参照してください。
 
 ---
 
@@ -370,7 +333,7 @@ Commands と同様：
 
 ## ステータスインジケータ
 
-- `[A]` 作成（緑） - ターゲットディレクトリに新規ファイル作成
+- `[A]` 作成（緑） - 変換先ディレクトリに新規ファイル作成
 - `[M]` 更新（黄） - 既存ファイルを更新
 - `[=]` 変更なし（青） - ファイルが存在し、変換結果が既存内容と同一
 - `[D]` 削除（赤） - `--sync-delete` でファイル削除
