@@ -129,17 +129,16 @@ async function writeDownloadedFile(filePath: string, file: DownloadedFile): Prom
 }
 
 /**
- * Inject _from provenance URL into a SKILL.md text content.
- * Parses frontmatter, appends URL to _from array, and re-serializes.
+ * Inject _from provenance into a SKILL.md text content.
+ * If _from already has an entry, the original content is returned unchanged.
  */
-function injectFromUrl(content: string, url: string): string {
+function injectFromUrl(content: string, ownerRepo: string): string {
   const parsed = matter(content);
-  const fromArray: string[] = Array.isArray(parsed.data._from) ? [...parsed.data._from] : [];
-  if (!fromArray.includes(url)) {
-    fromArray.push(url);
+  if (Array.isArray(parsed.data._from) && parsed.data._from.length > 0) {
+    return content;
   }
-  parsed.data._from = fromArray;
-  return matter.stringify(parsed.content, parsed.data);
+  // Spread to avoid mutating gray-matter's cached data object
+  return matter.stringify(parsed.content, { ...parsed.data, _from: [ownerRepo] });
 }
 
 /**
@@ -178,9 +177,9 @@ async function downloadMultipleSkills(
   const totalStats = { A: 0, M: 0, "=": 0 };
   const skillStats = { A: 0, M: 0, "=": 0 };
 
-  for (const skill of skills) {
-    const provenanceUrl = `https://github.com/${repoUrl.owner}/${repoUrl.repo}/tree/${ref}/${skill.path}`;
+  const ownerRepo = `${repoUrl.owner}/${repoUrl.repo}`;
 
+  for (const skill of skills) {
     try {
       // Use raw.githubusercontent.com to avoid API rate limits
       const files = await fetchSkillFromTree(repoUrl.owner, repoUrl.repo, ref, skill);
@@ -189,7 +188,7 @@ async function downloadMultipleSkills(
       if (!options.noProvenance) {
         for (const file of files) {
           if (file.relativePath === SKILL_CONSTANTS.SKILL_FILE_NAME && typeof file.content === "string") {
-            file.content = injectFromUrl(file.content, provenanceUrl);
+            file.content = injectFromUrl(file.content, ownerRepo);
           }
         }
       }
@@ -331,9 +330,10 @@ export async function downloadSkill(options: DownloadOptions): Promise<void> {
 
   // 5. Inject _from provenance into SKILL.md
   if (!options.noProvenance) {
+    const ownerRepo = `${parsed.owner}/${parsed.repo}`;
     for (const file of files) {
       if (file.relativePath === SKILL_CONSTANTS.SKILL_FILE_NAME && typeof file.content === "string") {
-        file.content = injectFromUrl(file.content, options.url);
+        file.content = injectFromUrl(file.content, ownerRepo);
       }
     }
   }

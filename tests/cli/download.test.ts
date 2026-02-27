@@ -1,6 +1,7 @@
 import { mkdir, readFile, rm, writeFile as fsWriteFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import matter from "gray-matter";
 import { type Mock, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { downloadSkill } from "../../src/cli/download.js";
 import type { DownloadedFile, GitHubContentItem } from "../../src/utils/github-utils.js";
@@ -12,6 +13,9 @@ describe("download command", () => {
   let consoleOutput: string[];
 
   beforeEach(async () => {
+    // Clear gray-matter cache to prevent cross-test pollution
+    (matter as unknown as { clearCache: () => void }).clearCache();
+
     // Set up temp directory
     tempDir = join(tmpdir(), `download-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     await mkdir(tempDir, { recursive: true });
@@ -91,9 +95,9 @@ describe("download command", () => {
 
     // Check files were created at the URL path relative to gitRoot
     const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
-    // SKILL.md should have _from injected
+    // SKILL.md should have _from injected with owner/repo format
     expect(skillMd).toContain("_from:");
-    expect(skillMd).toContain(testUrl);
+    expect(skillMd).toContain("owner/repo");
     expect(skillMd).toContain("description: My Skill");
 
     const helperTs = await readFile(join(tempDir, ".claude/skills/my-skill/helper.ts"), "utf-8");
@@ -116,7 +120,7 @@ describe("download command", () => {
     // With -d gemini and customDir=tempDir, files go to tempDir/skills/my-skill/
     const skillMd = await readFile(join(tempDir, "skills/my-skill/SKILL.md"), "utf-8");
     expect(skillMd).toContain("description: My Skill");
-    expect(skillMd).toContain(testUrl);
+    expect(skillMd).toContain("owner/repo");
   });
 
   it("should not write files in noop mode", async () => {
@@ -180,7 +184,7 @@ describe("download command", () => {
     expect(output).toContain("1 skill updated");
   });
 
-  it("should inject _from into SKILL.md with GitHub URL", async () => {
+  it("should inject _from with owner/repo format", async () => {
     setupBasicMocks();
 
     await downloadSkill({
@@ -192,10 +196,9 @@ describe("download command", () => {
     });
 
     const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
-    // Verify _from array contains the download URL
-    const matter = await import("gray-matter");
-    const parsed = matter.default(skillMd);
-    expect(parsed.data._from).toEqual([testUrl]);
+    // Verify _from contains owner/repo (not full URL)
+    const parsed = matter(skillMd);
+    expect(parsed.data._from).toEqual(["owner/repo"]);
   });
 
   it("should not inject _from when noProvenance is true", async () => {
@@ -215,18 +218,15 @@ describe("download command", () => {
     expect(skillMd).not.toContain("_from");
   });
 
-  it("should preserve existing _from entries when re-downloading", async () => {
-    // Pre-create SKILL.md with existing _from
-    const skillDir = join(tempDir, ".claude/skills/my-skill");
-    await mkdir(skillDir, { recursive: true });
-    // Note: the downloaded content already has _from injected, so we test
-    // that the injection function handles existing _from in the downloaded content
-
+  it("should not add _from when entry already exists", async () => {
+    const existingFrom = "original-owner/original-repo";
     const newUrl = "https://github.com/other/repo/tree/main/.claude/skills/other-skill";
 
     mockFetch
       .mockResolvedValueOnce(mockDirectoryListing([{ name: "SKILL.md", type: "file" }]))
-      .mockResolvedValueOnce(mockFileContent(`---\ndescription: My Skill\n_from:\n  - ${testUrl}\n---\n# My Skill`));
+      .mockResolvedValueOnce(
+        mockFileContent(`---\ndescription: My Skill\n_from:\n  - ${existingFrom}\n---\n# My Skill`),
+      );
 
     await downloadSkill({
       url: newUrl,
@@ -237,10 +237,9 @@ describe("download command", () => {
     });
 
     const skillMd = await readFile(join(tempDir, ".claude/skills/other-skill/SKILL.md"), "utf-8");
-    const matter = await import("gray-matter");
-    const parsed = matter.default(skillMd);
-    // Should have both URLs
-    expect(parsed.data._from).toEqual([testUrl, newUrl]);
+    // Should keep only the original entry, not add a new one
+    expect(skillMd).toContain(existingFrom);
+    expect(skillMd).not.toContain("other/repo");
   });
 
   it("should show [=] for unchanged files", async () => {
@@ -248,8 +247,7 @@ describe("download command", () => {
     const skillDir = join(tempDir, ".claude/skills/my-skill");
     await mkdir(skillDir, { recursive: true });
     // The SKILL.md needs to already include _from to be truly unchanged after injection
-    const matterLib = await import("gray-matter");
-    const expectedContent = matterLib.default.stringify("# My Skill", { description: "My Skill", _from: [testUrl] });
+    const expectedContent = matter.stringify("# My Skill", { description: "My Skill", _from: ["owner/repo"] });
     await fsWriteFile(join(skillDir, "SKILL.md"), expectedContent, "utf-8");
     await fsWriteFile(join(skillDir, "helper.ts"), "export function helper() {}", "utf-8");
 
@@ -295,10 +293,10 @@ describe("download command", () => {
       gitRoot: tempDir,
     });
 
-    // Check text file (SKILL.md gets _from injected)
+    // Check text file (SKILL.md gets _from injected with owner/repo)
     const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
     expect(skillMd).toContain("# Skill with icon");
-    expect(skillMd).toContain(testUrl);
+    expect(skillMd).toContain("owner/repo");
 
     // Check binary file
     const iconPng = await readFile(join(tempDir, ".claude/skills/my-skill/icon.png"));
@@ -379,7 +377,7 @@ describe("download command", () => {
     // Should still download to the skill directory (parent of SKILL.md)
     const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
     expect(skillMd).toContain("description: My Skill");
-    expect(skillMd).toContain(blobUrl);
+    expect(skillMd).toContain("owner/repo");
   });
 
   describe("repository-level download", () => {
@@ -434,7 +432,7 @@ describe("download command", () => {
 
       const skillA = await readFile(join(tempDir, ".claude/skills/skill-a/SKILL.md"), "utf-8");
       expect(skillA).toContain("_from:");
-      expect(skillA).toContain("github.com/owner/repo/tree/main/.claude/skills/skill-a");
+      expect(skillA).toContain("owner/repo");
 
       const skillB = await readFile(join(tempDir, ".claude/skills/skill-b/SKILL.md"), "utf-8");
       expect(skillB).toContain("_from:");
@@ -563,7 +561,7 @@ describe("download command", () => {
       expect(goodSkill).toContain("description: Skill");
     });
 
-    it("should inject skill-specific provenance URL, not repo URL", async () => {
+    it("should inject owner/repo provenance format", async () => {
       mockRepoApiResponse();
       mockTreeScanResponse([".claude/skills/skill-a"]);
       mockSkillRawDownload();
@@ -577,9 +575,9 @@ describe("download command", () => {
       });
 
       const skillMd = await readFile(join(tempDir, ".claude/skills/skill-a/SKILL.md"), "utf-8");
-      const matter = await import("gray-matter");
-      const parsed = matter.default(skillMd);
-      expect(parsed.data._from[0]).toBe("https://github.com/owner/repo/tree/main/.claude/skills/skill-a");
+      expect(skillMd).toContain("_from:");
+      expect(skillMd).toContain("owner/repo");
+      expect(skillMd).not.toContain("https://github.com");
     });
   });
 });

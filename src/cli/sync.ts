@@ -1,12 +1,12 @@
 import { rm } from "node:fs/promises";
-import { join, relative } from "node:path";
+import { join } from "node:path";
 import picocolors from "picocolors";
 import { AGENT_REGISTRY } from "../agents/registry.js";
 import type { ConversionResult, FileOperation, SemanticIR } from "../types/index.js";
 import type { ProductType } from "../types/intermediate.js";
 import { assertNever } from "../utils/assert-never.js";
 import { SKILL_CONSTANTS } from "../utils/constants.js";
-import { getCurrentBranch, getGitHubRemoteUrl } from "../utils/git-utils.js";
+import { getGitHubRemoteUrl } from "../utils/git-utils.js";
 
 const { SKILL_FILE_NAME } = SKILL_CONSTANTS;
 import {
@@ -55,15 +55,8 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
       console.log(picocolors.yellow("NOOP MODE - No files will be modified"));
     }
 
-    // Detect source repository GitHub URL and branch for provenance tracking
-    let sourceRepoUrl: string | null = null;
-    let branch: string | null = null;
-    if (options.gitRoot) {
-      sourceRepoUrl = await getGitHubRemoteUrl(options.gitRoot);
-      if (sourceRepoUrl) {
-        branch = await getCurrentBranch(options.gitRoot);
-      }
-    }
+    // Detect source repository GitHub URL for provenance tracking
+    const sourceRepoUrl = options.gitRoot ? await getGitHubRemoteUrl(options.gitRoot) : null;
 
     // Process commands if contentType includes commands
     if (options.contentType === "commands" || options.contentType === "both") {
@@ -73,7 +66,7 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
       // Convert each command file
       for (const sourceFile of sourceFiles) {
         try {
-          const result = await convertSingleFile(sourceFile, options, sourceRepoUrl, branch);
+          const result = await convertSingleFile(sourceFile, options, sourceRepoUrl);
           operations.push(...result.operations);
           errors.push(...result.errors);
           countStats(result.operations, stats);
@@ -100,7 +93,7 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
       // Convert each skill
       for (const skillDir of sourceSkills) {
         try {
-          const result = await convertSingleSkill(skillDir, options, sourceRepoUrl, branch);
+          const result = await convertSingleSkill(skillDir, options, sourceRepoUrl);
           operations.push(...result.operations);
           errors.push(...result.errors);
           countStats(result.operations, stats);
@@ -153,14 +146,19 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
 }
 
 /**
- * Append a URL to ir.semantic.from (provenance tracking), avoiding duplicates.
+ * Set provenance tracking (owner/repo) on IR if not already present.
+ * Once set, the original provenance is preserved (single-entry policy).
  */
-function appendFromUrl(ir: SemanticIR, url: string): void {
-  if (!ir.semantic.from) {
-    ir.semantic.from = [url];
-  } else if (!ir.semantic.from.includes(url)) {
-    ir.semantic.from.push(url);
+function appendFromUrl(ir: SemanticIR, ownerRepo: string): void {
+  if (ir.semantic.from && ir.semantic.from.length > 0) {
+    return;
   }
+  ir.semantic.from = [ownerRepo];
+}
+
+/** Extract owner/repo from a GitHub URL (https://github.com/owner/repo → owner/repo) */
+function extractOwnerRepo(githubUrl: string): string {
+  return githubUrl.replace(/^https?:\/\/github\.com\//, "");
 }
 
 /**
@@ -208,7 +206,6 @@ async function convertSingleFile(
   sourceFile: string,
   options: CLIOptions,
   sourceRepoUrl?: string | null,
-  branch?: string | null,
 ): Promise<{ operations: FileOperation[]; errors: Error[] }> {
   const operations: FileOperation[] = [];
   const errors: Error[] = [];
@@ -220,14 +217,9 @@ async function convertSingleFile(
     const command = await src.parseCommand(sourceFile);
     const ir: SemanticIR = src.commandToIR(command, { destinationType: options.destination });
 
-    // Append source file URL to provenance tracking
-    if (!options.noProvenance) {
-      if (sourceRepoUrl && options.gitRoot && branch) {
-        const rel = relative(options.gitRoot, sourceFile);
-        appendFromUrl(ir, `${sourceRepoUrl}/blob/${branch}/${rel}`);
-      } else if (sourceRepoUrl) {
-        appendFromUrl(ir, sourceRepoUrl);
-      }
+    // Append provenance tracking (owner/repo)
+    if (!options.noProvenance && sourceRepoUrl) {
+      appendFromUrl(ir, extractOwnerRepo(sourceRepoUrl));
     }
 
     // Determine target file path
@@ -387,7 +379,6 @@ async function convertSingleSkill(
   skillDir: string,
   options: CLIOptions,
   sourceRepoUrl?: string | null,
-  branch?: string | null,
 ): Promise<{ operations: FileOperation[]; errors: Error[] }> {
   const operations: FileOperation[] = [];
   const errors: Error[] = [];
@@ -399,14 +390,9 @@ async function convertSingleSkill(
     const skill = await src.parseSkill(skillDir);
     const ir: SemanticIR = src.skillToIR(skill, { destinationType: options.destination });
 
-    // Append source skill URL to provenance tracking
-    if (!options.noProvenance) {
-      if (sourceRepoUrl && options.gitRoot && branch) {
-        const rel = relative(options.gitRoot, skillDir);
-        appendFromUrl(ir, `${sourceRepoUrl}/tree/${branch}/${rel}`);
-      } else if (sourceRepoUrl) {
-        appendFromUrl(ir, sourceRepoUrl);
-      }
+    // Append provenance tracking (owner/repo)
+    if (!options.noProvenance && sourceRepoUrl) {
+      appendFromUrl(ir, extractOwnerRepo(sourceRepoUrl));
     }
 
     // Get skill directories
