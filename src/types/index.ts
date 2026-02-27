@@ -3,6 +3,7 @@ export interface FileOperation {
   type: "A" | "M" | "D" | "-" | "=";
   filePath: string;
   description: string;
+  contentType?: "command" | "skill";
 }
 
 // Error types

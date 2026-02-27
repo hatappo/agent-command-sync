@@ -153,6 +153,8 @@ describe("download command", () => {
 
     const output = consoleOutput.join("\n");
     expect(output).toContain("Created");
+    expect(output).toContain("2 files created");
+    expect(output).toContain("1 skill created");
   });
 
   it("should show [M] for modified files", async () => {
@@ -174,6 +176,8 @@ describe("download command", () => {
 
     const output = consoleOutput.join("\n");
     expect(output).toContain("Updated");
+    expect(output).toContain("2 files updated");
+    expect(output).toContain("1 skill updated");
   });
 
   it("should inject _from into SKILL.md with GitHub URL", async () => {
@@ -244,6 +248,8 @@ describe("download command", () => {
 
     const output = consoleOutput.join("\n");
     expect(output).toContain("Unchanged");
+    expect(output).toContain("2 files unchanged");
+    expect(output).toContain("1 skill unchanged");
   });
 
   it("should handle binary files", async () => {
@@ -417,7 +423,8 @@ describe("download command", () => {
       expect(skillB).toContain("_from:");
 
       const output = consoleOutput.join("\n");
-      expect(output).toContain("2 skills");
+      expect(output).toContain("4 files created");
+      expect(output).toContain("2 skills created");
     });
 
     it("should use ref from tree URL instead of fetching default branch", async () => {
@@ -434,7 +441,8 @@ describe("download command", () => {
       });
 
       const output = consoleOutput.join("\n");
-      expect(output).toContain("1 skills");
+      expect(output).toContain("2 files created");
+      expect(output).toContain("1 skill created");
     });
 
     it("should throw when no skills found in repo", async () => {

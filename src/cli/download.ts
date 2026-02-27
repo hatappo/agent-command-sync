@@ -175,7 +175,7 @@ async function downloadMultipleSkills(
   );
 
   const totalStats = { A: 0, M: 0, "=": 0 };
-  let downloadedSkillCount = 0;
+  const skillStats = { A: 0, M: 0, "=": 0 };
 
   for (const skill of skills) {
     const provenanceUrl = `https://github.com/${repoUrl.owner}/${repoUrl.repo}/tree/${ref}/${skill.path}`;
@@ -191,10 +191,12 @@ async function downloadMultipleSkills(
         }
       }
 
+      const perSkillStats = { A: 0, M: 0, "=": 0 };
       for (const file of files) {
         const filePath = join(targetDir, file.relativePath);
         const op = await determineOperation(filePath, file.content);
         totalStats[op]++;
+        perSkillStats[op]++;
 
         const style = operationStyles[op];
         const displayBase = resolveDownloadBaseDir(options);
@@ -211,7 +213,15 @@ async function downloadMultipleSkills(
           console.log(`  ${style.prefix} ${displayPath} - ${style.color(label)}`);
         }
       }
-      downloadedSkillCount++;
+
+      // Determine skill-level status: all [A] → created, any [M] → updated, all [=] → unchanged
+      if (perSkillStats.M > 0) {
+        skillStats.M++;
+      } else if (perSkillStats.A > 0) {
+        skillStats.A++;
+      } else {
+        skillStats["="]++;
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.log(`  ${picocolors.red("[!]")} ${skill.path} - ${picocolors.red(`Skipped: ${message}`)}`);
@@ -222,11 +232,21 @@ async function downloadMultipleSkills(
   if (options.noop) {
     console.log(picocolors.dim("Dry run complete. Use without --noop to download."));
   } else {
+    // File-level summary
     const parts: string[] = [];
-    if (totalStats.A > 0) parts.push(picocolors.green(`${totalStats.A} created`));
-    if (totalStats.M > 0) parts.push(picocolors.yellow(`${totalStats.M} updated`));
-    if (totalStats["="] > 0) parts.push(picocolors.blue(`${totalStats["="]} unchanged`));
-    console.log(`Done! ${parts.join(", ")} across ${downloadedSkillCount} skills.`);
+    if (totalStats.A > 0) parts.push(picocolors.green(`${totalStats.A} file${totalStats.A !== 1 ? "s" : ""} created`));
+    if (totalStats.M > 0) parts.push(picocolors.yellow(`${totalStats.M} file${totalStats.M !== 1 ? "s" : ""} updated`));
+    if (totalStats["="] > 0) parts.push(picocolors.blue(`${totalStats["="] } file${totalStats["="] !== 1 ? "s" : ""} unchanged`));
+    console.log(`Done! ${parts.join(", ")}.`);
+
+    // Skill-level summary
+    const skillParts: string[] = [];
+    if (skillStats.A > 0) skillParts.push(picocolors.green(`${skillStats.A} skill${skillStats.A !== 1 ? "s" : ""} created`));
+    if (skillStats.M > 0) skillParts.push(picocolors.yellow(`${skillStats.M} skill${skillStats.M !== 1 ? "s" : ""} updated`));
+    if (skillStats["="] > 0) skillParts.push(picocolors.blue(`${skillStats["="] } skill${skillStats["="] !== 1 ? "s" : ""} unchanged`));
+    if (skillParts.length > 0) {
+      console.log(`      ${skillParts.join(", ")}.`);
+    }
   }
 }
 
@@ -339,11 +359,16 @@ export async function downloadSkill(options: DownloadOptions): Promise<void> {
   if (options.noop) {
     console.log(picocolors.dim("Dry run complete. Use without --noop to download."));
   } else {
-    const downloaded = stats.A + stats.M;
+    // File-level summary
     const parts: string[] = [];
-    if (stats.A > 0) parts.push(picocolors.green(`${stats.A} created`));
-    if (stats.M > 0) parts.push(picocolors.yellow(`${stats.M} updated`));
-    if (stats["="] > 0) parts.push(picocolors.blue(`${stats["="]} unchanged`));
+    if (stats.A > 0) parts.push(picocolors.green(`${stats.A} file${stats.A !== 1 ? "s" : ""} created`));
+    if (stats.M > 0) parts.push(picocolors.yellow(`${stats.M} file${stats.M !== 1 ? "s" : ""} updated`));
+    if (stats["="] > 0) parts.push(picocolors.blue(`${stats["="] } file${stats["="] !== 1 ? "s" : ""} unchanged`));
     console.log(`Done! ${parts.join(", ")}.`);
+
+    // Skill-level summary (single skill download = 1 skill)
+    const skillStatus = stats.A > 0 && stats.M === 0 ? "created" : stats.M > 0 ? "updated" : "unchanged";
+    const skillColor = skillStatus === "created" ? picocolors.green : skillStatus === "updated" ? picocolors.yellow : picocolors.blue;
+    console.log(`      ${skillColor(`1 skill ${skillStatus}`)}.`);
   }
 }

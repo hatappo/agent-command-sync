@@ -259,6 +259,7 @@ async function convertSingleFile(
 
     // Execute file operation
     const operation = await handleFileOperation(targetFile, targetContent, options);
+    operation.contentType = "command";
     operations.push(operation);
   } catch (error) {
     errors.push(error instanceof Error ? error : new Error(String(error)));
@@ -349,6 +350,7 @@ async function handleSyncDelete(
             type: "D",
             filePath: targetFile,
             description: "Would delete (orphaned)",
+            contentType: "command",
           });
         } else {
           await deleteFile(targetFile);
@@ -356,6 +358,7 @@ async function handleSyncDelete(
             type: "D",
             filePath: targetFile,
             description: "Deleted (orphaned)",
+            contentType: "command",
           });
         }
       }
@@ -418,6 +421,7 @@ async function convertSingleSkill(
         type: "-",
         filePath: targetSkillDir,
         description: "Skipped (skill exists and --no-overwrite specified)",
+        contentType: "skill",
       });
       return { operations, errors };
     }
@@ -449,6 +453,7 @@ async function convertSingleSkill(
             type: "=",
             filePath: targetSkillDir,
             description: "Unchanged",
+            contentType: "skill",
           });
           return { operations, errors };
         }
@@ -461,6 +466,7 @@ async function convertSingleSkill(
         type: targetExists ? "M" : "A",
         filePath: targetSkillDir,
         description: targetExists ? "Would modify" : "Would create",
+        contentType: "skill",
       });
       return { operations, errors };
     }
@@ -472,6 +478,7 @@ async function convertSingleSkill(
       type: targetExists ? "M" : "A",
       filePath: targetSkillDir,
       description: targetExists ? "Modified" : "Created",
+      contentType: "skill",
     });
   } catch (error) {
     errors.push(error instanceof Error ? error : new Error(String(error)));
@@ -515,6 +522,7 @@ async function handleSkillSyncDelete(
             type: "D",
             filePath: targetSkill,
             description: "Would delete (orphaned)",
+            contentType: "skill",
           });
         } else {
           await rm(targetSkill, { recursive: true });
@@ -522,6 +530,7 @@ async function handleSkillSyncDelete(
             type: "D",
             filePath: targetSkill,
             description: "Deleted (orphaned)",
+            contentType: "skill",
           });
         }
       }
@@ -585,12 +594,27 @@ function displayResults(operations: FileOperation[], errors: Error[], options: C
     "=": operations.filter((op) => op.type === "=").length,
   };
 
+  // Compute breakdown by contentType
+  const commandOps = operations.filter((op) => op.contentType === "command");
+  const skillOps = operations.filter((op) => op.contentType === "skill");
+  const hasBreakdown = commandOps.length > 0 && skillOps.length > 0;
+
+  const formatBreakdown = (type: FileOperation["type"]): string => {
+    if (!hasBreakdown) return "";
+    const cmds = commandOps.filter((op) => op.type === type).length;
+    const skls = skillOps.filter((op) => op.type === type).length;
+    const parts: string[] = [];
+    if (cmds > 0) parts.push(`${cmds} command${cmds !== 1 ? "s" : ""}`);
+    if (skls > 0) parts.push(`${skls} skill${skls !== 1 ? "s" : ""}`);
+    return parts.length > 0 ? ` (${parts.join(", ")})` : "";
+  };
+
   console.log(picocolors.bold("\nSummary:"));
-  if (stats.A > 0) console.log(`  ${picocolors.green("Created:")} ${stats.A}`);
-  if (stats.M > 0) console.log(`  ${picocolors.yellow("Modified:")} ${stats.M}`);
-  if (stats.D > 0) console.log(`  ${picocolors.red("Deleted:")} ${stats.D}`);
-  if (stats["-"] > 0) console.log(`  ${picocolors.gray("Skipped:")} ${stats["-"]}`);
-  if (stats["="] > 0) console.log(`  ${picocolors.blue("Unchanged:")} ${stats["="]}`);
+  if (stats.A > 0) console.log(`  ${picocolors.green("Created:")} ${stats.A}${formatBreakdown("A")}`);
+  if (stats.M > 0) console.log(`  ${picocolors.yellow("Modified:")} ${stats.M}${formatBreakdown("M")}`);
+  if (stats.D > 0) console.log(`  ${picocolors.red("Deleted:")} ${stats.D}${formatBreakdown("D")}`);
+  if (stats["-"] > 0) console.log(`  ${picocolors.gray("Skipped:")} ${stats["-"]}${formatBreakdown("-")}`);
+  if (stats["="] > 0) console.log(`  ${picocolors.blue("Unchanged:")} ${stats["="]}${formatBreakdown("=")}`);
 
   // Display errors
   if (errors.length > 0) {
