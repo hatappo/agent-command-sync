@@ -116,13 +116,13 @@ export class CopilotAgent implements AgentDefinition {
   commandToIR(source: CopilotCommand, _options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     let description: string | undefined;
-    let from: string[] | undefined;
+    let from: string | undefined;
 
     for (const [key, value] of Object.entries(source.frontmatter)) {
       if (key === "description") {
         description = value as string | undefined;
       } else if (key === "_from") {
-        from = Array.isArray(value) ? value : undefined;
+        from = typeof value === "string" ? value : Array.isArray(value) && value.length > 0 ? value[0] : undefined;
       } else {
         extras[key] = value;
       }
@@ -153,7 +153,7 @@ export class CopilotAgent implements AgentDefinition {
       frontmatter[key] = value;
     }
 
-    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+    if (ir.semantic.from !== undefined) {
       frontmatter._from = ir.semantic.from;
     }
 
@@ -274,13 +274,13 @@ export class CopilotAgent implements AgentDefinition {
   skillToIR(source: CopilotSkill, _options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     const fm = source.frontmatter;
-    let from: string[] | undefined;
+    let from: string | undefined;
 
     for (const [key, value] of Object.entries(fm)) {
       if ((SEMANTIC_SKILL_FIELDS as readonly string[]).includes(key)) continue;
 
       if (key === "_from") {
-        from = Array.isArray(value) ? value : undefined;
+        from = typeof value === "string" ? value : Array.isArray(value) && value.length > 0 ? value[0] : undefined;
         continue;
       }
 
@@ -336,7 +336,7 @@ export class CopilotAgent implements AgentDefinition {
       }
     }
 
-    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+    if (ir.semantic.from !== undefined) {
       frontmatter._from = ir.semantic.from;
     }
 

@@ -198,7 +198,7 @@ describe("download command", () => {
     const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
     // Verify _from contains owner/repo (not full URL)
     const parsed = matter(skillMd);
-    expect(parsed.data._from).toEqual(["owner/repo"]);
+    expect(parsed.data._from).toBe("owner/repo");
   });
 
   it("should not inject _from when noProvenance is true", async () => {
@@ -218,14 +218,14 @@ describe("download command", () => {
     expect(skillMd).not.toContain("_from");
   });
 
-  it("should not add _from when entry already exists", async () => {
+  it("should always update _from to latest source", async () => {
     const existingFrom = "original-owner/original-repo";
     const newUrl = "https://github.com/other/repo/tree/main/.claude/skills/other-skill";
 
     mockFetch
       .mockResolvedValueOnce(mockDirectoryListing([{ name: "SKILL.md", type: "file" }]))
       .mockResolvedValueOnce(
-        mockFileContent(`---\ndescription: My Skill\n_from:\n  - ${existingFrom}\n---\n# My Skill`),
+        mockFileContent(`---\ndescription: My Skill\n_from: ${existingFrom}\n---\n# My Skill`),
       );
 
     await downloadSkill({
@@ -237,9 +237,10 @@ describe("download command", () => {
     });
 
     const skillMd = await readFile(join(tempDir, ".claude/skills/other-skill/SKILL.md"), "utf-8");
-    // Should keep only the original entry, not add a new one
-    expect(skillMd).toContain(existingFrom);
-    expect(skillMd).not.toContain("other/repo");
+    const parsed = matter(skillMd);
+    // Should always update to the new source
+    expect(parsed.data._from).toBe("other/repo");
+    expect(skillMd).not.toContain(existingFrom);
   });
 
   it("should show [=] for unchanged files", async () => {
@@ -247,7 +248,7 @@ describe("download command", () => {
     const skillDir = join(tempDir, ".claude/skills/my-skill");
     await mkdir(skillDir, { recursive: true });
     // The SKILL.md needs to already include _from to be truly unchanged after injection
-    const expectedContent = matter.stringify("# My Skill", { description: "My Skill", _from: ["owner/repo"] });
+    const expectedContent = matter.stringify("# My Skill", { description: "My Skill", _from: "owner/repo" });
     await fsWriteFile(join(skillDir, "SKILL.md"), expectedContent, "utf-8");
     await fsWriteFile(join(skillDir, "helper.ts"), "export function helper() {}", "utf-8");
 

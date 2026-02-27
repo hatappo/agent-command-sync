@@ -100,13 +100,13 @@ export class ClaudeAgent implements AgentDefinition {
   commandToIR(source: ClaudeCommand, _options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     let description: string | undefined;
-    let from: string[] | undefined;
+    let from: string | undefined;
 
     for (const [key, value] of Object.entries(source.frontmatter)) {
       if (key === "description") {
         description = value as string | undefined;
       } else if (key === "_from") {
-        from = Array.isArray(value) ? value : undefined;
+        from = typeof value === "string" ? value : Array.isArray(value) && value.length > 0 ? value[0] : undefined;
       } else {
         extras[key] = value;
       }
@@ -137,7 +137,7 @@ export class ClaudeAgent implements AgentDefinition {
       }
     }
 
-    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+    if (ir.semantic.from !== undefined) {
       frontmatter._from = ir.semantic.from;
     }
 
@@ -279,7 +279,11 @@ export class ClaudeAgent implements AgentDefinition {
         description: fm.description,
         modelInvocationEnabled:
           typeof fm["disable-model-invocation"] === "boolean" ? !fm["disable-model-invocation"] : undefined,
-        from: Array.isArray(fromValue) ? fromValue : undefined,
+        from: typeof fromValue === "string"
+          ? fromValue
+          : Array.isArray(fromValue) && fromValue.length > 0
+            ? fromValue[0]
+            : undefined,
       },
       extras,
       meta: {
@@ -309,7 +313,7 @@ export class ClaudeAgent implements AgentDefinition {
       }
     }
 
-    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+    if (ir.semantic.from !== undefined) {
       frontmatter._from = ir.semantic.from;
     }
 

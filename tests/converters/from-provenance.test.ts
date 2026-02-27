@@ -17,22 +17,22 @@ import type {
 } from "../../src/types/index.js";
 
 describe("_from provenance tracking", () => {
-  const fromUrls = ["https://github.com/owner/repo", "https://github.com/other/repo"];
+  const fromUrl = "owner/repo";
 
   describe("Command round-trip", () => {
     it("Claude: _from round-trips through IR", () => {
       const claude: ClaudeCommand = {
-        frontmatter: { description: "Test", _from: fromUrls },
+        frontmatter: { description: "Test", _from: fromUrl },
         content: "body",
         filePath: "/test.md",
       };
       const agent = new ClaudeAgent();
       const ir = agent.commandToIR(claude);
-      expect(ir.semantic.from).toEqual(fromUrls);
+      expect(ir.semantic.from).toBe(fromUrl);
       expect(ir.extras._from).toBeUndefined();
 
       const result = agent.commandFromIR(ir);
-      expect(result.frontmatter._from).toEqual(fromUrls);
+      expect(result.frontmatter._from).toBe(fromUrl);
     });
 
     it("Gemini: _from round-trips through IR (TOML)", () => {
@@ -40,57 +40,57 @@ describe("_from provenance tracking", () => {
         description: "Test",
         prompt: "body",
         filePath: "/test.toml",
-        _from: fromUrls,
+        _from: fromUrl,
       };
       const agent = new GeminiAgent();
       const ir = agent.commandToIR(gemini);
-      expect(ir.semantic.from).toEqual(fromUrls);
+      expect(ir.semantic.from).toBe(fromUrl);
       expect(ir.extras._from).toBeUndefined();
 
       const result = agent.commandFromIR(ir);
-      expect(result._from).toEqual(fromUrls);
+      expect(result._from).toBe(fromUrl);
     });
 
     it("Codex: _from round-trips through IR", () => {
       const codex: CodexCommand = {
-        frontmatter: { description: "Test", _from: fromUrls },
+        frontmatter: { description: "Test", _from: fromUrl },
         content: "body",
         filePath: "/test.md",
       };
       const agent = new CodexAgent();
       const ir = agent.commandToIR(codex);
-      expect(ir.semantic.from).toEqual(fromUrls);
+      expect(ir.semantic.from).toBe(fromUrl);
 
       const result = agent.commandFromIR(ir);
-      expect(result.frontmatter?._from).toEqual(fromUrls);
+      expect(result.frontmatter?._from).toBe(fromUrl);
     });
 
     it("OpenCode: _from round-trips through IR", () => {
       const opencode: OpenCodeCommand = {
-        frontmatter: { description: "Test", _from: fromUrls },
+        frontmatter: { description: "Test", _from: fromUrl },
         content: "body",
         filePath: "/test.md",
       };
       const agent = new OpenCodeAgent();
       const ir = agent.commandToIR(opencode);
-      expect(ir.semantic.from).toEqual(fromUrls);
+      expect(ir.semantic.from).toBe(fromUrl);
 
       const result = agent.commandFromIR(ir);
-      expect(result.frontmatter?._from).toEqual(fromUrls);
+      expect(result.frontmatter?._from).toBe(fromUrl);
     });
 
     it("Copilot: _from round-trips through IR", () => {
       const copilot: CopilotCommand = {
-        frontmatter: { description: "Test", _from: fromUrls },
+        frontmatter: { description: "Test", _from: fromUrl },
         content: "body",
         filePath: "/test.prompt.md",
       };
       const agent = new CopilotAgent();
       const ir = agent.commandToIR(copilot);
-      expect(ir.semantic.from).toEqual(fromUrls);
+      expect(ir.semantic.from).toBe(fromUrl);
 
       const result = agent.commandFromIR(ir);
-      expect(result.frontmatter._from).toEqual(fromUrls);
+      expect(result.frontmatter._from).toBe(fromUrl);
     });
 
     it("Cursor: _from is lost for commands (no frontmatter)", () => {
@@ -102,16 +102,16 @@ describe("_from provenance tracking", () => {
 
     it("Chimera: _from round-trips through IR", () => {
       const chimera: ChimeraCommand = {
-        frontmatter: { description: "Test", _from: fromUrls },
+        frontmatter: { description: "Test", _from: fromUrl },
         content: "body",
         filePath: "/test.md",
       };
       const agent = new ChimeraAgent();
       const ir = agent.commandToIR(chimera);
-      expect(ir.semantic.from).toEqual(fromUrls);
+      expect(ir.semantic.from).toBe(fromUrl);
 
       const result = agent.commandFromIR(ir);
-      expect(result.frontmatter._from).toEqual(fromUrls);
+      expect(result.frontmatter._from).toBe(fromUrl);
     });
   });
 
@@ -123,79 +123,79 @@ describe("_from provenance tracking", () => {
         content: "body",
         dirPath: "/test/skill",
         supportFiles: [],
-        frontmatter: { name: "test-skill", description: "Test", _from: fromUrls } as Record<string, unknown>,
+        frontmatter: { name: "test-skill", description: "Test", _from: fromUrl } as Record<string, unknown>,
       };
     }
 
     it("Claude: _from round-trips through skill IR", () => {
       const agent = new ClaudeAgent();
       const ir = agent.skillToIR(makeSkill());
-      expect(ir.semantic.from).toEqual(fromUrls);
+      expect(ir.semantic.from).toBe(fromUrl);
       expect(ir.extras._from).toBeUndefined();
 
       const result = agent.skillFromIR(ir);
-      expect(result.frontmatter._from).toEqual(fromUrls);
+      expect(result.frontmatter._from).toBe(fromUrl);
     });
 
     it("Gemini: _from round-trips through skill IR", () => {
       const agent = new GeminiAgent();
       const ir = agent.skillToIR(makeSkill());
-      expect(ir.semantic.from).toEqual(fromUrls);
+      expect(ir.semantic.from).toBe(fromUrl);
 
       const result = agent.skillFromIR(ir);
-      expect(result.frontmatter._from).toEqual(fromUrls);
+      expect(result.frontmatter._from).toBe(fromUrl);
     });
 
     it("Codex: _from round-trips through skill IR", () => {
       const agent = new CodexAgent();
       const ir = agent.skillToIR(makeSkill());
-      expect(ir.semantic.from).toEqual(fromUrls);
+      expect(ir.semantic.from).toBe(fromUrl);
 
       const result = agent.skillFromIR(ir);
-      expect(result.frontmatter._from).toEqual(fromUrls);
+      expect(result.frontmatter._from).toBe(fromUrl);
     });
 
     it("OpenCode: _from round-trips through skill IR", () => {
       const agent = new OpenCodeAgent();
       const ir = agent.skillToIR(makeSkill());
-      expect(ir.semantic.from).toEqual(fromUrls);
+      expect(ir.semantic.from).toBe(fromUrl);
 
       const result = agent.skillFromIR(ir);
-      expect(result.frontmatter._from).toEqual(fromUrls);
+      expect(result.frontmatter._from).toBe(fromUrl);
     });
 
     it("Copilot: _from round-trips through skill IR", () => {
       const agent = new CopilotAgent();
       const ir = agent.skillToIR(makeSkill());
-      expect(ir.semantic.from).toEqual(fromUrls);
+      expect(ir.semantic.from).toBe(fromUrl);
 
       const result = agent.skillFromIR(ir);
-      expect(result.frontmatter._from).toEqual(fromUrls);
+      expect(result.frontmatter._from).toBe(fromUrl);
     });
 
     it("Cursor: _from round-trips through skill IR", () => {
       const agent = new CursorAgent();
       const ir = agent.skillToIR(makeSkill());
-      expect(ir.semantic.from).toEqual(fromUrls);
+      expect(ir.semantic.from).toBe(fromUrl);
 
       const result = agent.skillFromIR(ir);
-      expect(result.frontmatter._from).toEqual(fromUrls);
+      expect(result.frontmatter._from).toBe(fromUrl);
     });
 
     it("Chimera: _from round-trips through skill IR", () => {
       const agent = new ChimeraAgent();
       const ir = agent.skillToIR(makeSkill());
-      expect(ir.semantic.from).toEqual(fromUrls);
+      expect(ir.semantic.from).toBe(fromUrl);
 
       const result = agent.skillFromIR(ir);
-      expect(result.frontmatter._from).toEqual(fromUrls);
+      expect(result.frontmatter._from).toBe(fromUrl);
     });
   });
 
   describe("Cross-agent conversion preserves _from", () => {
     it("Claude -> Gemini: _from is preserved", () => {
       const claude: ClaudeCommand = {
-        frontmatter: { description: "Test", _from: fromUrls },
+        frontmatter: { description: "Test", _from: fromUrl },
         content: "body",
         filePath: "/test.md",
       };
@@ -203,7 +203,7 @@ describe("_from provenance tracking", () => {
       const geminiAgent = new GeminiAgent();
       const ir = claudeAgent.commandToIR(claude);
       const gemini = geminiAgent.commandFromIR(ir);
-      expect(gemini._from).toEqual(fromUrls);
+      expect(gemini._from).toBe(fromUrl);
     });
 
     it("Gemini -> Claude: _from is preserved", () => {
@@ -211,18 +211,18 @@ describe("_from provenance tracking", () => {
         description: "Test",
         prompt: "body",
         filePath: "/test.toml",
-        _from: fromUrls,
+        _from: fromUrl,
       };
       const geminiAgent = new GeminiAgent();
       const claudeAgent = new ClaudeAgent();
       const ir = geminiAgent.commandToIR(gemini);
       const claude = claudeAgent.commandFromIR(ir);
-      expect(claude.frontmatter._from).toEqual(fromUrls);
+      expect(claude.frontmatter._from).toBe(fromUrl);
     });
 
     it("Claude -> Cursor: _from is lost for commands (no frontmatter)", () => {
       const claude: ClaudeCommand = {
-        frontmatter: { description: "Test", _from: fromUrls },
+        frontmatter: { description: "Test", _from: fromUrl },
         content: "body",
         filePath: "/test.md",
       };
@@ -238,7 +238,7 @@ describe("_from provenance tracking", () => {
   });
 
   describe("Empty _from handling", () => {
-    it("should not write _from when semantic.from is empty", () => {
+    it("should not write _from when semantic.from is undefined", () => {
       const agent = new ClaudeAgent();
       const ir = agent.commandToIR({
         frontmatter: { description: "Test" },
@@ -251,19 +251,47 @@ describe("_from provenance tracking", () => {
       expect(result.frontmatter._from).toBeUndefined();
     });
 
-    it("should not write _from when semantic.from is empty array", () => {
+    it("should treat legacy empty array as undefined", () => {
       const agent = new ClaudeAgent();
       const ir = agent.commandToIR({
         frontmatter: { description: "Test", _from: [] },
         content: "body",
         filePath: "/test.md",
       });
-      // Empty array is preserved (Array.isArray([]) === true)
-      expect(ir.semantic.from).toEqual([]);
+      // Empty array has no first element, so from becomes undefined
+      expect(ir.semantic.from).toBeUndefined();
 
-      // But fromIR should not write empty _from to frontmatter
       const result = agent.commandFromIR(ir);
       expect(result.frontmatter._from).toBeUndefined();
+    });
+  });
+
+  describe("Backward compatibility: legacy string[] format", () => {
+    it("should read legacy string[] and take first element", () => {
+      const agent = new ClaudeAgent();
+      const claude: ClaudeCommand = {
+        frontmatter: { description: "Test", _from: ["owner/repo", "other/repo"] },
+        content: "body",
+        filePath: "/test.md",
+      };
+      const ir = agent.commandToIR(claude);
+      expect(ir.semantic.from).toBe("owner/repo");
+
+      const result = agent.commandFromIR(ir);
+      expect(result.frontmatter._from).toBe("owner/repo");
+    });
+
+    it("should read legacy string[] in skills and take first element", () => {
+      const agent = new ClaudeAgent();
+      const ir = agent.skillToIR({
+        name: "test-skill",
+        description: "Test",
+        content: "body",
+        dirPath: "/test/skill",
+        supportFiles: [],
+        frontmatter: { name: "test-skill", description: "Test", _from: ["owner/repo", "other/repo"] },
+      });
+      expect(ir.semantic.from).toBe("owner/repo");
     });
   });
 });

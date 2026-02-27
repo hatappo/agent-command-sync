@@ -146,14 +146,11 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
 }
 
 /**
- * Set provenance tracking (owner/repo) on IR if not already present.
- * Once set, the original provenance is preserved (single-entry policy).
+ * Set provenance tracking (owner/repo) on IR.
+ * Always updates to track the most recent source.
  */
-function appendFromUrl(ir: SemanticIR, ownerRepo: string): void {
-  if (ir.semantic.from && ir.semantic.from.length > 0) {
-    return;
-  }
-  ir.semantic.from = [ownerRepo];
+function setFromUrl(ir: SemanticIR, ownerRepo: string): void {
+  ir.semantic.from = ownerRepo;
 }
 
 /** Extract owner/repo from a GitHub URL (https://github.com/owner/repo → owner/repo) */
@@ -219,7 +216,7 @@ async function convertSingleFile(
 
     // Append provenance tracking (owner/repo)
     if (!options.noProvenance && sourceRepoUrl) {
-      appendFromUrl(ir, extractOwnerRepo(sourceRepoUrl));
+      setFromUrl(ir, extractOwnerRepo(sourceRepoUrl));
     }
 
     // Determine target file path
@@ -392,7 +389,7 @@ async function convertSingleSkill(
 
     // Append provenance tracking (owner/repo)
     if (!options.noProvenance && sourceRepoUrl) {
-      appendFromUrl(ir, extractOwnerRepo(sourceRepoUrl));
+      setFromUrl(ir, extractOwnerRepo(sourceRepoUrl));
     }
 
     // Get skill directories

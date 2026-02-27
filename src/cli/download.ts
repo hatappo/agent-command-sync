@@ -130,15 +130,12 @@ async function writeDownloadedFile(filePath: string, file: DownloadedFile): Prom
 
 /**
  * Inject _from provenance into a SKILL.md text content.
- * If _from already has an entry, the original content is returned unchanged.
+ * Always updates to track the most recent source.
  */
 function injectFromUrl(content: string, ownerRepo: string): string {
   const parsed = matter(content);
-  if (Array.isArray(parsed.data._from) && parsed.data._from.length > 0) {
-    return content;
-  }
   // Spread to avoid mutating gray-matter's cached data object
-  return matter.stringify(parsed.content, { ...parsed.data, _from: [ownerRepo] });
+  return matter.stringify(parsed.content, { ...parsed.data, _from: ownerRepo });
 }
 
 /**

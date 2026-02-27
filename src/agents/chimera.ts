@@ -110,13 +110,14 @@ export class ChimeraAgent implements AgentDefinition {
   commandToIR(source: ChimeraCommand, options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     let description: string | undefined;
-    let from: string[] | undefined;
+    let from: string | undefined;
 
     for (const [key, value] of Object.entries(source.frontmatter)) {
       if (key === CHIMERA_KEY) continue;
       if ((SEMANTIC_COMMAND_FIELDS as readonly string[]).includes(key)) {
         if (key === "description") description = value as string | undefined;
-        if (key === "_from") from = Array.isArray(value) ? value : undefined;
+        if (key === "_from")
+          from = typeof value === "string" ? value : Array.isArray(value) && value.length > 0 ? value[0] : undefined;
       } else {
         extras[key] = value;
       }
@@ -150,7 +151,7 @@ export class ChimeraAgent implements AgentDefinition {
     if (ir.semantic.description !== undefined) {
       frontmatter.description = ir.semantic.description;
     }
-    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+    if (ir.semantic.from !== undefined) {
       frontmatter._from = ir.semantic.from;
     }
 
@@ -284,12 +285,12 @@ export class ChimeraAgent implements AgentDefinition {
   skillToIR(source: ChimeraSkill, options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     const fm = source.frontmatter;
-    let from: string[] | undefined;
+    let from: string | undefined;
 
     for (const [key, value] of Object.entries(fm)) {
       if (key === CHIMERA_KEY) continue;
       if (key === "_from") {
-        from = Array.isArray(value) ? value : undefined;
+        from = typeof value === "string" ? value : Array.isArray(value) && value.length > 0 ? value[0] : undefined;
         continue;
       }
       if (!(SEMANTIC_SKILL_FIELDS as readonly string[]).includes(key)) {
@@ -338,7 +339,7 @@ export class ChimeraAgent implements AgentDefinition {
     if (ir.semantic.modelInvocationEnabled !== undefined) {
       frontmatter["disable-model-invocation"] = !ir.semantic.modelInvocationEnabled;
     }
-    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+    if (ir.semantic.from !== undefined) {
       frontmatter._from = ir.semantic.from;
     }
 

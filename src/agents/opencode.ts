@@ -100,13 +100,13 @@ export class OpenCodeAgent implements AgentDefinition {
     const fm = source.frontmatter || {};
     const extras: Record<string, unknown> = {};
     let description: string | undefined;
-    let from: string[] | undefined;
+    let from: string | undefined;
 
     for (const [key, value] of Object.entries(fm)) {
       if (key === "description") {
         description = String(value);
       } else if (key === "_from") {
-        from = Array.isArray(value) ? value : undefined;
+        from = typeof value === "string" ? value : Array.isArray(value) && value.length > 0 ? value[0] : undefined;
       } else {
         extras[key] = value;
       }
@@ -141,7 +141,7 @@ export class OpenCodeAgent implements AgentDefinition {
       frontmatter[key] = value;
     }
 
-    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+    if (ir.semantic.from !== undefined) {
       frontmatter._from = ir.semantic.from;
     }
 
@@ -259,7 +259,7 @@ export class OpenCodeAgent implements AgentDefinition {
   skillToIR(source: OpenCodeSkill, _options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     let modelInvocationEnabled: boolean | undefined;
-    let from: string[] | undefined;
+    let from: string | undefined;
 
     for (const [key, value] of Object.entries(source.frontmatter)) {
       if (key === "name" || key === "description") continue;
@@ -270,7 +270,7 @@ export class OpenCodeAgent implements AgentDefinition {
       }
 
       if (key === "_from") {
-        from = Array.isArray(value) ? value : undefined;
+        from = typeof value === "string" ? value : Array.isArray(value) && value.length > 0 ? value[0] : undefined;
         continue;
       }
 
@@ -315,7 +315,7 @@ export class OpenCodeAgent implements AgentDefinition {
       }
     }
 
-    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+    if (ir.semantic.from !== undefined) {
       frontmatter._from = ir.semantic.from;
     }
 

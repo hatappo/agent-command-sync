@@ -232,7 +232,11 @@ export class CursorAgent implements AgentDefinition {
         description: fm.description,
         modelInvocationEnabled:
           typeof fm["disable-model-invocation"] === "boolean" ? !fm["disable-model-invocation"] : undefined,
-        from: Array.isArray(fromValue) ? fromValue : undefined,
+        from: typeof fromValue === "string"
+          ? fromValue
+          : Array.isArray(fromValue) && fromValue.length > 0
+            ? fromValue[0]
+            : undefined,
       },
       extras,
       meta: {
@@ -263,7 +267,7 @@ export class CursorAgent implements AgentDefinition {
       }
     }
 
-    if (ir.semantic.from !== undefined && ir.semantic.from.length > 0) {
+    if (ir.semantic.from !== undefined) {
       frontmatter._from = ir.semantic.from;
     }
 

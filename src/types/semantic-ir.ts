@@ -18,8 +18,8 @@ export interface SemanticProperties {
   name?: string;
   /** Claude: !disable-model-invocation, Codex: allow_implicit_invocation */
   modelInvocationEnabled?: boolean;
-  /** Provenance tracking: list of source URLs (download/sync origins) */
-  from?: string[];
+  /** Provenance tracking: most recent source origin (owner/repo) */
+  from?: string;
 }
 
 /**
