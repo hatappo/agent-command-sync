@@ -221,11 +221,13 @@ async function convertSingleFile(
     const ir: SemanticIR = src.commandToIR(command, { destinationType: options.destination });
 
     // Append source file URL to provenance tracking
-    if (sourceRepoUrl && options.gitRoot && branch) {
-      const rel = relative(options.gitRoot, sourceFile);
-      appendFromUrl(ir, `${sourceRepoUrl}/blob/${branch}/${rel}`);
-    } else if (sourceRepoUrl) {
-      appendFromUrl(ir, sourceRepoUrl);
+    if (!options.noProvenance) {
+      if (sourceRepoUrl && options.gitRoot && branch) {
+        const rel = relative(options.gitRoot, sourceFile);
+        appendFromUrl(ir, `${sourceRepoUrl}/blob/${branch}/${rel}`);
+      } else if (sourceRepoUrl) {
+        appendFromUrl(ir, sourceRepoUrl);
+      }
     }
 
     // Determine target file path
@@ -398,11 +400,13 @@ async function convertSingleSkill(
     const ir: SemanticIR = src.skillToIR(skill, { destinationType: options.destination });
 
     // Append source skill URL to provenance tracking
-    if (sourceRepoUrl && options.gitRoot && branch) {
-      const rel = relative(options.gitRoot, skillDir);
-      appendFromUrl(ir, `${sourceRepoUrl}/tree/${branch}/${rel}`);
-    } else if (sourceRepoUrl) {
-      appendFromUrl(ir, sourceRepoUrl);
+    if (!options.noProvenance) {
+      if (sourceRepoUrl && options.gitRoot && branch) {
+        const rel = relative(options.gitRoot, skillDir);
+        appendFromUrl(ir, `${sourceRepoUrl}/tree/${branch}/${rel}`);
+      } else if (sourceRepoUrl) {
+        appendFromUrl(ir, sourceRepoUrl);
+      }
     }
 
     // Get skill directories

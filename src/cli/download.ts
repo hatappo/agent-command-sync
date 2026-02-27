@@ -37,6 +37,7 @@ export interface DownloadOptions {
   verbose: boolean;
   gitRoot?: string | null;
   customDirs?: Partial<Record<ProductType, string>>;
+  noProvenance?: boolean;
 }
 
 // ── Operation display ───────────────────────────────────────────
@@ -185,9 +186,11 @@ async function downloadMultipleSkills(
       const files = await fetchSkillFromTree(repoUrl.owner, repoUrl.repo, ref, skill);
       const targetDir = resolveTargetDirForRepoSkill(skill, options);
 
-      for (const file of files) {
-        if (file.relativePath === SKILL_CONSTANTS.SKILL_FILE_NAME && typeof file.content === "string") {
-          file.content = injectFromUrl(file.content, provenanceUrl);
+      if (!options.noProvenance) {
+        for (const file of files) {
+          if (file.relativePath === SKILL_CONSTANTS.SKILL_FILE_NAME && typeof file.content === "string") {
+            file.content = injectFromUrl(file.content, provenanceUrl);
+          }
         }
       }
 
@@ -327,9 +330,11 @@ export async function downloadSkill(options: DownloadOptions): Promise<void> {
   }
 
   // 5. Inject _from provenance into SKILL.md
-  for (const file of files) {
-    if (file.relativePath === SKILL_CONSTANTS.SKILL_FILE_NAME && typeof file.content === "string") {
-      file.content = injectFromUrl(file.content, options.url);
+  if (!options.noProvenance) {
+    for (const file of files) {
+      if (file.relativePath === SKILL_CONSTANTS.SKILL_FILE_NAME && typeof file.content === "string") {
+        file.content = injectFromUrl(file.content, options.url);
+      }
     }
   }
 

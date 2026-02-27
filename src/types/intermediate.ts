@@ -39,4 +39,6 @@ export interface IntermediateConversionOptions {
   global: boolean;
   /** Git repository root path (null if not in a git repo). Resolved at CLI startup. */
   gitRoot?: string | null;
+  /** Do not record source URL in _from frontmatter property */
+  noProvenance?: boolean;
 }

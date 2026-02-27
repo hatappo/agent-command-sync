@@ -20,6 +20,7 @@ export const defaultCLIOptions: Partial<CLIOptions> = {
   verbose: false,
   contentType: "both",
   global: false,
+  noProvenance: false,
 };
 
 /**

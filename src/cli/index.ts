@@ -107,7 +107,8 @@ async function main(): Promise<void> {
     .option("--sync-delete", "Delete commands in the target that don't exist in the source", false)
     .option("-f, --file <filename>", "Convert only the specified command/skill (without extension)")
     .option("-n, --noop", "Display a list of changes without applying them", false)
-    .option("-v, --verbose", "Show detailed debug information", false);
+    .option("-v, --verbose", "Show detailed debug information", false)
+    .option("--no-provenance", "Do not record source URL in _from frontmatter property");
 
   registerCommonDirOptions(syncCmd);
 
@@ -134,6 +135,7 @@ async function main(): Promise<void> {
         global: options.global,
         gitRoot,
         customDirs: buildCustomDirs(options),
+        noProvenance: !options.provenance,
         rawSubCommand: "sync",
       };
 
@@ -150,7 +152,8 @@ async function main(): Promise<void> {
     .description("Import commands/skills from an agent into Chimera hub")
     .option("-t, --type <type>", "Content type: skills, commands, or both", "skills")
     .option("-f, --file <filename>", "Convert only the specified command/skill (without extension)")
-    .option("-v, --verbose", "Show detailed debug information", false);
+    .option("-v, --verbose", "Show detailed debug information", false)
+    .option("--no-provenance", "Do not record source URL in _from frontmatter property");
 
   registerCommonDirOptions(importCmd);
 
@@ -169,6 +172,7 @@ async function main(): Promise<void> {
         global: options.global,
         gitRoot,
         customDirs: buildCustomDirs(options),
+        noProvenance: !options.provenance,
         rawSubCommand: "import",
       };
 
@@ -185,7 +189,8 @@ async function main(): Promise<void> {
     .description("Preview what would change when importing from an agent (dry run)")
     .option("-t, --type <type>", "Content type: skills, commands, or both", "skills")
     .option("-f, --file <filename>", "Convert only the specified command/skill (without extension)")
-    .option("-v, --verbose", "Show detailed debug information", false);
+    .option("-v, --verbose", "Show detailed debug information", false)
+    .option("--no-provenance", "Do not record source URL in _from frontmatter property");
 
   registerCommonDirOptions(driftCmd);
 
@@ -204,6 +209,7 @@ async function main(): Promise<void> {
         global: options.global,
         gitRoot,
         customDirs: buildCustomDirs(options),
+        noProvenance: !options.provenance,
         rawSubCommand: "drift",
       };
 
@@ -223,7 +229,8 @@ async function main(): Promise<void> {
     .option("--no-overwrite", "Skip conversion if a command with the same name exists in the target")
     .option("--sync-delete", "Delete commands in the target that don't exist in the source", false)
     .option("-f, --file <filename>", "Convert only the specified command/skill (without extension)")
-    .option("-v, --verbose", "Show detailed debug information", false);
+    .option("-v, --verbose", "Show detailed debug information", false)
+    .option("--no-provenance", "Do not record source URL in _from frontmatter property");
 
   registerCommonDirOptions(applyCmd);
 
@@ -242,6 +249,7 @@ async function main(): Promise<void> {
         global: options.global,
         gitRoot,
         customDirs: buildCustomDirs(options),
+        noProvenance: !options.provenance,
         rawSubCommand: "apply",
       };
 
@@ -259,7 +267,8 @@ async function main(): Promise<void> {
     .option("-t, --type <type>", "Content type: skills, commands, or both", "skills")
     .option("--remove-unsupported", "Remove keys that are not supported in the target format", false)
     .option("-f, --file <filename>", "Convert only the specified command/skill (without extension)")
-    .option("-v, --verbose", "Show detailed debug information", false);
+    .option("-v, --verbose", "Show detailed debug information", false)
+    .option("--no-provenance", "Do not record source URL in _from frontmatter property");
 
   registerCommonDirOptions(planCmd);
 
@@ -278,6 +287,7 @@ async function main(): Promise<void> {
         global: options.global,
         gitRoot,
         customDirs: buildCustomDirs(options),
+        noProvenance: !options.provenance,
         rawSubCommand: "plan",
       };
 
@@ -293,7 +303,8 @@ async function main(): Promise<void> {
     .command("download <url> [to]")
     .description("Download skill(s) from GitHub (supports repo-level URLs for bulk download)")
     .option("-n, --noop", "Preview files without downloading", false)
-    .option("-v, --verbose", "Show detailed debug information", false);
+    .option("-v, --verbose", "Show detailed debug information", false)
+    .option("--no-provenance", "Do not record source URL in _from frontmatter property");
 
   registerCommonDirOptions(downloadCmd);
 
@@ -308,6 +319,7 @@ async function main(): Promise<void> {
         verbose: options.verbose,
         gitRoot,
         customDirs: buildCustomDirs(options),
+        noProvenance: !options.provenance,
       });
     } catch (error) {
       handleError(error);

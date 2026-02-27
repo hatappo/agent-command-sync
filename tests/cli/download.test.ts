@@ -198,6 +198,23 @@ describe("download command", () => {
     expect(parsed.data._from).toEqual([testUrl]);
   });
 
+  it("should not inject _from when noProvenance is true", async () => {
+    setupBasicMocks();
+
+    await downloadSkill({
+      url: testUrl,
+      global: false,
+      noop: false,
+      verbose: false,
+      gitRoot: tempDir,
+      noProvenance: true,
+    });
+
+    const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
+    // Verify raw content doesn't contain _from (avoid gray-matter cache pollution from prior tests)
+    expect(skillMd).not.toContain("_from");
+  });
+
   it("should preserve existing _from entries when re-downloading", async () => {
     // Pre-create SKILL.md with existing _from
     const skillDir = join(tempDir, ".claude/skills/my-skill");
