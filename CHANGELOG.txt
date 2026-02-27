@@ -1,5 +1,29 @@
 # Changelog
 
+## [5.2.0] - 2026-02-27
+
+### Added
+- **`--no-provenance` option**: Skip `_from` provenance tracking in `download` and `sync` commands. Available on all subcommands (sync, import, drift, apply, plan, download).
+
+### Changed
+- **`_from` provenance format**: Shortened from full GitHub URL (e.g., `https://github.com/owner/repo/tree/main/.claude/skills/my-skill`) to `owner/repo` format
+- **`_from` single-entry policy**: If `_from` already has an entry, no additional entry is added. Provenance chain A→B→C is traceable via one entry per node.
+
+## [5.1.0] - 2026-02-27
+
+### Added
+- **Repository-level bulk download**: `acs download <repo-url>` scans the entire repository for skills (directories containing `SKILL.md`) and downloads them all at once
+  - Supports bare repo URLs (`https://github.com/owner/repo`) and tree URLs (`https://github.com/owner/repo/tree/main`)
+  - Uses GitHub Git Trees API for efficient repository scanning
+  - Continues downloading remaining skills if one fails
+  - Warns when the tree response is truncated by GitHub API
+- **Skill-level summary**: Download and sync output now includes a skill-level summary line (e.g., `2 skills created, 1 skill updated`) in addition to the file-level summary
+
+## [5.0.1] - 2026-02-27
+
+### Fixed
+- Improved Quick Start examples in README with concrete URLs and paths
+
 ## [5.0.0] - 2026-02-27
 
 ### BREAKING CHANGES

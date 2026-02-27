@@ -1,5 +1,29 @@
 # 変更履歴
 
+## [5.2.0] - 2026-02-27
+
+### 追加機能
+- **`--no-provenance` オプション**: `download` および `sync` コマンドで `_from` プロバナンス記録をスキップ。全サブコマンド（sync, import, drift, apply, plan, download）で利用可能。
+
+### 変更
+- **`_from` プロバナンス形式の短縮**: 完全な GitHub URL（例: `https://github.com/owner/repo/tree/main/.claude/skills/my-skill`）から `owner/repo` 形式に変更
+- **`_from` 単一エントリポリシー**: 既に `_from` エントリが存在する場合、追加エントリは記録しない。プロバナンスチェーン A→B→C は各ノードの1エントリで追跡可能。
+
+## [5.1.0] - 2026-02-27
+
+### 追加機能
+- **リポジトリレベル一括ダウンロード**: `acs download <repo-url>` でリポジトリ全体をスキャンし、スキル（`SKILL.md` を含むディレクトリ）を一括ダウンロード
+  - ベアリポジトリ URL（`https://github.com/owner/repo`）およびツリー URL（`https://github.com/owner/repo/tree/main`）に対応
+  - GitHub Git Trees API による効率的なリポジトリスキャン
+  - 1つのスキルが失敗しても残りのダウンロードを継続
+  - GitHub API によりツリーが切り詰められた場合に警告を表示
+- **スキルレベルサマリー**: download および sync の出力にファイルレベルサマリーに加え、スキルレベルサマリー行（例: `2 skills created, 1 skill updated`）を表示
+
+## [5.0.1] - 2026-02-27
+
+### 修正
+- README の Quick Start 例を具体的な URL・パスに改善
+
 ## [5.0.0] - 2026-02-27
 
 ### 破壊的変更

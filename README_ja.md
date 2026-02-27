@@ -71,12 +71,14 @@ acs sync gemini claude -n
 ## 機能
 
 - **GitHub からダウンロード** — `acs download` で GitHub リポジトリからスキルを直接取得
-- **来歴トラッキング** — ダウンロードや同期のたびにソース URL を `_from` に記録。公開スキルに問題が発見された場合、影響を受けるローカルスキルを即座に追跡可能
+- **来歴トラッキング** — ダウンロードや同期のたびにソース情報を `_from` に記録（`owner/repo` 形式）。公開スキルに問題が発見された場合、影響を受けるローカルスキルを即座に追跡可能。`--no-provenance` で無効化
 - **エージェント間フォーマット変換** — 7エージェント間でフォーマット差異を吸収したスキル変換
 - **プレースホルダー変換** — `$ARGUMENTS` ↔ `{{args}}`、ファイル参照、シェルコマンドを自動変換
 - **ドライランプレビュー** — `-n` で適用前に変更内容を確認
 - **Chimera Hub** — 全エージェント固有設定を保持するロスレス変換ハブ（[詳細](docs/chimera-hub-workflow.md)）
 
+> **v5.1 からのアップグレード？** v5.2.0 で `_from` の形式が完全な GitHub URL から `owner/repo` に変更されました。[CHANGELOG_ja.txt](CHANGELOG_ja.txt) をご確認ください。
+>
 > **v3 からのアップグレード？** v4.0.0 ではデフォルトのディレクトリスコープが変更されました。破壊的変更は [CHANGELOG_ja.txt](CHANGELOG_ja.txt) をご確認ください。
 >
 > **v2 からのアップグレード？** [マイグレーションガイド](docs/migration-v2-to-v3_ja.md)をご確認ください。
@@ -139,6 +141,7 @@ acs plan gemini                            # 適用の変更をプレビュー
 | `--no-overwrite`            | 変換先ディレクトリの既存ファイルをスキップ                                |
 | `--sync-delete`             | 変換先ディレクトリの孤立ファイルを削除                                   |
 | `--remove-unsupported`      | 変換先形式でサポートされていないフィールドを削除                           |
+| `--no-provenance`           | ソース情報を `_from` frontmatter プロパティに記録しない                    |
 | `--claude-dir <path>`       | Claude ベースディレクトリ（デフォルト: ~/.claude）                          |
 | `--gemini-dir <path>`       | Gemini ベースディレクトリ（デフォルト: ~/.gemini）                          |
 | `--codex-dir <path>`        | Codex ベースディレクトリ（デフォルト: ~/.codex）                           |

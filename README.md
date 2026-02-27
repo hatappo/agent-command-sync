@@ -71,12 +71,14 @@ acs sync gemini claude -n
 ## Features
 
 - **Download from GitHub** — Fetch skills directly from GitHub repositories with `acs download`
-- **Provenance Tracking** — Every download and sync records the source URL in `_from`. If a public skill is found to be compromised, trace affected local skills instantly
+- **Provenance Tracking** — Every download and sync records the source in `_from` (as `owner/repo`). If a public skill is found to be compromised, trace affected local skills instantly. Disable with `--no-provenance`
 - **Cross-Agent Conversion** — Convert skill formats and placement across 7 agents, absorbing format differences automatically
 - **Placeholder Conversion** — `$ARGUMENTS` ↔ `{{args}}`, file references, shell commands auto-converted
 - **Dry-Run Preview** — Preview changes with `-n` before applying them
 - **Chimera Hub** — Lossless conversion hub that preserves all agent-specific settings ([details](docs/chimera-hub-workflow.md))
 
+> **Upgrading from v5.1?** v5.2.0 changes `_from` format from full GitHub URL to `owner/repo`. See [CHANGELOG.txt](CHANGELOG.txt).
+>
 > **Upgrading from v3?** v4.0.0 changes the default directory scope. See [CHANGELOG.txt](CHANGELOG.txt) for breaking changes.
 >
 > **Upgrading from v2?** See the [Migration Guide](docs/migration-v2-to-v3.md).
@@ -139,6 +141,7 @@ acs plan gemini                            # Preview apply changes
 | `--no-overwrite`            | Skip existing files in target directory                               |
 | `--sync-delete`             | Delete orphaned files in target directory                             |
 | `--remove-unsupported`      | Remove fields not supported by target format                          |
+| `--no-provenance`           | Do not record source in `_from` frontmatter property                  |
 | `--claude-dir <path>`       | Claude base directory (default: ~/.claude)                            |
 | `--gemini-dir <path>`       | Gemini base directory (default: ~/.gemini)                            |
 | `--codex-dir <path>`        | Codex base directory (default: ~/.codex)                              |
