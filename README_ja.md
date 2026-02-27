@@ -58,6 +58,8 @@ acs sync gemini claude -g
 acs sync gemini claude -n
 ```
 
+![acs sync example](https://raw.githubusercontent.com/hatappo/agent-command-sync/main/docs/acsync-example.png)
+
 ## 対応エージェント
 
 | エージェント | Skills | Commands | プレースホルダー |
