@@ -279,11 +279,12 @@ export class ClaudeAgent implements AgentDefinition {
         description: fm.description,
         modelInvocationEnabled:
           typeof fm["disable-model-invocation"] === "boolean" ? !fm["disable-model-invocation"] : undefined,
-        from: typeof fromValue === "string"
-          ? fromValue
-          : Array.isArray(fromValue) && fromValue.length > 0
-            ? fromValue[0]
-            : undefined,
+        from:
+          typeof fromValue === "string"
+            ? fromValue
+            : Array.isArray(fromValue) && fromValue.length > 0
+              ? fromValue[0]
+              : undefined,
       },
       extras,
       meta: {

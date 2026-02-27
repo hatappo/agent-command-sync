@@ -234,13 +234,17 @@ describe("download command", () => {
     const otherTreeHash = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     mockFetch
       .mockResolvedValueOnce(mockDirectoryListing([{ name: "SKILL.md", type: "file" }]))
-      .mockResolvedValueOnce(
-        mockFileContent(`---\ndescription: My Skill\n_from: ${existingFrom}\n---\n# My Skill`),
-      )
+      .mockResolvedValueOnce(mockFileContent(`---\ndescription: My Skill\n_from: ${existingFrom}\n---\n# My Skill`))
       // Parent directory fetch (for tree hash)
       .mockResolvedValueOnce(
         mockDirectoryListing([
-          { name: "other-skill", type: "dir", path: ".claude/skills/other-skill", sha: otherTreeHash, download_url: null },
+          {
+            name: "other-skill",
+            type: "dir",
+            path: ".claude/skills/other-skill",
+            sha: otherTreeHash,
+            download_url: null,
+          },
         ]),
       );
 
@@ -419,7 +423,13 @@ describe("download command", () => {
       const treeItems: { path: string; type: string; mode: string; sha: string; url: string }[] = [];
       for (const skillPath of skillPaths) {
         // Add tree entry for the skill directory (provides tree hash)
-        treeItems.push({ path: skillPath, type: "tree", mode: "040000", sha: `tree-${skillPath.split("/").pop()}`, url: "" });
+        treeItems.push({
+          path: skillPath,
+          type: "tree",
+          mode: "040000",
+          sha: `tree-${skillPath.split("/").pop()}`,
+          url: "",
+        });
         treeItems.push(
           { path: `${skillPath}/SKILL.md`, type: "blob", mode: "100644", sha: "s1", url: "" },
           { path: `${skillPath}/helper.ts`, type: "blob", mode: "100644", sha: "s2", url: "" },

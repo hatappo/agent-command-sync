@@ -1,5 +1,21 @@
 # Changelog
 
+## [5.3.0] - 2026-02-28
+
+### Added
+- **`acs update [skill-path]` subcommand**: Check for and apply upstream updates to downloaded skills
+  - Scans local skills with `_from` provenance and compares tree hashes against upstream repositories
+  - Without arguments: scans all agent skill directories (`.claude/skills/`, `.gemini/skills/`, etc.)
+  - With `skill-path`: scans the specified path for skills (single skill directory or parent directory containing multiple skills)
+  - Supports `--noop` for dry-run mode (check only, no downloads)
+  - Groups skills by `owner/repo` for efficient batched API calls
+  - Handles truncated/short tree hashes gracefully (treated as mismatch, triggers re-download)
+  - Legacy `_from` without tree hash (e.g., `owner/repo`) forces re-download and updates `_from` with current hash
+- **Skill-level summary list in bulk download**: `acs download <repo-url>` now shows a per-skill summary at the end of output, making it easier to see which skills were created, updated, or unchanged
+
+### Changed
+- **Update status wording**: Changed "Up to date" to "No upstream changes" to accurately reflect that only the upstream state is checked, not local file identity
+
 ## [5.2.0] - 2026-02-27
 
 ### Added

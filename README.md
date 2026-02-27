@@ -7,7 +7,7 @@
 [![npm version](https://badge.fury.io/js/agent-command-sync.svg)](https://www.npmjs.com/package/agent-command-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A skill package manager for AI coding agents — Easily download any Skill from GitHub and copy it in the right format across Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor.
+A skill package manager for AI coding agents — Download, update, and sync Skills across Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor. Zero config, no extra files needed.
 
 ## CHANGELOG
 
@@ -71,12 +71,15 @@ acs sync gemini claude -n
 ## Features
 
 - **Download from GitHub** — Fetch skills directly from GitHub repositories with `acs download`
-- **Provenance Tracking** — Every download and sync records the source in `_from` (as `owner/repo`). If a public skill is found to be compromised, trace affected local skills instantly. Disable with `--no-provenance`
+- **Update from Upstream** — Check and apply upstream changes to downloaded skills with `acs update`
+- **Provenance Tracking** — Every download and sync records the source in `_from` (as `owner/repo@treeHash`). If a public skill is found to be compromised, trace affected local skills instantly. Disable with `--no-provenance`
 - **Cross-Agent Conversion** — Convert skill formats and placement across 7 agents, absorbing format differences automatically
 - **Placeholder Conversion** — `$ARGUMENTS` ↔ `{{args}}`, file references, shell commands auto-converted
 - **Dry-Run Preview** — Preview changes with `-n` before applying them
 - **Chimera Hub** — Lossless conversion hub that preserves all agent-specific settings ([details](docs/chimera-hub-workflow.md))
 
+> **Upgrading from v5.2?** v5.3.0 adds the `acs update` subcommand and appends tree hashes to `_from` (`owner/repo@treeHash`). See [CHANGELOG.txt](CHANGELOG.txt).
+>
 > **Upgrading from v5.1?** v5.2.0 changes `_from` format from full GitHub URL to `owner/repo`. See [CHANGELOG.txt](CHANGELOG.txt).
 >
 > **Upgrading from v3?** v4.0.0 changes the default directory scope. See [CHANGELOG.txt](CHANGELOG.txt) for breaking changes.
@@ -103,6 +106,15 @@ export GITHUB_TOKEN=ghp_...
 ```
 
 **Token permissions**: Public repositories require no permissions. For private repositories, grant **Contents: Read** access to the target repository.
+
+### `acs update [skill-path]` — Update downloaded skills from upstream
+
+```bash
+acs update                                 # Check and update all agent skills
+acs update .claude/skills/my-skill         # Update a specific skill
+acs update skills/                         # Update all skills under a path
+acs update -n                              # Check for updates without applying
+```
 
 ### `acs sync <from> <to>` — Direct conversion between agents
 

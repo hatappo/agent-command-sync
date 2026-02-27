@@ -6,11 +6,7 @@ import { AGENT_REGISTRY } from "../agents/registry.js";
 import { PRODUCT_TYPES, type ProductType } from "../types/intermediate.js";
 import { SKILL_CONSTANTS } from "../utils/constants.js";
 import { type DirResolutionContext, fileExists, findAgentSkills, readFile } from "../utils/file-utils.js";
-import {
-  fetchDefaultBranch,
-  fetchSkillFromTree,
-  scanRepositoryForSkills,
-} from "../utils/github-utils.js";
+import { fetchDefaultBranch, fetchSkillFromTree, scanRepositoryForSkills } from "../utils/github-utils.js";
 import { formatFromValue, injectFromUrl, writeDownloadedFile } from "./download.js";
 
 // ── Types ───────────────────────────────────────────────────────
@@ -203,17 +199,10 @@ export async function updateSkills(options: UpdateOptions): Promise<void> {
         console.log(`  DEBUG: Default branch: ${defaultBranch}`);
       }
 
-      const { skills: remoteSkills, truncated } = await scanRepositoryForSkills(
-        owner,
-        repo,
-        defaultBranch,
-        token,
-      );
+      const { skills: remoteSkills, truncated } = await scanRepositoryForSkills(owner, repo, defaultBranch, token);
 
       if (truncated) {
-        console.log(
-          picocolors.yellow("    Warning: Repository tree was truncated. Some skills may not be found."),
-        );
+        console.log(picocolors.yellow("    Warning: Repository tree was truncated. Some skills may not be found."));
       }
 
       if (options.verbose) {

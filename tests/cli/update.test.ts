@@ -67,10 +67,7 @@ describe("update command", () => {
   }
 
   /** Mock scanRepositoryForSkills response */
-  function mockTreeScan(
-    skills: { name: string; path: string; treeHash?: string }[],
-    truncated = false,
-  ): void {
+  function mockTreeScan(skills: { name: string; path: string; treeHash?: string }[], truncated = false): void {
     const treeItems: { path: string; type: string; mode: string; sha: string; url: string }[] = [];
     for (const skill of skills) {
       treeItems.push({

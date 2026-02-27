@@ -247,8 +247,16 @@ async function downloadMultipleSkills(
     for (const { name, op } of skillResults) {
       const style = operationStyles[op];
       const label = options.noop
-        ? op === "A" ? "would create" : op === "M" ? "would update" : "unchanged"
-        : op === "A" ? "Created" : op === "M" ? "Updated" : "Unchanged";
+        ? op === "A"
+          ? "would create"
+          : op === "M"
+            ? "would update"
+            : "unchanged"
+        : op === "A"
+          ? "Created"
+          : op === "M"
+            ? "Updated"
+            : "Unchanged";
       console.log(`    ${style.prefix} ${name} - ${style.color(label)}`);
     }
 
