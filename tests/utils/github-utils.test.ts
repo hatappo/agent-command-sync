@@ -572,9 +572,7 @@ describe("github-utils", () => {
       } as Response);
 
       await scanRepositoryForSkills("owner", "repo", "v1.0.0");
-      expect(mockFetch.mock.calls[0][0]).toBe(
-        "https://api.github.com/repos/owner/repo/git/trees/v1.0.0?recursive=1",
-      );
+      expect(mockFetch.mock.calls[0][0]).toBe("https://api.github.com/repos/owner/repo/git/trees/v1.0.0?recursive=1");
     });
   });
 });

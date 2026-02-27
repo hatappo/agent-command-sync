@@ -147,10 +147,7 @@ export function tryParseRepoUrl(url: string): ParsedRepoUrl | null {
     return null;
   }
 
-  const segments = parsed.pathname
-    .replace(/^\//, "")
-    .replace(/\/$/, "")
-    .split("/");
+  const segments = parsed.pathname.replace(/^\//, "").replace(/\/$/, "").split("/");
 
   if (segments.length < 2 || !segments[0] || !segments[1]) {
     return null;
@@ -333,7 +330,9 @@ export async function scanRepositoryForSkills(
   const skills: DiscoveredSkill[] = [];
   for (const dirPath of skillPaths) {
     const prefix = `${dirPath}/`;
-    const files = data.tree.filter((item) => item.type === "blob" && item.path.startsWith(prefix)).map((item) => item.path);
+    const files = data.tree
+      .filter((item) => item.type === "blob" && item.path.startsWith(prefix))
+      .map((item) => item.path);
     const segments = dirPath.split("/");
     skills.push({ path: dirPath, name: segments[segments.length - 1], files });
   }

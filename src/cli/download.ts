@@ -236,14 +236,18 @@ async function downloadMultipleSkills(
     const parts: string[] = [];
     if (totalStats.A > 0) parts.push(picocolors.green(`${totalStats.A} file${totalStats.A !== 1 ? "s" : ""} created`));
     if (totalStats.M > 0) parts.push(picocolors.yellow(`${totalStats.M} file${totalStats.M !== 1 ? "s" : ""} updated`));
-    if (totalStats["="] > 0) parts.push(picocolors.blue(`${totalStats["="] } file${totalStats["="] !== 1 ? "s" : ""} unchanged`));
+    if (totalStats["="] > 0)
+      parts.push(picocolors.blue(`${totalStats["="]} file${totalStats["="] !== 1 ? "s" : ""} unchanged`));
     console.log(`Done! ${parts.join(", ")}.`);
 
     // Skill-level summary
     const skillParts: string[] = [];
-    if (skillStats.A > 0) skillParts.push(picocolors.green(`${skillStats.A} skill${skillStats.A !== 1 ? "s" : ""} created`));
-    if (skillStats.M > 0) skillParts.push(picocolors.yellow(`${skillStats.M} skill${skillStats.M !== 1 ? "s" : ""} updated`));
-    if (skillStats["="] > 0) skillParts.push(picocolors.blue(`${skillStats["="] } skill${skillStats["="] !== 1 ? "s" : ""} unchanged`));
+    if (skillStats.A > 0)
+      skillParts.push(picocolors.green(`${skillStats.A} skill${skillStats.A !== 1 ? "s" : ""} created`));
+    if (skillStats.M > 0)
+      skillParts.push(picocolors.yellow(`${skillStats.M} skill${skillStats.M !== 1 ? "s" : ""} updated`));
+    if (skillStats["="] > 0)
+      skillParts.push(picocolors.blue(`${skillStats["="]} skill${skillStats["="] !== 1 ? "s" : ""} unchanged`));
     if (skillParts.length > 0) {
       console.log(`      ${skillParts.join(", ")}.`);
     }
@@ -363,12 +367,13 @@ export async function downloadSkill(options: DownloadOptions): Promise<void> {
     const parts: string[] = [];
     if (stats.A > 0) parts.push(picocolors.green(`${stats.A} file${stats.A !== 1 ? "s" : ""} created`));
     if (stats.M > 0) parts.push(picocolors.yellow(`${stats.M} file${stats.M !== 1 ? "s" : ""} updated`));
-    if (stats["="] > 0) parts.push(picocolors.blue(`${stats["="] } file${stats["="] !== 1 ? "s" : ""} unchanged`));
+    if (stats["="] > 0) parts.push(picocolors.blue(`${stats["="]} file${stats["="] !== 1 ? "s" : ""} unchanged`));
     console.log(`Done! ${parts.join(", ")}.`);
 
     // Skill-level summary (single skill download = 1 skill)
     const skillStatus = stats.A > 0 && stats.M === 0 ? "created" : stats.M > 0 ? "updated" : "unchanged";
-    const skillColor = skillStatus === "created" ? picocolors.green : skillStatus === "updated" ? picocolors.yellow : picocolors.blue;
+    const skillColor =
+      skillStatus === "created" ? picocolors.green : skillStatus === "updated" ? picocolors.yellow : picocolors.blue;
     console.log(`      ${skillColor(`1 skill ${skillStatus}`)}.`);
   }
 }
