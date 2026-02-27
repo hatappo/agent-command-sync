@@ -128,6 +128,11 @@ async function writeDownloadedFile(filePath: string, file: DownloadedFile): Prom
   }
 }
 
+/** Format _from value with optional tree hash: `owner/repo` or `owner/repo@treeHash` */
+function formatFromValue(ownerRepo: string, treeHash?: string): string {
+  return treeHash ? `${ownerRepo}@${treeHash}` : ownerRepo;
+}
+
 /**
  * Inject _from provenance into a SKILL.md text content.
  * Always updates to track the most recent source.
@@ -183,9 +188,10 @@ async function downloadMultipleSkills(
       const targetDir = resolveTargetDirForRepoSkill(skill, options);
 
       if (!options.noProvenance) {
+        const fromValue = formatFromValue(ownerRepo, skill.treeHash);
         for (const file of files) {
           if (file.relativePath === SKILL_CONSTANTS.SKILL_FILE_NAME && typeof file.content === "string") {
-            file.content = injectFromUrl(file.content, ownerRepo);
+            file.content = injectFromUrl(file.content, fromValue);
           }
         }
       }
@@ -312,7 +318,7 @@ export async function downloadSkill(options: DownloadOptions): Promise<void> {
   );
 
   // 3. Fetch files from GitHub
-  const files = await fetchSkillDirectory(parsed, options.githubToken);
+  const { files, treeHash } = await fetchSkillDirectory(parsed, options.githubToken);
 
   if (options.verbose) {
     console.log(`DEBUG: Fetched ${files.length} files`);
@@ -328,9 +334,10 @@ export async function downloadSkill(options: DownloadOptions): Promise<void> {
   // 5. Inject _from provenance into SKILL.md
   if (!options.noProvenance) {
     const ownerRepo = `${parsed.owner}/${parsed.repo}`;
+    const fromValue = formatFromValue(ownerRepo, treeHash);
     for (const file of files) {
       if (file.relativePath === SKILL_CONSTANTS.SKILL_FILE_NAME && typeof file.content === "string") {
-        file.content = injectFromUrl(file.content, ownerRepo);
+        file.content = injectFromUrl(file.content, fromValue);
       }
     }
   }

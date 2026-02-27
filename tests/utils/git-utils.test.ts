@@ -2,7 +2,7 @@ import { writeFile as fsWriteFile, mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { findGitRoot, getCurrentBranch, getGitHubRemoteUrl } from "../../src/utils/git-utils.js";
+import { findGitRoot, getCurrentBranch, getGitHubRemoteUrl, getTreeHash } from "../../src/utils/git-utils.js";
 
 describe("git-utils", () => {
   let tempDir: string;
@@ -227,6 +227,41 @@ describe("git-utils", () => {
 
       const result = await getCurrentBranch(worktreeDir);
       expect(result).toBe("feature-branch");
+    });
+  });
+
+  describe("getTreeHash", () => {
+    it("should return a 40-char hex hash for a committed directory", async () => {
+      // Use the actual project root (this test is run inside a git repo)
+      const gitRoot = await findGitRoot(process.cwd());
+      if (!gitRoot) {
+        // Skip if not in a git repo (shouldn't happen in normal test runs)
+        return;
+      }
+
+      const result = await getTreeHash(gitRoot, join(gitRoot, "src"));
+      expect(result).toMatch(/^[0-9a-f]{40}$/);
+    });
+
+    it("should return null for a non-existent directory", async () => {
+      const gitRoot = await findGitRoot(process.cwd());
+      if (!gitRoot) return;
+
+      const result = await getTreeHash(gitRoot, join(gitRoot, "non-existent-dir-xyz"));
+      expect(result).toBeNull();
+    });
+
+    it("should return null when dirPath is outside gitRoot", async () => {
+      const gitRoot = await findGitRoot(process.cwd());
+      if (!gitRoot) return;
+
+      const result = await getTreeHash(gitRoot, "/some/other/path");
+      expect(result).toBeNull();
+    });
+
+    it("should return null for a non-git directory", async () => {
+      const result = await getTreeHash(tempDir, join(tempDir, "subdir"));
+      expect(result).toBeNull();
     });
   });
 });

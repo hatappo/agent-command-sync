@@ -167,6 +167,13 @@ describe("github-utils", () => {
       } as Response;
     }
 
+    /** Mock response for the parent directory fetch (used to retrieve tree hash) */
+    function mockParentDirResponse(treeHash = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"): Response {
+      return mockDirectoryResponse([
+        { name: "my-skill", type: "dir", path: parsed.path, sha: treeHash, download_url: null },
+      ]);
+    }
+
     it("should fetch a skill directory with SKILL.md and support files", async () => {
       mockFetch
         // First call: directory listing
@@ -179,9 +186,11 @@ describe("github-utils", () => {
         // Second call: SKILL.md content
         .mockResolvedValueOnce(mockFileResponse("# My Skill\nDescription here"))
         // Third call: helper.ts content
-        .mockResolvedValueOnce(mockFileResponse("export function helper() {}"));
+        .mockResolvedValueOnce(mockFileResponse("export function helper() {}"))
+        // Fourth call: parent directory (for tree hash)
+        .mockResolvedValueOnce(mockParentDirResponse());
 
-      const files = await fetchSkillDirectory(parsed);
+      const { files, treeHash } = await fetchSkillDirectory(parsed);
 
       expect(files).toHaveLength(2);
       expect(files[0]).toEqual({
@@ -194,6 +203,7 @@ describe("github-utils", () => {
         content: "export function helper() {}",
         isBinary: false,
       });
+      expect(treeHash).toBe("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2");
     });
 
     it("should recursively fetch subdirectories", async () => {
@@ -212,9 +222,11 @@ describe("github-utils", () => {
           mockDirectoryResponse([{ name: "nested.ts", type: "file", path: `${parsed.path}/subdir/nested.ts` }]),
         )
         // nested.ts content
-        .mockResolvedValueOnce(mockFileResponse("nested content"));
+        .mockResolvedValueOnce(mockFileResponse("nested content"))
+        // Parent directory (for tree hash)
+        .mockResolvedValueOnce(mockParentDirResponse());
 
-      const files = await fetchSkillDirectory(parsed);
+      const { files } = await fetchSkillDirectory(parsed);
 
       expect(files).toHaveLength(2);
       expect(files[0].relativePath).toBe("SKILL.md");
@@ -238,9 +250,11 @@ describe("github-utils", () => {
           status: 200,
           arrayBuffer: async () => binaryData.buffer,
           headers: new Headers(),
-        } as Response);
+        } as Response)
+        // Parent directory (for tree hash)
+        .mockResolvedValueOnce(mockParentDirResponse());
 
-      const files = await fetchSkillDirectory(parsed);
+      const { files } = await fetchSkillDirectory(parsed);
 
       expect(files).toHaveLength(2);
       expect(files[1].relativePath).toBe("image.png");
@@ -298,7 +312,8 @@ describe("github-utils", () => {
     it("should include Authorization header when token is provided", async () => {
       mockFetch
         .mockResolvedValueOnce(mockDirectoryResponse([{ name: "SKILL.md", type: "file" }]))
-        .mockResolvedValueOnce(mockFileResponse("# Skill"));
+        .mockResolvedValueOnce(mockFileResponse("# Skill"))
+        .mockResolvedValueOnce(mockParentDirResponse());
 
       await fetchSkillDirectory(parsed, "my-token");
 
@@ -310,7 +325,8 @@ describe("github-utils", () => {
     it("should not include Authorization header when no token is provided", async () => {
       mockFetch
         .mockResolvedValueOnce(mockDirectoryResponse([{ name: "SKILL.md", type: "file" }]))
-        .mockResolvedValueOnce(mockFileResponse("# Skill"));
+        .mockResolvedValueOnce(mockFileResponse("# Skill"))
+        .mockResolvedValueOnce(mockParentDirResponse());
 
       await fetchSkillDirectory(parsed);
 
@@ -335,9 +351,11 @@ describe("github-utils", () => {
           status: 200,
           json: async () => ({ content: base64Content, encoding: "base64" }),
           headers: new Headers(),
-        } as Response);
+        } as Response)
+        // Parent directory (for tree hash)
+        .mockResolvedValueOnce(mockParentDirResponse());
 
-      const files = await fetchSkillDirectory(parsed);
+      const { files } = await fetchSkillDirectory(parsed);
 
       expect(files).toHaveLength(2);
       expect(files[1].relativePath).toBe("large.txt");

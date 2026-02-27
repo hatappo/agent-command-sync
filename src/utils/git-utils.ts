@@ -2,8 +2,9 @@
  * Git repository utilities
  */
 
+import { execFile } from "node:child_process";
 import { readFile, stat } from "node:fs/promises";
-import { dirname, join, parse } from "node:path";
+import { dirname, join, parse, relative } from "node:path";
 
 /**
  * Find git repository root by walking up from startDir (or cwd).
@@ -154,4 +155,25 @@ function normalizeGitHubUrl(url: string): string | null {
   }
 
   return null;
+}
+
+/**
+ * Get the git tree hash for a directory within a repository.
+ * Runs `git rev-parse HEAD:<relative-path>`.
+ * Returns null if git is not available or the path doesn't exist in the index.
+ */
+export async function getTreeHash(gitRoot: string, dirPath: string): Promise<string | null> {
+  const relPath = relative(gitRoot, dirPath);
+  if (!relPath || relPath.startsWith("..")) return null;
+
+  return new Promise((resolve) => {
+    execFile("git", ["rev-parse", `HEAD:${relPath}`], { cwd: gitRoot }, (error, stdout) => {
+      if (error) {
+        resolve(null);
+        return;
+      }
+      const hash = stdout.trim();
+      resolve(/^[0-9a-f]{40}$/.test(hash) ? hash : null);
+    });
+  });
 }

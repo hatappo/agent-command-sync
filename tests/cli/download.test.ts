@@ -70,6 +70,13 @@ describe("download command", () => {
     } as Response;
   }
 
+  /** Mock response for the parent directory fetch (tree hash retrieval) */
+  function mockParentDirResponse(treeHash = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"): Response {
+    return mockDirectoryListing([
+      { name: "my-skill", type: "dir", path: ".claude/skills/my-skill", sha: treeHash, download_url: null },
+    ]);
+  }
+
   function setupBasicMocks() {
     mockFetch
       .mockResolvedValueOnce(
@@ -79,7 +86,9 @@ describe("download command", () => {
         ]),
       )
       .mockResolvedValueOnce(mockFileContent("---\ndescription: My Skill\n---\n# My Skill"))
-      .mockResolvedValueOnce(mockFileContent("export function helper() {}"));
+      .mockResolvedValueOnce(mockFileContent("export function helper() {}"))
+      // Parent directory fetch (for tree hash)
+      .mockResolvedValueOnce(mockParentDirResponse());
   }
 
   it("should download skill to project-level path based on URL (default)", async () => {
@@ -198,7 +207,7 @@ describe("download command", () => {
     const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
     // Verify _from contains owner/repo (not full URL)
     const parsed = matter(skillMd);
-    expect(parsed.data._from).toBe("owner/repo");
+    expect(parsed.data._from).toBe("owner/repo@a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2");
   });
 
   it("should not inject _from when noProvenance is true", async () => {
@@ -222,10 +231,17 @@ describe("download command", () => {
     const existingFrom = "original-owner/original-repo";
     const newUrl = "https://github.com/other/repo/tree/main/.claude/skills/other-skill";
 
+    const otherTreeHash = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     mockFetch
       .mockResolvedValueOnce(mockDirectoryListing([{ name: "SKILL.md", type: "file" }]))
       .mockResolvedValueOnce(
         mockFileContent(`---\ndescription: My Skill\n_from: ${existingFrom}\n---\n# My Skill`),
+      )
+      // Parent directory fetch (for tree hash)
+      .mockResolvedValueOnce(
+        mockDirectoryListing([
+          { name: "other-skill", type: "dir", path: ".claude/skills/other-skill", sha: otherTreeHash, download_url: null },
+        ]),
       );
 
     await downloadSkill({
@@ -238,8 +254,8 @@ describe("download command", () => {
 
     const skillMd = await readFile(join(tempDir, ".claude/skills/other-skill/SKILL.md"), "utf-8");
     const parsed = matter(skillMd);
-    // Should always update to the new source
-    expect(parsed.data._from).toBe("other/repo");
+    // Should always update to the new source (with tree hash)
+    expect(parsed.data._from).toBe(`other/repo@${otherTreeHash}`);
     expect(skillMd).not.toContain(existingFrom);
   });
 
@@ -247,8 +263,11 @@ describe("download command", () => {
     // Pre-create existing file with same content (including _from)
     const skillDir = join(tempDir, ".claude/skills/my-skill");
     await mkdir(skillDir, { recursive: true });
-    // The SKILL.md needs to already include _from to be truly unchanged after injection
-    const expectedContent = matter.stringify("# My Skill", { description: "My Skill", _from: "owner/repo" });
+    // The SKILL.md needs to already include _from (with tree hash) to be truly unchanged after injection
+    const expectedContent = matter.stringify("# My Skill", {
+      description: "My Skill",
+      _from: "owner/repo@a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+    });
     await fsWriteFile(join(skillDir, "SKILL.md"), expectedContent, "utf-8");
     await fsWriteFile(join(skillDir, "helper.ts"), "export function helper() {}", "utf-8");
 
@@ -284,7 +303,9 @@ describe("download command", () => {
         status: 200,
         arrayBuffer: async () => binaryData.buffer,
         headers: new Headers(),
-      } as Response);
+      } as Response)
+      // Parent directory fetch (for tree hash)
+      .mockResolvedValueOnce(mockParentDirResponse());
 
     await downloadSkill({
       url: testUrl,
@@ -294,7 +315,7 @@ describe("download command", () => {
       gitRoot: tempDir,
     });
 
-    // Check text file (SKILL.md gets _from injected with owner/repo)
+    // Check text file (SKILL.md gets _from injected with owner/repo@treeHash)
     const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
     expect(skillMd).toContain("# Skill with icon");
     expect(skillMd).toContain("owner/repo");
@@ -397,6 +418,8 @@ describe("download command", () => {
     function mockTreeScanResponse(skillPaths: string[], truncated = false) {
       const treeItems: { path: string; type: string; mode: string; sha: string; url: string }[] = [];
       for (const skillPath of skillPaths) {
+        // Add tree entry for the skill directory (provides tree hash)
+        treeItems.push({ path: skillPath, type: "tree", mode: "040000", sha: `tree-${skillPath.split("/").pop()}`, url: "" });
         treeItems.push(
           { path: `${skillPath}/SKILL.md`, type: "blob", mode: "100644", sha: "s1", url: "" },
           { path: `${skillPath}/helper.ts`, type: "blob", mode: "100644", sha: "s2", url: "" },

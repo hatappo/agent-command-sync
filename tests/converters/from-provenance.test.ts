@@ -294,4 +294,49 @@ describe("_from provenance tracking", () => {
       expect(ir.semantic.from).toBe("owner/repo");
     });
   });
+
+  describe("owner/repo@treeHash format", () => {
+    const fromWithHash = "owner/repo@a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2";
+
+    it("Claude: owner/repo@treeHash round-trips as opaque string", () => {
+      const agent = new ClaudeAgent();
+      const ir = agent.commandToIR({
+        frontmatter: { description: "Test", _from: fromWithHash },
+        content: "body",
+        filePath: "/test.md",
+      });
+      expect(ir.semantic.from).toBe(fromWithHash);
+
+      const result = agent.commandFromIR(ir);
+      expect(result.frontmatter._from).toBe(fromWithHash);
+    });
+
+    it("Cross-agent: owner/repo@treeHash preserved through Claude -> Gemini", () => {
+      const claudeAgent = new ClaudeAgent();
+      const geminiAgent = new GeminiAgent();
+      const ir = claudeAgent.commandToIR({
+        frontmatter: { description: "Test", _from: fromWithHash },
+        content: "body",
+        filePath: "/test.md",
+      });
+      const gemini = geminiAgent.commandFromIR(ir);
+      expect(gemini._from).toBe(fromWithHash);
+    });
+
+    it("Skill: owner/repo@treeHash round-trips through skill IR", () => {
+      const agent = new ClaudeAgent();
+      const ir = agent.skillToIR({
+        name: "test-skill",
+        description: "Test",
+        content: "body",
+        dirPath: "/test/skill",
+        supportFiles: [],
+        frontmatter: { name: "test-skill", description: "Test", _from: fromWithHash } as Record<string, unknown>,
+      });
+      expect(ir.semantic.from).toBe(fromWithHash);
+
+      const result = agent.skillFromIR(ir);
+      expect(result.frontmatter._from).toBe(fromWithHash);
+    });
+  });
 });

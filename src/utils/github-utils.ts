@@ -63,6 +63,8 @@ export interface DiscoveredSkill {
   name: string;
   /** All file paths (repo-relative) belonging to this skill */
   files: string[];
+  /** Git tree hash of the skill directory (from Git Trees API) */
+  treeHash?: string;
 }
 
 // ── URL Parsing ─────────────────────────────────────────────────
@@ -230,7 +232,10 @@ export async function githubApiRequest(url: string, token?: string): Promise<Res
  * @returns Array of downloaded files with their relative paths
  * @throws Error if SKILL.md is not found, or on API errors
  */
-export async function fetchSkillDirectory(parsed: ParsedGitHubUrl, token?: string): Promise<DownloadedFile[]> {
+export async function fetchSkillDirectory(
+  parsed: ParsedGitHubUrl,
+  token?: string,
+): Promise<{ files: DownloadedFile[]; treeHash?: string }> {
   const files: DownloadedFile[] = [];
 
   async function fetchDirectory(dirPath: string, relativeBase: string): Promise<void> {
@@ -289,7 +294,21 @@ export async function fetchSkillDirectory(parsed: ParsedGitHubUrl, token?: strin
     );
   }
 
-  return files;
+  // Fetch parent directory to get the tree hash of the skill directory (best-effort)
+  let treeHash: string | undefined;
+  try {
+    const parentPath = parsed.path.includes("/") ? parsed.path.slice(0, parsed.path.lastIndexOf("/")) : "";
+    const dirName = parsed.path.includes("/") ? parsed.path.slice(parsed.path.lastIndexOf("/") + 1) : parsed.path;
+    const parentApiUrl = `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/contents/${parentPath}?ref=${parsed.ref}`;
+    const parentResponse = await githubApiRequest(parentApiUrl, token);
+    const parentItems: GitHubContentItem[] = await parentResponse.json();
+    const dirEntry = parentItems.find((item) => item.type === "dir" && item.name === dirName);
+    treeHash = dirEntry?.sha;
+  } catch {
+    // tree hash is best-effort; proceed without it
+  }
+
+  return { files, treeHash };
 }
 
 // ── Repository-level operations ─────────────────────────────────
@@ -326,6 +345,14 @@ export async function scanRepositoryForSkills(
     }
   }
 
+  // Build tree hash map from "tree" type items
+  const treeHashMap = new Map<string, string>();
+  for (const item of data.tree) {
+    if (item.type === "tree" && skillPaths.has(item.path)) {
+      treeHashMap.set(item.path, item.sha);
+    }
+  }
+
   // Second pass: collect all files belonging to each skill directory
   const skills: DiscoveredSkill[] = [];
   for (const dirPath of skillPaths) {
@@ -334,7 +361,7 @@ export async function scanRepositoryForSkills(
       .filter((item) => item.type === "blob" && item.path.startsWith(prefix))
       .map((item) => item.path);
     const segments = dirPath.split("/");
-    skills.push({ path: dirPath, name: segments[segments.length - 1], files });
+    skills.push({ path: dirPath, name: segments[segments.length - 1], files, treeHash: treeHashMap.get(dirPath) });
   }
 
   return { skills, truncated: data.truncated };

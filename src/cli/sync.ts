@@ -6,7 +6,7 @@ import type { ConversionResult, FileOperation, SemanticIR } from "../types/index
 import type { ProductType } from "../types/intermediate.js";
 import { assertNever } from "../utils/assert-never.js";
 import { SKILL_CONSTANTS } from "../utils/constants.js";
-import { getGitHubRemoteUrl } from "../utils/git-utils.js";
+import { getGitHubRemoteUrl, getTreeHash } from "../utils/git-utils.js";
 
 const { SKILL_FILE_NAME } = SKILL_CONSTANTS;
 import {
@@ -149,8 +149,13 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
  * Set provenance tracking (owner/repo) on IR.
  * Always updates to track the most recent source.
  */
-function setFromUrl(ir: SemanticIR, ownerRepo: string): void {
-  ir.semantic.from = ownerRepo;
+function setFromUrl(ir: SemanticIR, fromValue: string): void {
+  ir.semantic.from = fromValue;
+}
+
+/** Format _from value with optional tree hash: `owner/repo` or `owner/repo@treeHash` */
+function formatFromValue(ownerRepo: string, treeHash?: string | null): string {
+  return treeHash ? `${ownerRepo}@${treeHash}` : ownerRepo;
 }
 
 /** Extract owner/repo from a GitHub URL (https://github.com/owner/repo → owner/repo) */
@@ -387,9 +392,10 @@ async function convertSingleSkill(
     const skill = await src.parseSkill(skillDir);
     const ir: SemanticIR = src.skillToIR(skill, { destinationType: options.destination });
 
-    // Append provenance tracking (owner/repo)
+    // Append provenance tracking (owner/repo@treeHash for skills)
     if (!options.noProvenance && sourceRepoUrl) {
-      setFromUrl(ir, extractOwnerRepo(sourceRepoUrl));
+      const treeHash = options.gitRoot ? await getTreeHash(options.gitRoot, skillDir) : null;
+      setFromUrl(ir, formatFromValue(extractOwnerRepo(sourceRepoUrl), treeHash));
     }
 
     // Get skill directories
