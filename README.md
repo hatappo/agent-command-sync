@@ -40,6 +40,8 @@ acs download https://github.com/anthropics/skills claude -g
 acs download https://github.com/anthropics/skills -n
 ```
 
+![acs download and update](https://raw.githubusercontent.com/hatappo/agent-command-sync/main/docs/acs-download.png)
+
 ### Reformat and relocate skills for other agents
 
 ```bash
