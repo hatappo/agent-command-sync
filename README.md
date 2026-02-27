@@ -24,17 +24,20 @@ npm install -g agent-command-sync
 ### Download a skill from GitHub
 
 ```bash
-# Download a skill to your project (e.g., downloads to <repo>/skills/skill-creator/)
+# Download a specific skill to your project (to ./skills/skill-creator/)
 acs download https://github.com/anthropics/skills/tree/main/skills/skill-creator
 
-# Download into a specific agent's skill directory (e.g., <repo>/.gemini/skills/skill-creator/)
-acs download <url> gemini
+# Download all skills from a repository
+acs download https://github.com/anthropics/skills
 
-# Download to user-level (global) directory (e.g., ~/.claude/skills/skill-creator/)
-acs download <url> claude -g
+# Place into a specific agent's directory (to ./.gemini/skills/)
+acs download https://github.com/anthropics/skills gemini
 
-# Preview without downloading
-acs download <url> -n
+# Place into user-level (global) directory (to ~/.claude/skills/)
+acs download https://github.com/anthropics/skills claude -g
+
+# Preview only, without downloading
+acs download https://github.com/anthropics/skills -n
 ```
 
 ### Reformat and relocate skills for other agents
@@ -50,7 +53,7 @@ acs sync gemini claude
 acs sync gemini claude -g
 
 # Preview changes before applying
-acs sync claude gemini -n
+acs sync gemini claude -n
 ```
 
 ## Supported Agents

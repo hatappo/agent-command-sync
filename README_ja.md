@@ -24,17 +24,20 @@ npm install -g agent-command-sync
 ### GitHub からスキルをダウンロード
 
 ```bash
-# プロジェクトにスキルをダウンロード（この場合は 実行時のリポジトリの skill/skill-creator/ に DL）
+# 特定のスキルをプロジェクトにダウンロード （to ./skill/skill-creator/）
 acs download https://github.com/anthropics/skills/tree/main/skills/skill-creator
 
-# 特定のエージェント用のディレクトリに配置（この場合は、実行時のリポジトリの .gemini/skills/skill-creator/ に DL）
-acs download <url> gemini
+# リポジトリ上の全てのスキルをダウンロード
+acs download https://github.com/anthropics/skills
 
-# ユーザーレベル（グローバル）ディレクトリにダウンロード（この場合は ~/.claude/skills/skill-creator/ に DL）
-acs download <url> claude -g
+# 特定のエージェント用ディレクトリへ配置 (to ./.gemini/skills/)
+acs download https://github.com/anthropics/skills gemini
 
-# ダウンロードせずにプレビュー
-acs download <url> -n
+# ユーザーレベル（グローバル）ディレクトリへ配置 (to ~/.claude/skills/）
+acs download https://github.com/anthropics/skills claude -g
+
+# ダウンロードせずにプレビューのみ
+acs download https://github.com/anthropics/skills -n
 ```
 
 ### スキルの形式と配置先を他のエージェント用に変換
@@ -50,7 +53,7 @@ acs sync gemini claude
 acs sync gemini claude -g
 
 # 適用前に変更をプレビュー
-acs sync claude gemini -n
+acs sync gemini claude -n
 ```
 
 ## 対応エージェント
