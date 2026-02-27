@@ -13,6 +13,7 @@ import { validateCLIOptions } from "./options.js";
 import { downloadSkill } from "./download.js";
 import { showStatus } from "./status.js";
 import { syncCommands } from "./sync.js";
+import { updateSkills } from "./update.js";
 
 // Dynamically generated from PRODUCT_TYPES / AGENT_REGISTRY
 const displayNames = PRODUCT_TYPES.map((p) => AGENT_REGISTRY[p].displayName).join(", ");
@@ -326,6 +327,31 @@ async function main(): Promise<void> {
     }
   });
 
+  // ── update subcommand ────────────────────────────────────────────
+
+  const updateCmd = program
+    .command("update [skill-path]")
+    .description("Check for and apply upstream updates to downloaded skills")
+    .option("-n, --noop", "Check for updates without applying them", false)
+    .option("-v, --verbose", "Show detailed debug information", false);
+
+  registerCommonDirOptions(updateCmd);
+
+  updateCmd.action(async (skillPath: string | undefined, options) => {
+    try {
+      await updateSkills({
+        skillPath,
+        noop: options.noop,
+        verbose: options.verbose,
+        gitRoot,
+        global: options.global,
+        customDirs: buildCustomDirs(options),
+      });
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
   // ── status subcommand ────────────────────────────────────────────
 
   const statusCmd = program.command("status").description("Show Chimera status and detected agents");
@@ -384,6 +410,10 @@ async function main(): Promise<void> {
     console.log("  $ acs status                                 # Show Chimera status and detected agents");
     console.log("  $ acs download <github-url>                  # Download a skill from GitHub");
     console.log("  $ acs download <github-url> gemini           # Download and place in Gemini skill directory");
+    console.log("  $ acs update                                 # Check and update all agent skills");
+    console.log("  $ acs update skills/                         # Check and update skills under a path");
+    console.log("  $ acs update skills/my-skill                 # Check and update a specific skill");
+    console.log("  $ acs update -n                              # Check for updates without applying");
     console.log("  $ acs sync claude gemini --remove-unsupported # Remove unsupported fields");
     console.log("  $ acs sync gemini claude --no-overwrite      # Skip existing files");
     console.log("  $ acs sync claude gemini --sync-delete       # Delete orphaned files");

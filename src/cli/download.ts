@@ -98,7 +98,7 @@ function getModeLabel(options: DownloadOptions): string {
 /**
  * Determine the operation type for a file
  */
-async function determineOperation(filePath: string, newContent: string | Buffer): Promise<OperationType> {
+export async function determineOperation(filePath: string, newContent: string | Buffer): Promise<OperationType> {
   if (!(await fileExists(filePath))) {
     return "A";
   }
@@ -119,7 +119,7 @@ async function determineOperation(filePath: string, newContent: string | Buffer)
 /**
  * Write a single downloaded file to disk
  */
-async function writeDownloadedFile(filePath: string, file: DownloadedFile): Promise<void> {
+export async function writeDownloadedFile(filePath: string, file: DownloadedFile): Promise<void> {
   await ensureDirectory(dirname(filePath));
   if (Buffer.isBuffer(file.content)) {
     await fs.writeFile(filePath, file.content);
@@ -129,7 +129,7 @@ async function writeDownloadedFile(filePath: string, file: DownloadedFile): Prom
 }
 
 /** Format _from value with optional tree hash: `owner/repo` or `owner/repo@treeHash` */
-function formatFromValue(ownerRepo: string, treeHash?: string): string {
+export function formatFromValue(ownerRepo: string, treeHash?: string): string {
   return treeHash ? `${ownerRepo}@${treeHash}` : ownerRepo;
 }
 
@@ -137,7 +137,7 @@ function formatFromValue(ownerRepo: string, treeHash?: string): string {
  * Inject _from provenance into a SKILL.md text content.
  * Always updates to track the most recent source.
  */
-function injectFromUrl(content: string, ownerRepo: string): string {
+export function injectFromUrl(content: string, ownerRepo: string): string {
   const parsed = matter(content);
   // Spread to avoid mutating gray-matter's cached data object
   return matter.stringify(parsed.content, { ...parsed.data, _from: ownerRepo });
@@ -177,7 +177,7 @@ async function downloadMultipleSkills(
   );
 
   const totalStats = { A: 0, M: 0, "=": 0 };
-  const skillStats = { A: 0, M: 0, "=": 0 };
+  const skillResults: { name: string; op: OperationType }[] = [];
 
   const ownerRepo = `${repoUrl.owner}/${repoUrl.repo}`;
 
@@ -220,32 +220,41 @@ async function downloadMultipleSkills(
       }
 
       // Determine skill-level status: all [A] → created, any [M] → updated, all [=] → unchanged
-      if (perSkillStats.M > 0) {
-        skillStats.M++;
-      } else if (perSkillStats.A > 0) {
-        skillStats.A++;
-      } else {
-        skillStats["="]++;
-      }
+      const skillOp: OperationType = perSkillStats.M > 0 ? "M" : perSkillStats.A > 0 ? "A" : "=";
+      skillResults.push({ name: skill.name, op: skillOp });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.log(`  ${picocolors.red("[!]")} ${skill.path} - ${picocolors.red(`Skipped: ${message}`)}`);
     }
   }
 
+  // File-level summary
   console.log("");
   if (options.noop) {
     console.log(picocolors.dim("Dry run complete. Use without --noop to download."));
   } else {
-    // File-level summary
     const parts: string[] = [];
     if (totalStats.A > 0) parts.push(picocolors.green(`${totalStats.A} file${totalStats.A !== 1 ? "s" : ""} created`));
     if (totalStats.M > 0) parts.push(picocolors.yellow(`${totalStats.M} file${totalStats.M !== 1 ? "s" : ""} updated`));
     if (totalStats["="] > 0)
       parts.push(picocolors.blue(`${totalStats["="]} file${totalStats["="] !== 1 ? "s" : ""} unchanged`));
     console.log(`Done! ${parts.join(", ")}.`);
+  }
 
-    // Skill-level summary
+  // Skill-level summary list
+  if (skillResults.length > 0) {
+    console.log("\n  Skills:");
+    for (const { name, op } of skillResults) {
+      const style = operationStyles[op];
+      const label = options.noop
+        ? op === "A" ? "would create" : op === "M" ? "would update" : "unchanged"
+        : op === "A" ? "Created" : op === "M" ? "Updated" : "Unchanged";
+      console.log(`    ${style.prefix} ${name} - ${style.color(label)}`);
+    }
+
+    const skillStats = { A: 0, M: 0, "=": 0 };
+    for (const { op } of skillResults) skillStats[op]++;
+
     const skillParts: string[] = [];
     if (skillStats.A > 0)
       skillParts.push(picocolors.green(`${skillStats.A} skill${skillStats.A !== 1 ? "s" : ""} created`));
@@ -254,7 +263,7 @@ async function downloadMultipleSkills(
     if (skillStats["="] > 0)
       skillParts.push(picocolors.blue(`${skillStats["="]} skill${skillStats["="] !== 1 ? "s" : ""} unchanged`));
     if (skillParts.length > 0) {
-      console.log(`      ${skillParts.join(", ")}.`);
+      console.log(`  ${skillParts.join(", ")}.`);
     }
   }
 }
