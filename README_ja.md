@@ -92,7 +92,7 @@ acs sync gemini claude -n
 
 ## サブコマンド
 
-### `acs download <url> [to]` — GitHub からスキルをダウンロード
+### `acs download <url> [to]`（エイリアス: `acs dl`）— GitHub からスキルをダウンロード
 
 ```bash
 acs download https://github.com/anthropics/skills/tree/main/skills/skill-creator

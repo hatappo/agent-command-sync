@@ -92,7 +92,7 @@ acs sync gemini claude -n
 
 ## Subcommands
 
-### `acs download <url> [to]` — Download a skill from GitHub
+### `acs download <url> [to]` (alias: `acs dl`) — Download a skill from GitHub
 
 ```bash
 acs download https://github.com/anthropics/skills/tree/main/skills/skill-creator

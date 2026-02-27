@@ -15,6 +15,7 @@
 
 ### Changed
 - **Update status wording**: Changed "Up to date" to "No upstream changes" to accurately reflect that only the upstream state is checked, not local file identity
+- **`dl` alias for `download`**: `acs dl` can be used as a shorthand for `acs download`
 
 ## [5.2.0] - 2026-02-27
 
