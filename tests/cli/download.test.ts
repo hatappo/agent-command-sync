@@ -358,4 +358,203 @@ describe("download command", () => {
     expect(skillMd).toContain("description: My Skill");
     expect(skillMd).toContain(blobUrl);
   });
+
+  describe("repository-level download", () => {
+    const repoUrl = "https://github.com/owner/repo";
+    const repoTreeUrl = "https://github.com/owner/repo/tree/main";
+
+    function mockRepoApiResponse() {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ default_branch: "main" }),
+        headers: new Headers(),
+      } as Response);
+    }
+
+    function mockTreeScanResponse(skillPaths: string[], truncated = false) {
+      const treeItems: { path: string; type: string; mode: string; sha: string; url: string }[] = [];
+      for (const skillPath of skillPaths) {
+        treeItems.push(
+          { path: `${skillPath}/SKILL.md`, type: "blob", mode: "100644", sha: "s1", url: "" },
+          { path: `${skillPath}/helper.ts`, type: "blob", mode: "100644", sha: "s2", url: "" },
+        );
+      }
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ sha: "abc", url: "...", tree: treeItems, truncated }),
+        headers: new Headers(),
+      } as Response);
+    }
+
+    function mockSkillRawDownload() {
+      // fetchSkillFromTree downloads each file from raw.githubusercontent.com
+      mockFetch
+        .mockResolvedValueOnce(mockFileContent("---\ndescription: Skill\n---\n# Skill"))
+        .mockResolvedValueOnce(mockFileContent("export function helper() {}"));
+    }
+
+    it("should scan and download all skills from bare repo URL", async () => {
+      mockRepoApiResponse();
+      mockTreeScanResponse([".claude/skills/skill-a", ".claude/skills/skill-b"]);
+      mockSkillRawDownload();
+      mockSkillRawDownload();
+
+      await downloadSkill({
+        url: repoUrl,
+        global: false,
+        noop: false,
+        verbose: false,
+        gitRoot: tempDir,
+      });
+
+      const skillA = await readFile(join(tempDir, ".claude/skills/skill-a/SKILL.md"), "utf-8");
+      expect(skillA).toContain("_from:");
+      expect(skillA).toContain("github.com/owner/repo/tree/main/.claude/skills/skill-a");
+
+      const skillB = await readFile(join(tempDir, ".claude/skills/skill-b/SKILL.md"), "utf-8");
+      expect(skillB).toContain("_from:");
+
+      const output = consoleOutput.join("\n");
+      expect(output).toContain("2 skills");
+    });
+
+    it("should use ref from tree URL instead of fetching default branch", async () => {
+      // No fetchDefaultBranch call — tree URL already has ref
+      mockTreeScanResponse(["skills/my-skill"]);
+      mockSkillRawDownload();
+
+      await downloadSkill({
+        url: repoTreeUrl,
+        global: false,
+        noop: false,
+        verbose: false,
+        gitRoot: tempDir,
+      });
+
+      const output = consoleOutput.join("\n");
+      expect(output).toContain("1 skills");
+    });
+
+    it("should throw when no skills found in repo", async () => {
+      mockRepoApiResponse();
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          sha: "abc",
+          url: "...",
+          tree: [{ path: "README.md", type: "blob", mode: "100644", sha: "s1", url: "" }],
+          truncated: false,
+        }),
+        headers: new Headers(),
+      } as Response);
+
+      await expect(
+        downloadSkill({ url: repoUrl, global: false, noop: false, verbose: false, gitRoot: tempDir }),
+      ).rejects.toThrow("No skills found");
+    });
+
+    it("should warn when tree is truncated", async () => {
+      mockRepoApiResponse();
+      mockTreeScanResponse(["skills/a"], true);
+      mockSkillRawDownload();
+
+      await downloadSkill({
+        url: repoUrl,
+        global: false,
+        noop: false,
+        verbose: false,
+        gitRoot: tempDir,
+      });
+
+      const output = consoleOutput.join("\n");
+      expect(output).toContain("truncated");
+    });
+
+    it("should work in noop mode", async () => {
+      mockRepoApiResponse();
+      mockTreeScanResponse(["skills/a"]);
+      mockSkillRawDownload();
+
+      await downloadSkill({
+        url: repoUrl,
+        global: false,
+        noop: true,
+        verbose: false,
+        gitRoot: tempDir,
+      });
+
+      const output = consoleOutput.join("\n");
+      expect(output).toContain("would create");
+      expect(output).toContain("Dry run complete");
+    });
+
+    it("should place skills in agent directory when destination is specified", async () => {
+      mockRepoApiResponse();
+      mockTreeScanResponse([".claude/skills/skill-a"]);
+      mockSkillRawDownload();
+
+      await downloadSkill({
+        url: repoUrl,
+        destination: "gemini",
+        global: false,
+        noop: false,
+        verbose: false,
+        gitRoot: tempDir,
+        customDirs: { gemini: tempDir },
+      });
+
+      const skillMd = await readFile(join(tempDir, "skills/skill-a/SKILL.md"), "utf-8");
+      expect(skillMd).toContain("description: Skill");
+    });
+
+    it("should continue downloading when one skill fails", async () => {
+      mockRepoApiResponse();
+      mockTreeScanResponse(["skills/bad-skill", "skills/good-skill"]);
+      // bad-skill: 404 error
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        statusText: "Not Found",
+        headers: new Headers(),
+      } as Response);
+      // good-skill: success
+      mockSkillRawDownload();
+
+      await downloadSkill({
+        url: repoUrl,
+        global: false,
+        noop: false,
+        verbose: false,
+        gitRoot: tempDir,
+      });
+
+      const output = consoleOutput.join("\n");
+      expect(output).toContain("Skipped");
+
+      const goodSkill = await readFile(join(tempDir, "skills/good-skill/SKILL.md"), "utf-8");
+      expect(goodSkill).toContain("description: Skill");
+    });
+
+    it("should inject skill-specific provenance URL, not repo URL", async () => {
+      mockRepoApiResponse();
+      mockTreeScanResponse([".claude/skills/skill-a"]);
+      mockSkillRawDownload();
+
+      await downloadSkill({
+        url: repoUrl,
+        global: false,
+        noop: false,
+        verbose: false,
+        gitRoot: tempDir,
+      });
+
+      const skillMd = await readFile(join(tempDir, ".claude/skills/skill-a/SKILL.md"), "utf-8");
+      const matter = await import("gray-matter");
+      const parsed = matter.default(skillMd);
+      expect(parsed.data._from[0]).toBe("https://github.com/owner/repo/tree/main/.claude/skills/skill-a");
+    });
+  });
 });

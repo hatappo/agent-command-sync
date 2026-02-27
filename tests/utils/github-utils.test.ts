@@ -4,8 +4,11 @@ import {
   type GitHubContentItem,
   type ParsedGitHubUrl,
   extractSkillName,
+  fetchDefaultBranch,
   fetchSkillDirectory,
   parseGitHubUrl,
+  scanRepositoryForSkills,
+  tryParseRepoUrl,
 } from "../../src/utils/github-utils.js";
 
 describe("github-utils", () => {
@@ -344,6 +347,234 @@ describe("github-utils", () => {
       // Check that Blob API was called
       const blobCall = mockFetch.mock.calls[2];
       expect(blobCall[0]).toContain("/git/blobs/blob-sha-123");
+    });
+  });
+
+  describe("tryParseRepoUrl", () => {
+    it("should parse bare repo URL", () => {
+      const result = tryParseRepoUrl("https://github.com/owner/repo");
+      expect(result).toEqual({ owner: "owner", repo: "repo", ref: undefined });
+    });
+
+    it("should parse repo URL with trailing slash", () => {
+      const result = tryParseRepoUrl("https://github.com/owner/repo/");
+      expect(result).toEqual({ owner: "owner", repo: "repo", ref: undefined });
+    });
+
+    it("should parse tree root URL", () => {
+      const result = tryParseRepoUrl("https://github.com/owner/repo/tree/main");
+      expect(result).toEqual({ owner: "owner", repo: "repo", ref: "main" });
+    });
+
+    it("should parse tree root with tag ref", () => {
+      const result = tryParseRepoUrl("https://github.com/owner/repo/tree/v2.0.0");
+      expect(result).toEqual({ owner: "owner", repo: "repo", ref: "v2.0.0" });
+    });
+
+    it("should return null for specific-path URL", () => {
+      expect(tryParseRepoUrl("https://github.com/owner/repo/tree/main/.claude/skills/my-skill")).toBeNull();
+    });
+
+    it("should return null for blob URL with path", () => {
+      expect(tryParseRepoUrl("https://github.com/owner/repo/blob/main/SKILL.md")).toBeNull();
+    });
+
+    it("should return null for non-GitHub URL", () => {
+      expect(tryParseRepoUrl("https://gitlab.com/owner/repo")).toBeNull();
+    });
+
+    it("should return null for invalid URL", () => {
+      expect(tryParseRepoUrl("not-a-url")).toBeNull();
+    });
+
+    it("should return null for URL with only owner", () => {
+      expect(tryParseRepoUrl("https://github.com/owner")).toBeNull();
+    });
+  });
+
+  describe("fetchDefaultBranch", () => {
+    let originalFetch: typeof globalThis.fetch;
+    let mockFetch: Mock;
+
+    beforeEach(() => {
+      originalFetch = globalThis.fetch;
+      mockFetch = vi.fn();
+      globalThis.fetch = mockFetch;
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+    });
+
+    it("should fetch the default branch name", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ default_branch: "main" }),
+        headers: new Headers(),
+      } as Response);
+
+      const branch = await fetchDefaultBranch("owner", "repo");
+      expect(branch).toBe("main");
+      expect(mockFetch.mock.calls[0][0]).toBe("https://api.github.com/repos/owner/repo");
+    });
+
+    it("should pass token when provided", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ default_branch: "develop" }),
+        headers: new Headers(),
+      } as Response);
+
+      await fetchDefaultBranch("owner", "repo", "my-token");
+      expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe("token my-token");
+    });
+
+    it("should throw on 404", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        statusText: "Not Found",
+        headers: new Headers(),
+      } as Response);
+
+      await expect(fetchDefaultBranch("owner", "repo")).rejects.toThrow("Not found");
+    });
+  });
+
+  describe("scanRepositoryForSkills", () => {
+    let originalFetch: typeof globalThis.fetch;
+    let mockFetch: Mock;
+
+    beforeEach(() => {
+      originalFetch = globalThis.fetch;
+      mockFetch = vi.fn();
+      globalThis.fetch = mockFetch;
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+    });
+
+    it("should find skills containing SKILL.md", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          sha: "abc",
+          url: "...",
+          tree: [
+            { path: ".claude/skills/my-skill/SKILL.md", type: "blob", mode: "100644", sha: "s1", url: "" },
+            { path: ".claude/skills/my-skill/helper.ts", type: "blob", mode: "100644", sha: "s2", url: "" },
+            { path: ".gemini/skills/other-skill/SKILL.md", type: "blob", mode: "100644", sha: "s3", url: "" },
+            { path: "README.md", type: "blob", mode: "100644", sha: "s4", url: "" },
+          ],
+          truncated: false,
+        }),
+        headers: new Headers(),
+      } as Response);
+
+      const { skills, truncated } = await scanRepositoryForSkills("owner", "repo", "main");
+      expect(truncated).toBe(false);
+      expect(skills).toEqual([
+        {
+          path: ".claude/skills/my-skill",
+          name: "my-skill",
+          files: [".claude/skills/my-skill/SKILL.md", ".claude/skills/my-skill/helper.ts"],
+        },
+        {
+          path: ".gemini/skills/other-skill",
+          name: "other-skill",
+          files: [".gemini/skills/other-skill/SKILL.md"],
+        },
+      ]);
+    });
+
+    it("should skip SKILL.md at repository root", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          sha: "abc",
+          url: "...",
+          tree: [
+            { path: "SKILL.md", type: "blob", mode: "100644", sha: "s1", url: "" },
+            { path: "skills/valid-skill/SKILL.md", type: "blob", mode: "100644", sha: "s2", url: "" },
+          ],
+          truncated: false,
+        }),
+        headers: new Headers(),
+      } as Response);
+
+      const { skills } = await scanRepositoryForSkills("owner", "repo", "main");
+      expect(skills).toEqual([
+        { path: "skills/valid-skill", name: "valid-skill", files: ["skills/valid-skill/SKILL.md"] },
+      ]);
+    });
+
+    it("should report truncated flag", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          sha: "abc",
+          url: "...",
+          tree: [{ path: "skills/a/SKILL.md", type: "blob", mode: "100644", sha: "s1", url: "" }],
+          truncated: true,
+        }),
+        headers: new Headers(),
+      } as Response);
+
+      const { skills, truncated } = await scanRepositoryForSkills("owner", "repo", "main");
+      expect(truncated).toBe(true);
+      expect(skills).toHaveLength(1);
+    });
+
+    it("should return empty array when no skills found", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          sha: "abc",
+          url: "...",
+          tree: [
+            { path: "README.md", type: "blob", mode: "100644", sha: "s1", url: "" },
+            { path: "src/index.ts", type: "blob", mode: "100644", sha: "s2", url: "" },
+          ],
+          truncated: false,
+        }),
+        headers: new Headers(),
+      } as Response);
+
+      const { skills } = await scanRepositoryForSkills("owner", "repo", "main");
+      expect(skills).toEqual([]);
+    });
+
+    it("should pass token to API request", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ sha: "abc", url: "...", tree: [], truncated: false }),
+        headers: new Headers(),
+      } as Response);
+
+      await scanRepositoryForSkills("owner", "repo", "main", "my-token");
+      expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe("token my-token");
+    });
+
+    it("should use correct API URL with recursive parameter", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ sha: "abc", url: "...", tree: [], truncated: false }),
+        headers: new Headers(),
+      } as Response);
+
+      await scanRepositoryForSkills("owner", "repo", "v1.0.0");
+      expect(mockFetch.mock.calls[0][0]).toBe(
+        "https://api.github.com/repos/owner/repo/git/trees/v1.0.0?recursive=1",
+      );
     });
   });
 });

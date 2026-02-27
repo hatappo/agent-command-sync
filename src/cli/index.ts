@@ -291,7 +291,7 @@ async function main(): Promise<void> {
 
   const downloadCmd = program
     .command("download <url> [to]")
-    .description("Download a skill from GitHub")
+    .description("Download skill(s) from GitHub (supports repo-level URLs for bulk download)")
     .option("-n, --noop", "Preview files without downloading", false)
     .option("-v, --verbose", "Show detailed debug information", false);
 

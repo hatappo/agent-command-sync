@@ -89,6 +89,16 @@ acs download <url> claude -g               # Place in global Claude directory
 acs download <url> -n                      # Preview without downloading
 ```
 
+#### GitHub Authentication
+
+For private repositories, set a [personal access token](https://github.com/settings/tokens?type=beta):
+
+```bash
+export GITHUB_TOKEN=ghp_...
+```
+
+**Token permissions**: Public repositories require no permissions. For private repositories, grant **Contents: Read** access to the target repository.
+
 ### `acs sync <from> <to>` — Direct conversion between agents
 
 ```bash

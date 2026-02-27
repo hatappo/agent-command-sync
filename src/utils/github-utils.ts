@@ -14,6 +14,15 @@ export interface ParsedGitHubUrl {
 }
 
 /**
+ * Parsed repository-level GitHub URL (no specific file/directory path)
+ */
+export interface ParsedRepoUrl {
+  owner: string;
+  repo: string;
+  ref?: string;
+}
+
+/**
  * GitHub Contents API response item
  */
 export interface GitHubContentItem {
@@ -26,12 +35,34 @@ export interface GitHubContentItem {
 }
 
 /**
+ * GitHub Git Tree API response item
+ */
+export interface GitHubTreeItem {
+  path: string;
+  mode: string;
+  type: "blob" | "tree";
+  sha: string;
+  size?: number;
+  url: string;
+}
+
+/**
  * Downloaded file
  */
 export interface DownloadedFile {
   relativePath: string;
   content: string | Buffer;
   isBinary: boolean;
+}
+
+/**
+ * Discovered skill location within a repository
+ */
+export interface DiscoveredSkill {
+  path: string;
+  name: string;
+  /** All file paths (repo-relative) belonging to this skill */
+  files: string[];
 }
 
 // ── URL Parsing ─────────────────────────────────────────────────
@@ -97,6 +128,55 @@ export function parseGitHubUrl(url: string): ParsedGitHubUrl {
 }
 
 /**
+ * Try to parse a repository-level GitHub URL.
+ * Returns null for URLs with specific paths (those should use parseGitHubUrl).
+ *
+ * Supported formats:
+ *   - https://github.com/{owner}/{repo}
+ *   - https://github.com/{owner}/{repo}/tree/{ref}
+ */
+export function tryParseRepoUrl(url: string): ParsedRepoUrl | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+
+  if (parsed.hostname !== "github.com") {
+    return null;
+  }
+
+  const segments = parsed.pathname
+    .replace(/^\//, "")
+    .replace(/\/$/, "")
+    .split("/");
+
+  if (segments.length < 2 || !segments[0] || !segments[1]) {
+    return null;
+  }
+
+  const [owner, repo, action, ref, ...pathParts] = segments;
+
+  // Specific path URL → handled by parseGitHubUrl
+  if (action && (action === "tree" || action === "blob") && ref && pathParts.length > 0) {
+    return null;
+  }
+
+  // https://github.com/owner/repo/tree/main (tree root, no path)
+  if (action === "tree" && ref) {
+    return { owner, repo, ref };
+  }
+
+  // https://github.com/owner/repo (bare repo URL)
+  if (!action) {
+    return { owner, repo, ref: undefined };
+  }
+
+  return null;
+}
+
+/**
  * Extract skill name (last path segment) from a parsed GitHub URL
  */
 export function extractSkillName(parsed: ParsedGitHubUrl): string {
@@ -114,7 +194,7 @@ function isBinaryFile(filename: string): boolean {
 /**
  * Make a request to the GitHub API
  */
-async function githubApiRequest(url: string, token?: string): Promise<Response> {
+export async function githubApiRequest(url: string, token?: string): Promise<Response> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",
     "User-Agent": "agent-command-sync",
@@ -210,6 +290,86 @@ export async function fetchSkillDirectory(parsed: ParsedGitHubUrl, token?: strin
     throw new Error(
       `SKILL.md not found in ${parsed.path}. Make sure the URL points to a valid skill directory containing SKILL.md.`,
     );
+  }
+
+  return files;
+}
+
+// ── Repository-level operations ─────────────────────────────────
+
+/**
+ * Fetch the default branch name for a GitHub repository.
+ */
+export async function fetchDefaultBranch(owner: string, repo: string, token?: string): Promise<string> {
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}`;
+  const response = await githubApiRequest(apiUrl, token);
+  const data: { default_branch: string } = await response.json();
+  return data.default_branch;
+}
+
+/**
+ * Scan a repository for skill directories (containing SKILL.md) using the Git Trees API.
+ * Skips SKILL.md at repository root (consistent with parseGitHubUrl behavior).
+ */
+export async function scanRepositoryForSkills(
+  owner: string,
+  repo: string,
+  ref: string,
+  token?: string,
+): Promise<{ skills: DiscoveredSkill[]; truncated: boolean }> {
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/${ref}?recursive=1`;
+  const response = await githubApiRequest(apiUrl, token);
+  const data: { tree: GitHubTreeItem[]; truncated: boolean } = await response.json();
+
+  // First pass: find skill directories (those containing SKILL.md)
+  const skillPaths = new Set<string>();
+  for (const item of data.tree) {
+    if (item.type === "blob" && item.path.endsWith("/SKILL.md")) {
+      skillPaths.add(item.path.slice(0, -"/SKILL.md".length));
+    }
+  }
+
+  // Second pass: collect all files belonging to each skill directory
+  const skills: DiscoveredSkill[] = [];
+  for (const dirPath of skillPaths) {
+    const prefix = `${dirPath}/`;
+    const files = data.tree.filter((item) => item.type === "blob" && item.path.startsWith(prefix)).map((item) => item.path);
+    const segments = dirPath.split("/");
+    skills.push({ path: dirPath, name: segments[segments.length - 1], files });
+  }
+
+  return { skills, truncated: data.truncated };
+}
+
+/**
+ * Fetch all files for a skill using raw.githubusercontent.com (not rate-limited).
+ * Used by repo-level download to avoid Contents API rate limits.
+ */
+export async function fetchSkillFromTree(
+  owner: string,
+  repo: string,
+  ref: string,
+  skill: DiscoveredSkill,
+): Promise<DownloadedFile[]> {
+  const files: DownloadedFile[] = [];
+  const prefix = `${skill.path}/`;
+
+  for (const filePath of skill.files) {
+    const relativePath = filePath.slice(prefix.length);
+    const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${filePath}`;
+    const response = await fetch(rawUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to download ${filePath}: ${response.status} ${response.statusText}`);
+    }
+
+    const binary = isBinaryFile(relativePath);
+    if (binary) {
+      const buffer = Buffer.from(await response.arrayBuffer());
+      files.push({ relativePath, content: buffer, isBinary: true });
+    } else {
+      const text = await response.text();
+      files.push({ relativePath, content: text, isBinary: false });
+    }
   }
 
   return files;

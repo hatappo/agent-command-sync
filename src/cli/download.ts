@@ -1,5 +1,4 @@
 import { promises as fs } from "node:fs";
-import { homedir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import matter from "gray-matter";
 import picocolors from "picocolors";
@@ -14,11 +13,17 @@ import {
   resolveSkillDir,
 } from "../utils/file-utils.js";
 import {
+  type DiscoveredSkill,
   type DownloadedFile,
   type ParsedGitHubUrl,
+  type ParsedRepoUrl,
   extractSkillName,
+  fetchDefaultBranch,
   fetchSkillDirectory,
+  fetchSkillFromTree,
   parseGitHubUrl,
+  scanRepositoryForSkills,
+  tryParseRepoUrl,
 } from "../utils/github-utils.js";
 
 // ── Types ───────────────────────────────────────────────────────
@@ -47,9 +52,18 @@ const operationStyles = {
 // ── Helpers ─────────────────────────────────────────────────────
 
 /**
+ * Resolve the base directory for download when no destination agent is specified.
+ * - In a git repo: gitRoot (project-level)
+ * - Outside a git repo: cwd
+ */
+function resolveDownloadBaseDir(options: DownloadOptions): string {
+  return options.gitRoot && !options.global ? options.gitRoot : process.cwd();
+}
+
+/**
  * Determine the base directory for downloaded files.
- * - With -d: use resolveSkillDir for the agent
- * - Without -d: use gitRoot (project) or homedir (global)
+ * - With [to]: use resolveSkillDir for the agent
+ * - Without [to]: use gitRoot (project) or cwd
  */
 function resolveTargetDir(parsed: ParsedGitHubUrl, options: DownloadOptions): string {
   if (options.destination) {
@@ -64,9 +78,7 @@ function resolveTargetDir(parsed: ParsedGitHubUrl, options: DownloadOptions): st
     return join(skillDir, skillName);
   }
 
-  // Default: use URL path as-is relative to base directory
-  const baseDir = options.gitRoot && !options.global ? options.gitRoot : homedir();
-  return join(baseDir, parsed.path);
+  return join(resolveDownloadBaseDir(options), parsed.path);
 }
 
 /**
@@ -76,7 +88,10 @@ function getModeLabel(options: DownloadOptions): string {
   if (options.gitRoot && !options.global) {
     return `[project: ${options.gitRoot}]`;
   }
-  return "[global]";
+  if (options.global) {
+    return "[global]";
+  }
+  return "";
 }
 
 /**
@@ -126,18 +141,140 @@ function injectFromUrl(content: string, url: string): string {
   return matter.stringify(parsed.content, parsed.data);
 }
 
+/**
+ * Determine the target directory for a skill discovered via repo scanning.
+ */
+function resolveTargetDirForRepoSkill(skill: DiscoveredSkill, options: DownloadOptions): string {
+  if (options.destination) {
+    const agent = AGENT_REGISTRY[options.destination];
+    const context: DirResolutionContext = {
+      customDir: options.customDirs?.[options.destination],
+      gitRoot: options.gitRoot,
+      global: options.global,
+    };
+    const skillDir = resolveSkillDir(agent, context);
+    return join(skillDir, skill.name);
+  }
+
+  return join(resolveDownloadBaseDir(options), skill.path);
+}
+
+/**
+ * Download all skills found in a repository.
+ */
+async function downloadMultipleSkills(
+  repoUrl: ParsedRepoUrl & { ref: string },
+  skills: DiscoveredSkill[],
+  options: DownloadOptions,
+): Promise<void> {
+  const ref = repoUrl.ref;
+  const modeLabel = getModeLabel(options);
+  const dryRunLabel = options.noop ? picocolors.dim(" (dry run)") : "";
+  console.log(
+    `\nDownloading ${picocolors.bold(String(skills.length))} skills from ${picocolors.cyan(`github.com/${repoUrl.owner}/${repoUrl.repo}`)}... ${picocolors.dim(modeLabel)}${dryRunLabel}`,
+  );
+
+  const totalStats = { A: 0, M: 0, "=": 0 };
+  let downloadedSkillCount = 0;
+
+  for (const skill of skills) {
+    const provenanceUrl = `https://github.com/${repoUrl.owner}/${repoUrl.repo}/tree/${ref}/${skill.path}`;
+
+    try {
+      // Use raw.githubusercontent.com to avoid API rate limits
+      const files = await fetchSkillFromTree(repoUrl.owner, repoUrl.repo, ref, skill);
+      const targetDir = resolveTargetDirForRepoSkill(skill, options);
+
+      for (const file of files) {
+        if (file.relativePath === SKILL_CONSTANTS.SKILL_FILE_NAME && typeof file.content === "string") {
+          file.content = injectFromUrl(file.content, provenanceUrl);
+        }
+      }
+
+      for (const file of files) {
+        const filePath = join(targetDir, file.relativePath);
+        const op = await determineOperation(filePath, file.content);
+        totalStats[op]++;
+
+        const style = operationStyles[op];
+        const displayBase = resolveDownloadBaseDir(options);
+        const displayPath = relative(displayBase, filePath);
+
+        if (options.noop) {
+          const label = op === "A" ? "(would create)" : op === "M" ? "(would update)" : "(unchanged)";
+          console.log(`  ${style.prefix} ${displayPath}  ${picocolors.dim(label)}`);
+        } else {
+          if (op !== "=") {
+            await writeDownloadedFile(filePath, file);
+          }
+          const label = op === "A" ? "Created" : op === "M" ? "Updated" : "Unchanged";
+          console.log(`  ${style.prefix} ${displayPath} - ${style.color(label)}`);
+        }
+      }
+      downloadedSkillCount++;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.log(`  ${picocolors.red("[!]")} ${skill.path} - ${picocolors.red(`Skipped: ${message}`)}`);
+    }
+  }
+
+  console.log("");
+  if (options.noop) {
+    console.log(picocolors.dim("Dry run complete. Use without --noop to download."));
+  } else {
+    const parts: string[] = [];
+    if (totalStats.A > 0) parts.push(picocolors.green(`${totalStats.A} created`));
+    if (totalStats.M > 0) parts.push(picocolors.yellow(`${totalStats.M} updated`));
+    if (totalStats["="] > 0) parts.push(picocolors.blue(`${totalStats["="]} unchanged`));
+    console.log(`Done! ${parts.join(", ")} across ${downloadedSkillCount} skills.`);
+  }
+}
+
 // ── Main ────────────────────────────────────────────────────────
 
 /**
- * Download a skill from GitHub and place it locally.
+ * Download skill(s) from GitHub and place them locally.
+ * Supports both single skill URLs and repository-level URLs for bulk download.
  */
 export async function downloadSkill(options: DownloadOptions): Promise<void> {
-  // 0. Validate: -g requires -d
+  // 0. Validate: -g requires destination
   if (options.global && !options.destination) {
     throw new Error("acs download with -g/--global requires [to] argument.\nExample: acs download <url> claude -g");
   }
 
-  // 1. Parse URL
+  // 1. Check for repo-level URL first
+  const repoUrl = tryParseRepoUrl(options.url);
+  if (repoUrl) {
+    const ref = repoUrl.ref ?? (await fetchDefaultBranch(repoUrl.owner, repoUrl.repo, options.githubToken));
+    const resolvedRepoUrl = { ...repoUrl, ref };
+
+    if (options.verbose) {
+      console.log(`DEBUG: Repository URL detected: ${repoUrl.owner}/${repoUrl.repo} ref=${ref}`);
+    }
+
+    const { skills, truncated } = await scanRepositoryForSkills(repoUrl.owner, repoUrl.repo, ref, options.githubToken);
+
+    if (truncated) {
+      console.log(
+        picocolors.yellow("Warning: Repository tree was truncated by GitHub API. Some skills may not be found."),
+      );
+    }
+
+    if (skills.length === 0) {
+      throw new Error(
+        `No skills found in github.com/${repoUrl.owner}/${repoUrl.repo}. Skills must contain a SKILL.md file.`,
+      );
+    }
+
+    if (options.verbose) {
+      console.log(`DEBUG: Found ${skills.length} skills: ${skills.map((s) => s.path).join(", ")}`);
+    }
+
+    await downloadMultipleSkills(resolvedRepoUrl, skills, options);
+    return;
+  }
+
+  // 2. Single skill download (existing flow)
   const parsed = parseGitHubUrl(options.url);
 
   if (options.verbose) {
@@ -182,7 +319,7 @@ export async function downloadSkill(options: DownloadOptions): Promise<void> {
 
     const style = operationStyles[op];
     // Display path relative to base directory for readability
-    const displayBase = options.gitRoot && !options.global ? options.gitRoot : homedir();
+    const displayBase = resolveDownloadBaseDir(options);
     const displayPath = relative(displayBase, filePath);
 
     if (options.noop) {

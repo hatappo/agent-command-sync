@@ -89,6 +89,16 @@ acs download <url> claude -g               # グローバル Claude ディレク
 acs download <url> -n                      # ダウンロードせずにプレビュー
 ```
 
+#### GitHub 認証
+
+プライベートリポジトリからダウンロードするには [Personal access token](https://github.com/settings/tokens?type=beta) を設定してください。
+
+```bash
+export GITHUB_TOKEN=ghp_...
+```
+
+**トークン権限**: パブリックリポジトリは権限設定不要です。プライベートリポジトリの場合、対象リポジトリに **Contents: Read** 権限を付与してください。
+
 ### `acs sync <from> <to>` — エージェント間の直接変換
 
 ```bash
