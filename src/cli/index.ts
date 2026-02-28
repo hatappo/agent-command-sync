@@ -17,12 +17,16 @@ import { syncCommands } from "./sync.js";
 import { updateSkills } from "./update.js";
 
 // Dynamically generated from PRODUCT_TYPES / AGENT_REGISTRY
-const displayNames = PRODUCT_TYPES.map((p) => AGENT_REGISTRY[p].displayName).join(", ");
-const productList = PRODUCT_TYPES.join(", ");
+const displayNames = PRODUCT_TYPES.filter((p) => p !== "chimera")
+  .map((p) => AGENT_REGISTRY[p].displayName)
+  .join(", ");
 
 const program = new Command();
 
-program.name("acs").description(`Convert Custom Slash Commands and Skills between ${displayNames}`).version(version);
+program
+  .name("acs")
+  .description(`Download, update, and sync AI agent skills across ${displayNames}`)
+  .version(version);
 
 // ── Helpers ───────────────────────────────────────────────────────
 
@@ -93,10 +97,160 @@ function registerCommonDirOptions(cmd: Command): Command {
   return cmd;
 }
 
+/** Print help text. Concise when detailed=false, full when detailed=true. */
+function printHelp(detailed: boolean): void {
+  const desc = `Download, update, and sync AI agent skills across ${displayNames}`;
+  console.log(`Usage: acs [command] [options]\n`);
+  console.log(desc);
+
+  if (detailed) {
+    console.log(`\nOptions:`);
+    console.log(`  -h                       Show concise help`);
+    console.log(`  --help                   Show detailed help (this output)`);
+  }
+
+  console.log(`\nCommands:`);
+  console.log(`  download <url> [to]      Download skill(s) from GitHub`);
+  if (detailed) {
+    console.log(`  dl <url> [to]            Alias for download`);
+  }
+  console.log(`  update [skill-path]      Check for and apply upstream updates`);
+  console.log(`  info <skill-path>        Show skill information and source links`);
+  console.log(`  sync <from> <to>         Convert commands/skills between agents`);
+  console.log(`  status                   Show Chimera hub status`);
+  console.log(`  version                  Show version`);
+
+  if (detailed) {
+    console.log(`\nAdvanced Commands:`);
+    console.log(`  import <agent>           Import into Chimera hub    (shorthand for: sync <agent> chimera)`);
+    console.log(`  drift <agent>            Preview import             (shorthand for: sync <agent> chimera -n)`);
+    console.log(`  apply <agent>            Apply Chimera hub to agent (shorthand for: sync chimera <agent>)`);
+    console.log(`  plan <agent>             Preview apply              (shorthand for: sync chimera <agent> -n)`);
+  }
+
+  console.log(`\nExamples:`);
+  console.log(`  $ acs download <github-url>          # Download a skill from GitHub`);
+  console.log(`  $ acs download <github-url> gemini   # Download into Gemini skill directory`);
+  console.log(`  $ acs download <github-repo-url>     # Bulk download all skills from a repo`);
+  console.log(`  $ acs update                         # Update all downloaded skills`);
+  console.log(`  $ acs update .claude/skills/my-skill  # Update a specific skill`);
+  console.log(`  $ acs info .claude/skills/my-skill    # Show skill information`);
+  console.log(`  $ acs sync claude gemini             # Convert skills between agents`);
+  console.log(`  $ acs sync claude gemini -g          # Use global (user-level) directories`);
+  console.log(`  $ acs status                         # Show Chimera hub status`);
+
+  if (detailed) {
+    console.log(`\nAdvanced Examples:`);
+    console.log(`  $ acs import claude                            # Import into Chimera hub`);
+    console.log(`  $ acs drift claude                             # Preview import (dry run)`);
+    console.log(`  $ acs apply gemini                             # Apply Chimera hub to agent`);
+    console.log(`  $ acs plan gemini                              # Preview apply (dry run)`);
+    console.log(`  $ acs sync claude gemini --remove-unsupported  # Remove unsupported fields`);
+    console.log(`  $ acs sync gemini claude --no-overwrite        # Skip existing files`);
+    console.log(`  $ acs sync claude gemini --sync-delete         # Delete orphaned files`);
+  }
+
+  if (!detailed) {
+    console.log(`\nRun 'acs --help' for all commands and advanced usage.`);
+  }
+}
+
 // ── Main (async entry point for git root detection) ──────────────
 
 async function main(): Promise<void> {
+  // ── Top-level help interception (before Commander parses) ────────
+  const rawArgs = process.argv.slice(2);
+  if (rawArgs.length === 0 || (rawArgs.length === 1 && rawArgs[0] === "-h")) {
+    printHelp(false);
+    process.exit(0);
+  }
+  if (rawArgs.length === 1 && (rawArgs[0] === "--help" || rawArgs[0] === "help")) {
+    printHelp(true);
+    process.exit(0);
+  }
+
+  // Disable Commander's built-in help subcommand (top-level help is handled above)
+  program.addHelpCommand(false);
+
   const gitRoot = await findGitRoot();
+
+  // ── download subcommand ──────────────────────────────────────────
+
+  const downloadCmd = program
+    .command("download <url> [to]")
+    .alias("dl")
+    .description("Download skill(s) from GitHub (supports repo-level bulk download)")
+    .option("-n, --noop", "Preview files without downloading", false)
+    .option("-v, --verbose", "Show detailed debug information", false)
+    .option("--no-provenance", "Do not record source URL in _from frontmatter property");
+
+  registerCommonDirOptions(downloadCmd);
+
+  downloadCmd.action(async (url: string, to: string | undefined, options) => {
+    try {
+      await downloadSkill({
+        url,
+        destination: to as ProductType | undefined,
+        global: options.global,
+        githubToken: process.env.GITHUB_TOKEN,
+        noop: options.noop,
+        verbose: options.verbose,
+        gitRoot,
+        customDirs: buildCustomDirs(options),
+        noProvenance: !options.provenance,
+      });
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+  // ── update subcommand ────────────────────────────────────────────
+
+  const updateCmd = program
+    .command("update [skill-path]")
+    .description("Check for and apply upstream updates to downloaded skills")
+    .option("-n, --noop", "Check for updates without applying them", false)
+    .option("-v, --verbose", "Show detailed debug information", false);
+
+  registerCommonDirOptions(updateCmd);
+
+  updateCmd.action(async (skillPath: string | undefined, options) => {
+    try {
+      await updateSkills({
+        skillPath,
+        noop: options.noop,
+        verbose: options.verbose,
+        gitRoot,
+        global: options.global,
+        customDirs: buildCustomDirs(options),
+      });
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+  // ── info subcommand ──────────────────────────────────────────────
+
+  const infoCmd = program
+    .command("info <skill-path>")
+    .description("Show skill information and source links")
+    .option("-v, --verbose", "Show detailed debug information", false);
+
+  registerCommonDirOptions(infoCmd);
+
+  infoCmd.action(async (skillPath: string, options) => {
+    try {
+      await showSkillInfo({
+        skillPath,
+        verbose: options.verbose,
+        gitRoot,
+        global: options.global,
+        customDirs: buildCustomDirs(options),
+      });
+    } catch (error) {
+      handleError(error);
+    }
+  });
 
   // ── sync subcommand ─────────────────────────────────────────────
 
@@ -299,84 +453,6 @@ async function main(): Promise<void> {
     }
   });
 
-  // ── download subcommand ──────────────────────────────────────────
-
-  const downloadCmd = program
-    .command("download <url> [to]")
-    .alias("dl")
-    .description("Download skill(s) from GitHub (supports repo-level URLs for bulk download)")
-    .option("-n, --noop", "Preview files without downloading", false)
-    .option("-v, --verbose", "Show detailed debug information", false)
-    .option("--no-provenance", "Do not record source URL in _from frontmatter property");
-
-  registerCommonDirOptions(downloadCmd);
-
-  downloadCmd.action(async (url: string, to: string | undefined, options) => {
-    try {
-      await downloadSkill({
-        url,
-        destination: to as ProductType | undefined,
-        global: options.global,
-        githubToken: process.env.GITHUB_TOKEN,
-        noop: options.noop,
-        verbose: options.verbose,
-        gitRoot,
-        customDirs: buildCustomDirs(options),
-        noProvenance: !options.provenance,
-      });
-    } catch (error) {
-      handleError(error);
-    }
-  });
-
-  // ── update subcommand ────────────────────────────────────────────
-
-  const updateCmd = program
-    .command("update [skill-path]")
-    .description("Check for and apply upstream updates to downloaded skills")
-    .option("-n, --noop", "Check for updates without applying them", false)
-    .option("-v, --verbose", "Show detailed debug information", false);
-
-  registerCommonDirOptions(updateCmd);
-
-  updateCmd.action(async (skillPath: string | undefined, options) => {
-    try {
-      await updateSkills({
-        skillPath,
-        noop: options.noop,
-        verbose: options.verbose,
-        gitRoot,
-        global: options.global,
-        customDirs: buildCustomDirs(options),
-      });
-    } catch (error) {
-      handleError(error);
-    }
-  });
-
-  // ── info subcommand ──────────────────────────────────────────────
-
-  const infoCmd = program
-    .command("info <skill-path>")
-    .description("Show skill information and source links")
-    .option("-v, --verbose", "Show detailed debug information", false);
-
-  registerCommonDirOptions(infoCmd);
-
-  infoCmd.action(async (skillPath: string, options) => {
-    try {
-      await showSkillInfo({
-        skillPath,
-        verbose: options.verbose,
-        gitRoot,
-        global: options.global,
-        customDirs: buildCustomDirs(options),
-      });
-    } catch (error) {
-      handleError(error);
-    }
-  });
-
   // ── status subcommand ────────────────────────────────────────────
 
   const statusCmd = program.command("status").description("Show Chimera status and detected agents");
@@ -411,40 +487,6 @@ async function main(): Promise<void> {
     .action(() => {
       console.log(version);
     });
-
-  // ── Help ────────────────────────────────────────────────────────
-
-  program.on("--help", () => {
-    console.log("");
-    console.log("Examples:");
-    console.log("  $ acs sync claude gemini                     # Direct conversion (project-level by default)");
-    console.log("  $ acs sync claude gemini -g                  # Use global (user-level) directories");
-    console.log("  $ acs sync claude gemini -t commands         # Convert only commands");
-    console.log(
-      "  $ acs import claude                          # Import into Chimera hub    (shorthand for: acs sync claude chimera)",
-    );
-    console.log(
-      "  $ acs drift claude                           # Preview import             (shorthand for: acs sync claude chimera -n)",
-    );
-    console.log(
-      "  $ acs apply gemini                           # Apply Chimera hub to agent (shorthand for: acs sync chimera gemini)",
-    );
-    console.log(
-      "  $ acs plan gemini                            # Preview apply              (shorthand for: acs sync chimera gemini -n)",
-    );
-    console.log("  $ acs status                                 # Show Chimera status and detected agents");
-    console.log("  $ acs download <github-url>                  # Download a skill from GitHub");
-    console.log("  $ acs download <github-url> gemini           # Download and place in Gemini skill directory");
-    console.log("  $ acs update                                 # Check and update all agent skills");
-    console.log("  $ acs update skills/                         # Check and update skills under a path");
-    console.log("  $ acs update skills/my-skill                 # Check and update a specific skill");
-    console.log("  $ acs update -n                              # Check for updates without applying");
-    console.log("  $ acs info .claude/skills/my-skill            # Show skill information");
-    console.log("  $ acs sync claude gemini --remove-unsupported # Remove unsupported fields");
-    console.log("  $ acs sync gemini claude --no-overwrite      # Skip existing files");
-    console.log("  $ acs sync claude gemini --sync-delete       # Delete orphaned files");
-    console.log("  $ acs sync claude gemini --verbose           # Show detailed debug information");
-  });
 
   program.parse();
 }
