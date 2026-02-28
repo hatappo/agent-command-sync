@@ -2,12 +2,12 @@
 
 --------------------------------------------------------------------------------
 
-# agent-command-sync
+# ACS / agent-command-sync
 
 [![npm version](https://badge.fury.io/js/agent-command-sync.svg)](https://www.npmjs.com/package/agent-command-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A skill package manager for AI coding agents — Download, update, and sync Skills across Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor. Zero config, no extra files needed.
+A skill lifecycle management CLI for AI agents — Download, update, and sync Skills across Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor. Zero config, no extra files needed.
 
 ## CHANGELOG
 
@@ -77,12 +77,14 @@ acs sync gemini claude -n
 - **Download from GitHub** — Fetch skills directly from GitHub repositories with `acs download`
 - **Update from Upstream** — Check and apply upstream changes to downloaded skills with `acs update`
 - **Skill Info** — View skill metadata and source links with `acs info`
-- **Provenance Tracking** — Every download and sync records the source in `_from` (as `owner/repo@treeHash`). If a public skill is found to be compromised, trace affected local skills instantly. Disable with `--no-provenance`
+- **Provenance Tracking** — Every download and sync records the source in `_from` (as `owner/repo@shortHash`, 7-char SHA by default; use `--full-hash` for full 40-char SHA). If a public skill is found to be compromised, trace affected local skills instantly. Disable with `--no-provenance`
 - **Cross-Agent Conversion** — Convert skill formats and placement across 7 agents, absorbing format differences automatically
 - **Placeholder Conversion** — `$ARGUMENTS` ↔ `{{args}}`, file references, shell commands auto-converted
 - **Dry-Run Preview** — Preview changes with `-n` before applying them
 - **Chimera Hub** — Lossless conversion hub that preserves all agent-specific settings ([details](docs/chimera-hub-workflow.md))
 
+> **Upgrading from v5.5?** v5.6.0 defaults `_from` tree hash to short SHA (7 chars) instead of full 40-char hash. Existing full hashes are still recognized via prefix matching. Use `--full-hash` to keep full hashes. See [CHANGELOG.txt](CHANGELOG.txt).
+>
 > **Upgrading from v5.2?** v5.3.0 adds the `acs update` subcommand and appends tree hashes to `_from` (`owner/repo@treeHash`). See [CHANGELOG.txt](CHANGELOG.txt).
 >
 > **Upgrading from v5.1?** v5.2.0 changes `_from` format from full GitHub URL to `owner/repo`. See [CHANGELOG.txt](CHANGELOG.txt).

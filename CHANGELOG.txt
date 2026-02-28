@@ -1,5 +1,10 @@
 # Changelog
 
+## [5.6.0] - 2026-02-28
+
+### Changed
+- **Short SHA for `_from` provenance**: `_from` tree hash now defaults to 7-character short SHA (e.g., `owner/repo@d5cd683`) instead of full 40-character hash. Use `--full-hash` option on `download` and `update` commands to keep full hashes. Existing full hashes are still recognized via prefix matching.
+
 ## [5.5.0] - 2026-02-28
 
 ### Added

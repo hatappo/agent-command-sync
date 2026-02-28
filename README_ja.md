@@ -2,12 +2,12 @@
 
 --------------------------------------------------------------------------------
 
-# agent-command-sync
+# ACS / agent-command-sync 
 
 [![npm version](https://badge.fury.io/js/agent-command-sync.svg)](https://www.npmjs.com/package/agent-command-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-AI コーディングエージェントの Skill パッケージマネージャー — Claude Code、Gemini CLI、Codex CLI、OpenCode、GitHub Copilot、Cursor 間で Skill をダウンロード・更新・同期。設定ファイル不要、追加ファイルなしですぐ使えます。
+AI エージェント Skill のライフサイクル マネジメント CLI — Claude Code、Gemini CLI、Codex CLI、OpenCode、GitHub Copilot、Cursor 間で Skill をダウンロード・更新・同期。設定ファイル不要、追加ファイルなしですぐ使えます。
 
 ## CHANGELOG
 
@@ -77,12 +77,14 @@ acs sync gemini claude -n
 - **GitHub からダウンロード** — `acs download` で GitHub リポジトリからスキルを直接取得
 - **上流からの更新** — `acs update` でダウンロード済みスキルの上流変更をチェックし適用
 - **スキル情報表示** — `acs info` でスキルのメタ情報とソースリンクを確認
-- **来歴トラッキング** — ダウンロードや同期のたびにソース情報を `_from` に記録（`owner/repo@treeHash` 形式）。公開スキルに問題が発見された場合、影響を受けるローカルスキルを即座に追跡可能。`--no-provenance` で無効化
+- **来歴トラッキング** — ダウンロードや同期のたびにソース情報を `_from` に記録（`owner/repo@shortHash` 形式、デフォルト 7 文字の短縮 SHA。`--full-hash` でフル 40 文字 SHA も選択可能）。公開スキルに問題が発見された場合、影響を受けるローカルスキルを即座に追跡可能。`--no-provenance` で無効化
 - **エージェント間フォーマット変換** — 7エージェント間でフォーマット差異を吸収したスキル変換
 - **プレースホルダー変換** — `$ARGUMENTS` ↔ `{{args}}`、ファイル参照、シェルコマンドを自動変換
 - **ドライランプレビュー** — `-n` で適用前に変更内容を確認
 - **Chimera Hub** — 全エージェント固有設定を保持するロスレス変換ハブ（[詳細](docs/chimera-hub-workflow.md)）
 
+> **v5.5 からのアップグレード？** v5.6.0 で `_from` の tree hash がデフォルトで短縮 SHA（7 文字）になりました。既存のフル SHA は prefix マッチで引き続き認識されます。`--full-hash` でフル SHA を維持可能です。[CHANGELOG_ja.txt](CHANGELOG_ja.txt) をご確認ください。
+>
 > **v5.2 からのアップグレード？** v5.3.0 で `acs update` サブコマンドが追加され、`_from` に tree hash が付与されるようになりました（`owner/repo@treeHash`）。[CHANGELOG_ja.txt](CHANGELOG_ja.txt) をご確認ください。
 >
 > **v5.1 からのアップグレード？** v5.2.0 で `_from` の形式が完全な GitHub URL から `owner/repo` に変更されました。[CHANGELOG_ja.txt](CHANGELOG_ja.txt) をご確認ください。
