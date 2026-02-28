@@ -11,6 +11,7 @@ import { findGitRoot } from "../utils/git-utils.js";
 import type { CLIOptions } from "./options.js";
 import { validateCLIOptions } from "./options.js";
 import { downloadSkill } from "./download.js";
+import { showSkillInfo } from "./info.js";
 import { showStatus } from "./status.js";
 import { syncCommands } from "./sync.js";
 import { updateSkills } from "./update.js";
@@ -353,6 +354,29 @@ async function main(): Promise<void> {
     }
   });
 
+  // ── info subcommand ──────────────────────────────────────────────
+
+  const infoCmd = program
+    .command("info <skill-path>")
+    .description("Show skill information and source links")
+    .option("-v, --verbose", "Show detailed debug information", false);
+
+  registerCommonDirOptions(infoCmd);
+
+  infoCmd.action(async (skillPath: string, options) => {
+    try {
+      await showSkillInfo({
+        skillPath,
+        verbose: options.verbose,
+        gitRoot,
+        global: options.global,
+        customDirs: buildCustomDirs(options),
+      });
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
   // ── status subcommand ────────────────────────────────────────────
 
   const statusCmd = program.command("status").description("Show Chimera status and detected agents");
@@ -415,6 +439,7 @@ async function main(): Promise<void> {
     console.log("  $ acs update skills/                         # Check and update skills under a path");
     console.log("  $ acs update skills/my-skill                 # Check and update a specific skill");
     console.log("  $ acs update -n                              # Check for updates without applying");
+    console.log("  $ acs info .claude/skills/my-skill            # Show skill information");
     console.log("  $ acs sync claude gemini --remove-unsupported # Remove unsupported fields");
     console.log("  $ acs sync gemini claude --no-overwrite      # Skip existing files");
     console.log("  $ acs sync claude gemini --sync-delete       # Delete orphaned files");

@@ -1,5 +1,16 @@
 # Changelog
 
+## [5.4.0] - 2026-02-28
+
+### Added
+- **`acs info <skill-path>` subcommand**: Display skill information and source links
+  - Shows metadata: description, source (`_from`), license, local path, Git remote URL
+  - Lists files in the skill directory (direct files + subdirectories with file counts)
+  - Displays source links (GitHub, skillsmp.com, skills.sh) when `_from` provenance exists
+  - Uses GitHub API to resolve the actual skill path in the source repository
+  - Accepts both skill directory path and `SKILL.md` file path
+- **`getOriginRemoteUrl()` utility**: Returns the raw origin remote URL from `.git/config` (no GitHub normalization)
+
 ## [5.3.0] - 2026-02-28
 
 ### Added

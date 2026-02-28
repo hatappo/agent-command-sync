@@ -20,7 +20,7 @@ export interface UpdateOptions {
   customDirs?: Partial<Record<ProductType, string>>;
 }
 
-interface LocalSkillInfo {
+export interface LocalSkillInfo {
   skillDir: string;
   skillName: string;
   ownerRepo: string;
@@ -50,7 +50,7 @@ export function parseFromValue(from: string): { ownerRepo: string; treeHash: str
 /**
  * Read a skill directory's SKILL.md and extract _from provenance info.
  */
-async function readSkillFrom(skillDir: string): Promise<LocalSkillInfo | null> {
+export async function readSkillFrom(skillDir: string): Promise<LocalSkillInfo | null> {
   try {
     const skillMdPath = join(skillDir, SKILL_CONSTANTS.SKILL_FILE_NAME);
     const content = await readFile(skillMdPath);

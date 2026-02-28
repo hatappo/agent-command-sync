@@ -85,15 +85,11 @@ export async function getCurrentBranch(gitRoot: string): Promise<string | null> 
 }
 
 /**
- * Parse .git/config to extract the origin remote URL.
- * If the origin points to github.com, normalizes to HTTPS repository URL.
- * Returns null for non-GitHub remotes or if no origin is found.
- *
- * Normalization:
- * - `git@github.com:owner/repo.git` → `https://github.com/owner/repo`
- * - `https://github.com/owner/repo.git` → `https://github.com/owner/repo`
+ * Get the raw origin remote URL from .git/config.
+ * Returns the URL as-is (no normalization).
+ * Returns null if no origin remote is found or not in a git repo.
  */
-export async function getGitHubRemoteUrl(gitRoot: string): Promise<string | null> {
+export async function getOriginRemoteUrl(gitRoot: string): Promise<string | null> {
   const gitDir = await resolveGitDir(gitRoot);
   if (!gitDir) return null;
 
@@ -104,8 +100,20 @@ export async function getGitHubRemoteUrl(gitRoot: string): Promise<string | null
     return null;
   }
 
-  // Parse .git/config for [remote "origin"] section
-  const originUrl = parseOriginUrl(configContent);
+  return parseOriginUrl(configContent);
+}
+
+/**
+ * Parse .git/config to extract the origin remote URL.
+ * If the origin points to github.com, normalizes to HTTPS repository URL.
+ * Returns null for non-GitHub remotes or if no origin is found.
+ *
+ * Normalization:
+ * - `git@github.com:owner/repo.git` → `https://github.com/owner/repo`
+ * - `https://github.com/owner/repo.git` → `https://github.com/owner/repo`
+ */
+export async function getGitHubRemoteUrl(gitRoot: string): Promise<string | null> {
+  const originUrl = await getOriginRemoteUrl(gitRoot);
   if (!originUrl) return null;
 
   return normalizeGitHubUrl(originUrl);

@@ -76,6 +76,7 @@ acs sync gemini claude -n
 
 - **GitHub からダウンロード** — `acs download` で GitHub リポジトリからスキルを直接取得
 - **上流からの更新** — `acs update` でダウンロード済みスキルの上流変更をチェックし適用
+- **スキル情報表示** — `acs info` でスキルのメタ情報とソースリンクを確認
 - **来歴トラッキング** — ダウンロードや同期のたびにソース情報を `_from` に記録（`owner/repo@treeHash` 形式）。公開スキルに問題が発見された場合、影響を受けるローカルスキルを即座に追跡可能。`--no-provenance` で無効化
 - **エージェント間フォーマット変換** — 7エージェント間でフォーマット差異を吸収したスキル変換
 - **プレースホルダー変換** — `$ARGUMENTS` ↔ `{{args}}`、ファイル参照、シェルコマンドを自動変換
@@ -118,6 +119,13 @@ acs update                                 # 全エージェントスキルを�
 acs update .claude/skills/my-skill         # 特定のスキルを更新
 acs update skills/                         # パス配下の全スキルを更新
 acs update -n                              # 更新チェックのみ（適用なし）
+```
+
+### `acs info <skill-path>` — スキル情報を表示
+
+```bash
+acs info .claude/skills/my-skill           # スキル情報とソースリンクを表示
+acs info .claude/skills/my-skill/SKILL.md  # SKILL.md パスの直接指定も可
 ```
 
 ### `acs sync <from> <to>` — エージェント間の直接変換

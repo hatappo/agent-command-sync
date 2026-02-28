@@ -1,6 +1,6 @@
 {
   "name": "agent-command-sync",
-  "version": "5.3.3",
+  "version": "5.4.0",
   "description": "A skill package manager for AI coding agents — download, update, and sync Skills across Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor. Zero config, no extra files needed.",
   "type": "module",
   "main": "dist/index.js",
