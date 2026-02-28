@@ -1,5 +1,16 @@
 # Changelog
 
+## [5.5.0] - 2026-02-28
+
+### Added
+- **Interactive skill selection for `acs info`**: Running `acs info` without arguments discovers all skills across agent directories and presents an interactive arrow-key selection UI
+  - Shows skill count, numbered choices with paths, and descriptions
+  - Uses `@inquirer/select` for the selection UI
+- **Two-level help display (Cargo pattern)**: `acs -h` shows concise help, `acs --help` shows detailed help with advanced commands and examples
+
+### Changed
+- **`acs info` argument is now optional**: `info <skill-path>` → `info [skill-path]`
+
 ## [5.4.0] - 2026-02-28
 
 ### Added

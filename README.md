@@ -121,9 +121,10 @@ acs update skills/                         # Update all skills under a path
 acs update -n                              # Check for updates without applying
 ```
 
-### `acs info <skill-path>` — Show skill information
+### `acs info [skill-path]` — Show skill information
 
 ```bash
+acs info                                   # Interactively select and view a skill
 acs info .claude/skills/my-skill           # Show skill info and source links
 acs info .claude/skills/my-skill/SKILL.md  # SKILL.md path also accepted
 ```
