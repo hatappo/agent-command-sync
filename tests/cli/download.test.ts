@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import matter from "gray-matter";
 import { type Mock, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { downloadSkill } from "../../src/cli/download.js";
+import { downloadSkill, formatFromValue } from "../../src/cli/download.js";
 import type { DownloadedFile, GitHubContentItem } from "../../src/utils/github-utils.js";
 
 describe("download command", () => {
@@ -207,7 +207,7 @@ describe("download command", () => {
     const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
     // Verify _from contains owner/repo (not full URL)
     const parsed = matter(skillMd);
-    expect(parsed.data._from).toBe("owner/repo@a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2");
+    expect(parsed.data._from).toBe("owner/repo@a1b2c3d");
   });
 
   it("should not inject _from when noProvenance is true", async () => {
@@ -259,7 +259,7 @@ describe("download command", () => {
     const skillMd = await readFile(join(tempDir, ".claude/skills/other-skill/SKILL.md"), "utf-8");
     const parsed = matter(skillMd);
     // Should always update to the new source (with tree hash)
-    expect(parsed.data._from).toBe(`other/repo@${otherTreeHash}`);
+    expect(parsed.data._from).toBe(`other/repo@${otherTreeHash.slice(0, 7)}`);
     expect(skillMd).not.toContain(existingFrom);
   });
 
@@ -270,7 +270,7 @@ describe("download command", () => {
     // The SKILL.md needs to already include _from (with tree hash) to be truly unchanged after injection
     const expectedContent = matter.stringify("# My Skill", {
       description: "My Skill",
-      _from: "owner/repo@a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+      _from: "owner/repo@a1b2c3d",
     });
     await fsWriteFile(join(skillDir, "SKILL.md"), expectedContent, "utf-8");
     await fsWriteFile(join(skillDir, "helper.ts"), "export function helper() {}", "utf-8");
@@ -612,6 +612,29 @@ describe("download command", () => {
       expect(skillMd).toContain("_from:");
       expect(skillMd).toContain("owner/repo");
       expect(skillMd).not.toContain("https://github.com");
+    });
+  });
+
+  // ── formatFromValue ─────────────────────────────────────────────
+
+  describe("formatFromValue", () => {
+    it("should return owner/repo when no treeHash", () => {
+      expect(formatFromValue("owner/repo")).toBe("owner/repo");
+      expect(formatFromValue("owner/repo", undefined)).toBe("owner/repo");
+    });
+
+    it("should use short hash (7 chars) by default", () => {
+      const fullHash = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2";
+      expect(formatFromValue("owner/repo", fullHash)).toBe("owner/repo@a1b2c3d");
+    });
+
+    it("should use full hash when fullHash=true", () => {
+      const fullHash = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2";
+      expect(formatFromValue("owner/repo", fullHash, true)).toBe(`owner/repo@${fullHash}`);
+    });
+
+    it("should handle hash shorter than 7 chars", () => {
+      expect(formatFromValue("owner/repo", "abc")).toBe("owner/repo@abc");
     });
   });
 });

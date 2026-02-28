@@ -180,7 +180,8 @@ async function main(): Promise<void> {
     .description("Download skill(s) from GitHub (supports repo-level bulk download)")
     .option("-n, --noop", "Preview files without downloading", false)
     .option("-v, --verbose", "Show detailed debug information", false)
-    .option("--no-provenance", "Do not record source URL in _from frontmatter property");
+    .option("--no-provenance", "Do not record source URL in _from frontmatter property")
+    .option("--full-hash", "Use full 40-character tree hash in _from provenance", false);
 
   registerCommonDirOptions(downloadCmd);
 
@@ -196,6 +197,7 @@ async function main(): Promise<void> {
         gitRoot,
         customDirs: buildCustomDirs(options),
         noProvenance: !options.provenance,
+        fullHash: options.fullHash,
       });
     } catch (error) {
       handleError(error);
@@ -208,7 +210,8 @@ async function main(): Promise<void> {
     .command("update [skill-path]")
     .description("Check for and apply upstream updates to downloaded skills")
     .option("-n, --noop", "Check for updates without applying them", false)
-    .option("-v, --verbose", "Show detailed debug information", false);
+    .option("-v, --verbose", "Show detailed debug information", false)
+    .option("--full-hash", "Use full 40-character tree hash in _from provenance", false);
 
   registerCommonDirOptions(updateCmd);
 
@@ -221,6 +224,7 @@ async function main(): Promise<void> {
         gitRoot,
         global: options.global,
         customDirs: buildCustomDirs(options),
+        fullHash: options.fullHash,
       });
     } catch (error) {
       handleError(error);

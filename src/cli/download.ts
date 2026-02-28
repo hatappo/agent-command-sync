@@ -38,6 +38,7 @@ export interface DownloadOptions {
   gitRoot?: string | null;
   customDirs?: Partial<Record<ProductType, string>>;
   noProvenance?: boolean;
+  fullHash?: boolean;
 }
 
 // ── Operation display ───────────────────────────────────────────
@@ -128,9 +129,13 @@ export async function writeDownloadedFile(filePath: string, file: DownloadedFile
   }
 }
 
+const SHORT_HASH_LENGTH = 7;
+
 /** Format _from value with optional tree hash: `owner/repo` or `owner/repo@treeHash` */
-export function formatFromValue(ownerRepo: string, treeHash?: string): string {
-  return treeHash ? `${ownerRepo}@${treeHash}` : ownerRepo;
+export function formatFromValue(ownerRepo: string, treeHash?: string, fullHash = false): string {
+  if (!treeHash) return ownerRepo;
+  const hash = fullHash ? treeHash : treeHash.slice(0, SHORT_HASH_LENGTH);
+  return `${ownerRepo}@${hash}`;
 }
 
 /**
@@ -188,7 +193,7 @@ async function downloadMultipleSkills(
       const targetDir = resolveTargetDirForRepoSkill(skill, options);
 
       if (!options.noProvenance) {
-        const fromValue = formatFromValue(ownerRepo, skill.treeHash);
+        const fromValue = formatFromValue(ownerRepo, skill.treeHash, options.fullHash);
         for (const file of files) {
           if (file.relativePath === SKILL_CONSTANTS.SKILL_FILE_NAME && typeof file.content === "string") {
             file.content = injectFromUrl(file.content, fromValue);
@@ -351,7 +356,7 @@ export async function downloadSkill(options: DownloadOptions): Promise<void> {
   // 5. Inject _from provenance into SKILL.md
   if (!options.noProvenance) {
     const ownerRepo = `${parsed.owner}/${parsed.repo}`;
-    const fromValue = formatFromValue(ownerRepo, treeHash);
+    const fromValue = formatFromValue(ownerRepo, treeHash, options.fullHash);
     for (const file of files) {
       if (file.relativePath === SKILL_CONSTANTS.SKILL_FILE_NAME && typeof file.content === "string") {
         file.content = injectFromUrl(file.content, fromValue);

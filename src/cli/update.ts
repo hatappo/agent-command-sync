@@ -18,6 +18,7 @@ export interface UpdateOptions {
   verbose: boolean;
   gitRoot?: string | null;
   customDirs?: Partial<Record<ProductType, string>>;
+  fullHash?: boolean;
 }
 
 export interface LocalSkillInfo {
@@ -45,6 +46,12 @@ export function parseFromValue(from: string): { ownerRepo: string; treeHash: str
     }
   }
   return { ownerRepo: from, treeHash: "" };
+}
+
+/** Compare hashes with prefix matching (short or full). */
+export function hashesMatch(a: string, b: string): boolean {
+  if (a === "" || b === "") return false;
+  return a.startsWith(b) || b.startsWith(a);
 }
 
 /**
@@ -225,7 +232,7 @@ export async function updateSkills(options: UpdateOptions): Promise<void> {
 
         // Compare tree hashes
         const remoteHash = remote.treeHash ?? "";
-        if (local.localTreeHash !== "" && local.localTreeHash === remoteHash) {
+        if (local.localTreeHash !== "" && hashesMatch(local.localTreeHash, remoteHash)) {
           console.log(
             `    ${picocolors.blue("[=]")} ${local.skillName} ${picocolors.dim(`(${displayPath})`)} - ${picocolors.blue("No upstream changes")}`,
           );
@@ -247,7 +254,7 @@ export async function updateSkills(options: UpdateOptions): Promise<void> {
           const files = await fetchSkillFromTree(owner, repo, defaultBranch, remote);
 
           // Inject updated _from with new tree hash
-          const fromValue = formatFromValue(ownerRepo, remote.treeHash);
+          const fromValue = formatFromValue(ownerRepo, remote.treeHash, options.fullHash);
           for (const file of files) {
             if (file.relativePath === SKILL_CONSTANTS.SKILL_FILE_NAME && typeof file.content === "string") {
               file.content = injectFromUrl(file.content, fromValue);

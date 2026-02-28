@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import matter from "gray-matter";
 import { type Mock, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { parseFromValue, updateSkills } from "../../src/cli/update.js";
+import { hashesMatch, parseFromValue, updateSkills } from "../../src/cli/update.js";
 
 describe("update command", () => {
   let originalFetch: typeof globalThis.fetch;
@@ -130,6 +130,30 @@ describe("update command", () => {
     it("should handle @ at position 0 as no hash", () => {
       const result = parseFromValue(`@${treeHash1}`);
       expect(result).toEqual({ ownerRepo: `@${treeHash1}`, treeHash: "" });
+    });
+  });
+
+  // ── hashesMatch ─────────────────────────────────────────────
+
+  describe("hashesMatch", () => {
+    it("should match identical full hashes", () => {
+      expect(hashesMatch(treeHash1, treeHash1)).toBe(true);
+    });
+
+    it("should match short hash against full hash", () => {
+      expect(hashesMatch(treeHash1.slice(0, 7), treeHash1)).toBe(true);
+      expect(hashesMatch(treeHash1, treeHash1.slice(0, 7))).toBe(true);
+    });
+
+    it("should not match different hashes", () => {
+      expect(hashesMatch(treeHash1, treeHash2)).toBe(false);
+      expect(hashesMatch(treeHash1.slice(0, 7), treeHash2)).toBe(false);
+    });
+
+    it("should return false when either hash is empty", () => {
+      expect(hashesMatch("", treeHash1)).toBe(false);
+      expect(hashesMatch(treeHash1, "")).toBe(false);
+      expect(hashesMatch("", "")).toBe(false);
     });
   });
 
@@ -288,7 +312,7 @@ describe("update command", () => {
 
       const skillMd = await readFile(join(tempDir, "some/deep/path/my-skill/SKILL.md"), "utf-8");
       const parsed = matter(skillMd);
-      expect(parsed.data._from).toBe(`owner/repo@${treeHash2}`);
+      expect(parsed.data._from).toBe(`owner/repo@${treeHash2.slice(0, 7)}`);
     });
   });
 
@@ -333,7 +357,7 @@ describe("update command", () => {
 
       const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
       const parsed = matter(skillMd);
-      expect(parsed.data._from).toBe(`owner/repo@${treeHash2}`);
+      expect(parsed.data._from).toBe(`owner/repo@${treeHash2.slice(0, 7)}`);
     });
 
     it("should update when local tree hash is non-existent (invalid but valid hex format)", async () => {
@@ -357,7 +381,7 @@ describe("update command", () => {
 
       const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
       const parsed = matter(skillMd);
-      expect(parsed.data._from).toBe(`owner/repo@${treeHash1}`);
+      expect(parsed.data._from).toBe(`owner/repo@${treeHash1.slice(0, 7)}`);
     });
 
     it("should force download when no local tree hash (legacy _from)", async () => {
@@ -379,7 +403,26 @@ describe("update command", () => {
 
       const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
       const parsed = matter(skillMd);
-      expect(parsed.data._from).toBe(`owner/repo@${treeHash1}`);
+      expect(parsed.data._from).toBe(`owner/repo@${treeHash1.slice(0, 7)}`);
+    });
+
+    it("should match short hash against full remote hash", async () => {
+      // Local has short hash, remote has full hash — should match
+      const shortHash = treeHash1.slice(0, 7);
+      await createLocalSkill(".claude/skills", "my-skill", `owner/repo@${shortHash}`);
+
+      mockDefaultBranch();
+      mockTreeScan([{ name: "my-skill", path: ".claude/skills/my-skill", treeHash: treeHash1 }]);
+
+      await updateSkills({
+        noop: false,
+        global: false,
+        verbose: false,
+        gitRoot: tempDir,
+      });
+
+      const output = consoleOutput.join("\n");
+      expect(output).toContain("No upstream changes");
     });
   });
 
