@@ -1,6 +1,6 @@
 {
   "name": "agent-command-sync",
-  "version": "5.6.0",
+  "version": "5.6.1",
   "description": "A skill lifecycle management CLI for AI agents — download, update, and sync Skills across Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor. Zero config, no extra files needed.",
   "type": "module",
   "main": "dist/index.js",

@@ -45,3 +45,6 @@ temp/
 
 # npm packages
 *.tgz
+
+# Demo intermediate files
+demo/*.cast

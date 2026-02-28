@@ -9,6 +9,10 @@
 
 AI エージェント Skill のライフサイクル マネジメント CLI — Claude Code、Gemini CLI、Codex CLI、OpenCode、GitHub Copilot、Cursor 間で Skill をダウンロード・更新・同期。設定ファイル不要、追加ファイルなしですぐ使えます。
 
+<div align="center">
+  <img src="demo/acs-demo-ja.svg" alt="ACS Demo" width="800">
+</div>
+
 ## CHANGELOG
 
 [CHANGELOG_ja.txt](CHANGELOG_ja.txt)
@@ -40,8 +44,6 @@ acs download https://github.com/anthropics/skills claude -g
 acs download https://github.com/anthropics/skills -n
 ```
 
-![acs download and update](https://raw.githubusercontent.com/hatappo/agent-command-sync/main/docs/acs-download.png)
-
 ### スキルの形式と配置先を他のエージェント用に変換
 
 ```bash
@@ -57,8 +59,6 @@ acs sync gemini claude -g
 # 適用前に変更をプレビュー
 acs sync gemini claude -n
 ```
-
-![acs sync example](https://raw.githubusercontent.com/hatappo/agent-command-sync/main/docs/acsync-example.png)
 
 ## 対応エージェント
 

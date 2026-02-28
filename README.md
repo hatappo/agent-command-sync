@@ -9,6 +9,10 @@
 
 A skill lifecycle management CLI for AI agents — Download, update, and sync Skills across Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor. Zero config, no extra files needed.
 
+<div align="center">
+  <img src="demo/acs-demo.svg" alt="ACS Demo" width="800">
+</div>
+
 ## CHANGELOG
 
 [CHANGELOG.txt](CHANGELOG.txt)
@@ -40,8 +44,6 @@ acs download https://github.com/anthropics/skills claude -g
 acs download https://github.com/anthropics/skills -n
 ```
 
-![acs download and update](https://raw.githubusercontent.com/hatappo/agent-command-sync/main/docs/acs-download.png)
-
 ### Reformat and relocate skills for other agents
 
 ```bash
@@ -57,8 +59,6 @@ acs sync gemini claude -g
 # Preview changes before applying
 acs sync gemini claude -n
 ```
-
-![acs sync example](https://raw.githubusercontent.com/hatappo/agent-command-sync/main/docs/acsync-example.png)
 
 ## Supported Agents
 

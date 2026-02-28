@@ -1,5 +1,13 @@
 # Changelog
 
+## [5.6.1] - 2026-03-01
+
+### Added
+- **CLI demo animation**: Added animated SVG demos to README showcasing `download`, `sync`, `update`, `info`, and `status` commands. Built with `terminal-demo` + `svg-term-cli`. English and Japanese versions included (`demo/`).
+
+### Changed
+- **README images replaced**: Static screenshots replaced with animated SVG demo at the top of README.
+
 ## [5.6.0] - 2026-02-28
 
 ### Changed
