@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm, writeFile as fsWriteFile } from "node:fs/promises";
+import { writeFile as fsWriteFile, mkdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import matter from "gray-matter";

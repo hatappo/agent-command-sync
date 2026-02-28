@@ -1,10 +1,13 @@
 import { promises as fs } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
+import select from "@inquirer/select";
 import matter from "gray-matter";
 import picocolors from "picocolors";
+import { AGENT_REGISTRY } from "../agents/registry.js";
+import { PRODUCT_TYPES } from "../types/intermediate.js";
 import type { ProductType } from "../types/intermediate.js";
 import { SKILL_CONSTANTS } from "../utils/constants.js";
-import { fileExists, readFile } from "../utils/file-utils.js";
+import { type DirResolutionContext, fileExists, findAgentSkills, readFile } from "../utils/file-utils.js";
 import { getOriginRemoteUrl } from "../utils/git-utils.js";
 import { fetchDefaultBranch, scanRepositoryForSkills } from "../utils/github-utils.js";
 import { parseFromValue } from "./update.js";
@@ -12,11 +15,17 @@ import { parseFromValue } from "./update.js";
 // ── Types ───────────────────────────────────────────────────────
 
 export interface InfoOptions {
-  skillPath: string;
+  skillPath?: string;
   verbose: boolean;
   global: boolean;
   gitRoot?: string | null;
   customDirs?: Partial<Record<ProductType, string>>;
+}
+
+interface DiscoveredSkill {
+  skillName: string;
+  relativePath: string;
+  description?: string;
 }
 
 // ── URL Builders ────────────────────────────────────────────────
@@ -47,6 +56,75 @@ export function buildSkillsmpUrl(owner: string, repo: string, repoSkillPath: str
     .replace(/-{2,}/g, "-")
     .replace(/^-+|-+$/g, "");
   return `https://skillsmp.com/skills/${slug}`;
+}
+
+// ── Skill discovery ─────────────────────────────────────────────
+
+/**
+ * Discover all skills across all agent directories.
+ */
+export async function discoverAllSkills(options: {
+  global: boolean;
+  gitRoot?: string | null;
+  customDirs?: Partial<Record<ProductType, string>>;
+}): Promise<DiscoveredSkill[]> {
+  const baseDir = options.gitRoot ?? process.cwd();
+  const results: DiscoveredSkill[] = [];
+  const seen = new Set<string>();
+
+  for (const agentName of PRODUCT_TYPES) {
+    const agent = AGENT_REGISTRY[agentName];
+    const context: DirResolutionContext = {
+      customDir: options.customDirs?.[agentName],
+      gitRoot: options.gitRoot,
+      global: options.global,
+    };
+    const skillDirs = await findAgentSkills(agent, undefined, context);
+
+    for (const dir of skillDirs) {
+      const relativePath = relative(baseDir, dir);
+
+      // Deduplicate (multiple agents may resolve to the same directory)
+      if (seen.has(relativePath)) continue;
+      seen.add(relativePath);
+
+      const skillName = basename(dir);
+      let description: string | undefined;
+
+      try {
+        const content = await readFile(join(dir, SKILL_CONSTANTS.SKILL_FILE_NAME));
+        const parsed = matter(content);
+        if (parsed.data.description && typeof parsed.data.description === "string") {
+          description = parsed.data.description;
+        }
+      } catch {
+        // Skip skills with unreadable SKILL.md
+      }
+
+      results.push({ skillName, relativePath, description });
+    }
+  }
+
+  return results.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+}
+
+// ── Interactive selection ───────────────────────────────────────
+
+async function selectSkillInteractively(skills: DiscoveredSkill[]): Promise<string> {
+  return select({
+    message: "Select a skill to view:\n",
+    choices: skills.map((s, i) => ({
+      name: `${i + 1}. ${s.skillName}  (${s.relativePath})`,
+      value: s.relativePath,
+      description: s.description,
+    })),
+    theme: {
+      style: {
+        description: (text: string) => `${picocolors.gray(text)}\n`,
+        help: (text: string) => picocolors.gray(text),
+      },
+    },
+  });
 }
 
 // ── Files listing ───────────────────────────────────────────────
@@ -103,9 +181,9 @@ async function listSkillFiles(skillDir: string): Promise<string[]> {
   return lines;
 }
 
-// ── Main ────────────────────────────────────────────────────────
+// ── showSkillInfo ───────────────────────────────────────────────
 
-export async function showSkillInfo(options: InfoOptions): Promise<void> {
+export async function showSkillInfo(options: InfoOptions & { skillPath: string }): Promise<void> {
   // 1. Resolve skill path (accept both skill directory and SKILL.md file)
   const baseDir = options.gitRoot ?? process.cwd();
   let resolvedPath = resolve(baseDir, options.skillPath);
@@ -203,4 +281,30 @@ export async function showSkillInfo(options: InfoOptions): Promise<void> {
   }
 
   console.log("");
+}
+
+// ── Entry point ─────────────────────────────────────────────────
+
+export async function runInfo(options: InfoOptions): Promise<void> {
+  if (options.skillPath) {
+    await showSkillInfo({ ...options, skillPath: options.skillPath });
+    return;
+  }
+
+  // No skill path: discover and select interactively
+  const skills = await discoverAllSkills({
+    global: options.global,
+    gitRoot: options.gitRoot,
+    customDirs: options.customDirs,
+  });
+
+  if (skills.length === 0) {
+    console.log(picocolors.yellow("No skills found."));
+    return;
+  }
+
+  console.log(`\nFound ${skills.length} skill${skills.length !== 1 ? "s" : ""}.`);
+
+  const selectedPath = await selectSkillInteractively(skills);
+  await showSkillInfo({ ...options, skillPath: selectedPath });
 }

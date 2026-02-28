@@ -12,7 +12,7 @@ export default defineConfig({
       },
     },
     rollupOptions: {
-      external: [/^node:/, "commander", "gray-matter", "@iarna/toml", "picocolors"],
+      external: [/^node:/, "commander", "gray-matter", "@iarna/toml", "@inquirer/select", "picocolors"],
       output: {
         preserveModules: true,
         preserveModulesRoot: "src",

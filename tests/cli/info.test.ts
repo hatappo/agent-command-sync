@@ -1,9 +1,16 @@
-import { mkdir, rm, writeFile as fsWriteFile } from "node:fs/promises";
+import { writeFile as fsWriteFile, mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import matter from "gray-matter";
 import { type Mock, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { buildGitHubUrl, buildSkillsShUrl, buildSkillsmpUrl, showSkillInfo } from "../../src/cli/info.js";
+import {
+  buildGitHubUrl,
+  buildSkillsShUrl,
+  buildSkillsmpUrl,
+  discoverAllSkills,
+  runInfo,
+  showSkillInfo,
+} from "../../src/cli/info.js";
 
 // Mock getOriginRemoteUrl
 vi.mock("../../src/utils/git-utils.js", async (importOriginal) => {
@@ -14,7 +21,13 @@ vi.mock("../../src/utils/git-utils.js", async (importOriginal) => {
   };
 });
 
+// Mock @inquirer/select
+vi.mock("@inquirer/select", () => ({
+  default: vi.fn(),
+}));
+
 import { getOriginRemoteUrl } from "../../src/utils/git-utils.js";
+import select from "@inquirer/select";
 
 describe("info command", () => {
   let originalFetch: typeof globalThis.fetch;
@@ -430,6 +443,112 @@ describe("info command", () => {
         const output = consoleOutput.join("\n");
         expect(output).toContain("DEBUG:");
       });
+    });
+  });
+
+  // ── discoverAllSkills ──────────────────────────────────────────
+
+  describe("discoverAllSkills", () => {
+    it("should discover skills across multiple agent directories", async () => {
+      await createLocalSkill(".claude/skills", "skill-a", { description: "Skill A desc" });
+      await createLocalSkill(".gemini/skills", "skill-b", { description: "Skill B desc" });
+
+      const skills = await discoverAllSkills({ global: false, gitRoot: tempDir });
+
+      expect(skills).toHaveLength(2);
+      expect(skills.map((s) => s.skillName).sort()).toEqual(["skill-a", "skill-b"]);
+      expect(skills.find((s) => s.skillName === "skill-a")?.description).toBe("Skill A desc");
+      expect(skills.find((s) => s.skillName === "skill-b")?.description).toBe("Skill B desc");
+    });
+
+    it("should return empty array when no skills exist", async () => {
+      const skills = await discoverAllSkills({ global: false, gitRoot: tempDir });
+      expect(skills).toHaveLength(0);
+    });
+
+    it("should deduplicate skills at the same path", async () => {
+      // Create a single skill that could be found by multiple agents
+      await createLocalSkill(".claude/skills", "shared-skill");
+
+      const skills = await discoverAllSkills({ global: false, gitRoot: tempDir });
+
+      const sharedSkills = skills.filter((s) => s.skillName === "shared-skill");
+      expect(sharedSkills).toHaveLength(1);
+    });
+
+    it("should sort skills by relative path", async () => {
+      await createLocalSkill(".gemini/skills", "z-skill");
+      await createLocalSkill(".claude/skills", "a-skill");
+
+      const skills = await discoverAllSkills({ global: false, gitRoot: tempDir });
+
+      expect(skills[0].relativePath).toContain(".claude");
+      expect(skills[1].relativePath).toContain(".gemini");
+    });
+  });
+
+  // ── runInfo ────────────────────────────────────────────────────
+
+  describe("runInfo", () => {
+    it("should call showSkillInfo directly when skillPath is provided", async () => {
+      await createLocalSkill(".claude/skills", "my-skill", { description: "Direct skill" });
+      vi.mocked(getOriginRemoteUrl).mockResolvedValue(null);
+
+      await runInfo({
+        skillPath: ".claude/skills/my-skill",
+        verbose: false,
+        global: false,
+        gitRoot: tempDir,
+      });
+
+      const output = consoleOutput.join("\n");
+      expect(output).toContain("my-skill");
+      expect(output).toContain("Direct skill");
+    });
+
+    it("should show message when no skills found", async () => {
+      await runInfo({
+        verbose: false,
+        global: false,
+        gitRoot: tempDir,
+      });
+
+      const output = consoleOutput.join("\n");
+      expect(output).toContain("No skills found");
+    });
+
+    it("should use interactive select even when only one skill exists", async () => {
+      await createLocalSkill(".claude/skills", "only-skill", { description: "The only one" });
+      vi.mocked(getOriginRemoteUrl).mockResolvedValue(null);
+      vi.mocked(select).mockResolvedValue(".claude/skills/only-skill");
+
+      await runInfo({
+        verbose: false,
+        global: false,
+        gitRoot: tempDir,
+      });
+
+      expect(vi.mocked(select)).toHaveBeenCalledTimes(1);
+      const output = consoleOutput.join("\n");
+      expect(output).toContain("only-skill");
+      expect(output).toContain("The only one");
+    });
+
+    it("should use interactive select when multiple skills exist", async () => {
+      await createLocalSkill(".claude/skills", "skill-a");
+      await createLocalSkill(".claude/skills", "skill-b");
+      vi.mocked(getOriginRemoteUrl).mockResolvedValue(null);
+      vi.mocked(select).mockResolvedValue(".claude/skills/skill-a");
+
+      await runInfo({
+        verbose: false,
+        global: false,
+        gitRoot: tempDir,
+      });
+
+      expect(vi.mocked(select)).toHaveBeenCalledTimes(1);
+      const output = consoleOutput.join("\n");
+      expect(output).toContain("skill-a");
     });
   });
 });

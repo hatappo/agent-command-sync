@@ -8,10 +8,10 @@ import { PRODUCT_TYPES } from "../types/intermediate.js";
 import type { ProductType } from "../types/intermediate.js";
 import type { ContentFilter } from "../types/skill.js";
 import { findGitRoot } from "../utils/git-utils.js";
+import { downloadSkill } from "./download.js";
+import { runInfo } from "./info.js";
 import type { CLIOptions } from "./options.js";
 import { validateCLIOptions } from "./options.js";
-import { downloadSkill } from "./download.js";
-import { showSkillInfo } from "./info.js";
 import { showStatus } from "./status.js";
 import { syncCommands } from "./sync.js";
 import { updateSkills } from "./update.js";
@@ -23,10 +23,7 @@ const displayNames = PRODUCT_TYPES.filter((p) => p !== "chimera")
 
 const program = new Command();
 
-program
-  .name("acs")
-  .description(`Download, update, and sync AI agent skills across ${displayNames}`)
-  .version(version);
+program.name("acs").description(`Download, update, and sync AI agent skills across ${displayNames}`).version(version);
 
 // ── Helpers ───────────────────────────────────────────────────────
 
@@ -100,54 +97,55 @@ function registerCommonDirOptions(cmd: Command): Command {
 /** Print help text. Concise when detailed=false, full when detailed=true. */
 function printHelp(detailed: boolean): void {
   const desc = `Download, update, and sync AI agent skills across ${displayNames}`;
-  console.log(`Usage: acs [command] [options]\n`);
+  console.log("Usage: acs [command] [options]\n");
   console.log(desc);
 
   if (detailed) {
-    console.log(`\nOptions:`);
-    console.log(`  -h                       Show concise help`);
-    console.log(`  --help                   Show detailed help (this output)`);
+    console.log("\nOptions:");
+    console.log("  -h                       Show concise help");
+    console.log("  --help                   Show detailed help (this output)");
   }
 
-  console.log(`\nCommands:`);
-  console.log(`  download <url> [to]      Download skill(s) from GitHub`);
+  console.log("\nCommands:");
+  console.log("  download <url> [to]      Download skill(s) from GitHub");
   if (detailed) {
-    console.log(`  dl <url> [to]            Alias for download`);
+    console.log("  dl <url> [to]            Alias for download");
   }
-  console.log(`  update [skill-path]      Check for and apply upstream updates`);
-  console.log(`  info <skill-path>        Show skill information and source links`);
-  console.log(`  sync <from> <to>         Convert commands/skills between agents`);
-  console.log(`  status                   Show Chimera hub status`);
-  console.log(`  version                  Show version`);
+  console.log("  update [skill-path]      Check for and apply upstream updates");
+  console.log("  info [skill-path]        Show skill information and source links");
+  console.log("  sync <from> <to>         Convert commands/skills between agents");
+  console.log("  status                   Show Chimera hub status");
+  console.log("  version                  Show version");
 
   if (detailed) {
-    console.log(`\nAdvanced Commands:`);
-    console.log(`  import <agent>           Import into Chimera hub    (shorthand for: sync <agent> chimera)`);
-    console.log(`  drift <agent>            Preview import             (shorthand for: sync <agent> chimera -n)`);
-    console.log(`  apply <agent>            Apply Chimera hub to agent (shorthand for: sync chimera <agent>)`);
-    console.log(`  plan <agent>             Preview apply              (shorthand for: sync chimera <agent> -n)`);
+    console.log("\nAdvanced Commands:");
+    console.log("  import <agent>           Import into Chimera hub    (shorthand for: sync <agent> chimera)");
+    console.log("  drift <agent>            Preview import             (shorthand for: sync <agent> chimera -n)");
+    console.log("  apply <agent>            Apply Chimera hub to agent (shorthand for: sync chimera <agent>)");
+    console.log("  plan <agent>             Preview apply              (shorthand for: sync chimera <agent> -n)");
   }
 
-  console.log(`\nExamples:`);
-  console.log(`  $ acs download <github-url>          # Download a skill from GitHub`);
-  console.log(`  $ acs download <github-url> gemini   # Download into Gemini skill directory`);
-  console.log(`  $ acs download <github-repo-url>     # Bulk download all skills from a repo`);
-  console.log(`  $ acs update                         # Update all downloaded skills`);
-  console.log(`  $ acs update .claude/skills/my-skill  # Update a specific skill`);
-  console.log(`  $ acs info .claude/skills/my-skill    # Show skill information`);
-  console.log(`  $ acs sync claude gemini             # Convert skills between agents`);
-  console.log(`  $ acs sync claude gemini -g          # Use global (user-level) directories`);
-  console.log(`  $ acs status                         # Show Chimera hub status`);
+  console.log("\nExamples:");
+  console.log("  $ acs download <github-url>          # Download a skill from GitHub");
+  console.log("  $ acs download <github-url> gemini   # Download into Gemini skill directory");
+  console.log("  $ acs download <github-repo-url>     # Bulk download all skills from a repo");
+  console.log("  $ acs update                         # Update all downloaded skills");
+  console.log("  $ acs update .claude/skills/my-skill  # Update a specific skill");
+  console.log("  $ acs info                            # Interactively select and view a skill");
+  console.log("  $ acs info .claude/skills/my-skill    # Show skill information");
+  console.log("  $ acs sync claude gemini             # Convert skills between agents");
+  console.log("  $ acs sync claude gemini -g          # Use global (user-level) directories");
+  console.log("  $ acs status                         # Show Chimera hub status");
 
   if (detailed) {
-    console.log(`\nAdvanced Examples:`);
-    console.log(`  $ acs import claude                            # Import into Chimera hub`);
-    console.log(`  $ acs drift claude                             # Preview import (dry run)`);
-    console.log(`  $ acs apply gemini                             # Apply Chimera hub to agent`);
-    console.log(`  $ acs plan gemini                              # Preview apply (dry run)`);
-    console.log(`  $ acs sync claude gemini --remove-unsupported  # Remove unsupported fields`);
-    console.log(`  $ acs sync gemini claude --no-overwrite        # Skip existing files`);
-    console.log(`  $ acs sync claude gemini --sync-delete         # Delete orphaned files`);
+    console.log("\nAdvanced Examples:");
+    console.log("  $ acs import claude                            # Import into Chimera hub");
+    console.log("  $ acs drift claude                             # Preview import (dry run)");
+    console.log("  $ acs apply gemini                             # Apply Chimera hub to agent");
+    console.log("  $ acs plan gemini                              # Preview apply (dry run)");
+    console.log("  $ acs sync claude gemini --remove-unsupported  # Remove unsupported fields");
+    console.log("  $ acs sync gemini claude --no-overwrite        # Skip existing files");
+    console.log("  $ acs sync claude gemini --sync-delete         # Delete orphaned files");
   }
 
   if (!detailed) {
@@ -232,15 +230,15 @@ async function main(): Promise<void> {
   // ── info subcommand ──────────────────────────────────────────────
 
   const infoCmd = program
-    .command("info <skill-path>")
+    .command("info [skill-path]")
     .description("Show skill information and source links")
     .option("-v, --verbose", "Show detailed debug information", false);
 
   registerCommonDirOptions(infoCmd);
 
-  infoCmd.action(async (skillPath: string, options) => {
+  infoCmd.action(async (skillPath: string | undefined, options) => {
     try {
-      await showSkillInfo({
+      await runInfo({
         skillPath,
         verbose: options.verbose,
         gitRoot,

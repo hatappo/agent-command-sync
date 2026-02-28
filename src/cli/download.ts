@@ -3,8 +3,8 @@ import { dirname, join, relative } from "node:path";
 import matter from "gray-matter";
 import picocolors from "picocolors";
 import { AGENT_REGISTRY } from "../agents/registry.js";
-import { SKILL_CONSTANTS } from "../utils/constants.js";
 import type { ProductType } from "../types/intermediate.js";
+import { SKILL_CONSTANTS } from "../utils/constants.js";
 import {
   type DirResolutionContext,
   ensureDirectory,
