@@ -83,16 +83,6 @@ acs sync gemini claude -n
 - **Dry-Run Preview** — Preview changes with `-n` before applying them
 - **Chimera Hub** — Lossless conversion hub that preserves all agent-specific settings ([details](docs/chimera-hub-workflow.md))
 
-> **Upgrading from v5.5?** v5.6.0 defaults `_from` tree hash to short SHA (7 chars) instead of full 40-char hash. Existing full hashes are still recognized via prefix matching. Use `--full-hash` to keep full hashes. See [CHANGELOG.txt](CHANGELOG.txt).
->
-> **Upgrading from v5.2?** v5.3.0 adds the `acs update` subcommand and appends tree hashes to `_from` (`owner/repo@treeHash`). See [CHANGELOG.txt](CHANGELOG.txt).
->
-> **Upgrading from v5.1?** v5.2.0 changes `_from` format from full GitHub URL to `owner/repo`. See [CHANGELOG.txt](CHANGELOG.txt).
->
-> **Upgrading from v3?** v4.0.0 changes the default directory scope. See [CHANGELOG.txt](CHANGELOG.txt) for breaking changes.
->
-> **Upgrading from v2?** See the [Migration Guide](docs/migration-v2-to-v3.md).
-
 ## Subcommands
 
 ### `acs download <url> [to]` (alias: `acs dl`) — Download a skill from GitHub

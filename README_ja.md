@@ -7,7 +7,7 @@
 [![npm version](https://badge.fury.io/js/agent-command-sync.svg)](https://www.npmjs.com/package/agent-command-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-AI エージェント Skill のライフサイクル マネジメント CLI — Claude Code、Gemini CLI、Codex CLI、OpenCode、GitHub Copilot、Cursor 間で Skill をダウンロード・更新・同期。設定ファイル不要、追加ファイルなしですぐ使えます。
+AI エージェント Skill のライフサイクル マネジメント CLI — 任意の Skill をダウンロードと更新管理し、Claude Code、などの多数のエージェント間でフォーマットを相互変換。設定ファイル不要、追加ファイルなしですぐ使えます。
 
 <div align="center">
   <img src="demo/acs-demo-ja.svg" alt="ACS Demo" width="800">
@@ -82,16 +82,6 @@ acs sync gemini claude -n
 - **プレースホルダー変換** — `$ARGUMENTS` ↔ `{{args}}`、ファイル参照、シェルコマンドを自動変換
 - **ドライランプレビュー** — `-n` で適用前に変更内容を確認
 - **Chimera Hub** — 全エージェント固有設定を保持するロスレス変換ハブ（[詳細](docs/chimera-hub-workflow.md)）
-
-> **v5.5 からのアップグレード？** v5.6.0 で `_from` の tree hash がデフォルトで短縮 SHA（7 文字）になりました。既存のフル SHA は prefix マッチで引き続き認識されます。`--full-hash` でフル SHA を維持可能です。[CHANGELOG_ja.txt](CHANGELOG_ja.txt) をご確認ください。
->
-> **v5.2 からのアップグレード？** v5.3.0 で `acs update` サブコマンドが追加され、`_from` に tree hash が付与されるようになりました（`owner/repo@treeHash`）。[CHANGELOG_ja.txt](CHANGELOG_ja.txt) をご確認ください。
->
-> **v5.1 からのアップグレード？** v5.2.0 で `_from` の形式が完全な GitHub URL から `owner/repo` に変更されました。[CHANGELOG_ja.txt](CHANGELOG_ja.txt) をご確認ください。
->
-> **v3 からのアップグレード？** v4.0.0 ではデフォルトのディレクトリスコープが変更されました。破壊的変更は [CHANGELOG_ja.txt](CHANGELOG_ja.txt) をご確認ください。
->
-> **v2 からのアップグレード？** [マイグレーションガイド](docs/migration-v2-to-v3_ja.md)をご確認ください。
 
 ## サブコマンド
 
