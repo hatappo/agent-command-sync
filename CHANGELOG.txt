@@ -1,8 +1,9 @@
 # Changelog
 
-## [5.6.2] - 2026-03-06
+## [5.7.0] - 2026-03-06
 
 ### Changed
+- **Repository moved**: Moved from `hatappo/agent-command-sync` to `skill-mill/agent-command-sync` GitHub organization. All repository URLs updated.
 - **README cleanup**: Removed version upgrade/migration notes from READMEs. Updated project description to be more concise.
 
 ## [5.6.1] - 2026-03-01

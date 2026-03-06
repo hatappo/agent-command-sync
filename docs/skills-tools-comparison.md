@@ -25,7 +25,7 @@ A comparison of tools for managing Skills across AI coding agents (Claude Code, 
 | [agent-skills-cli](https://github.com/Karanjot786/agent-skills-cli) | Community | Marketplace installation |
 | [skillshare](https://github.com/runkids/skillshare) | Community | Declarative skill sync |
 | [.agents](https://github.com/amtiYo/agents) | Community | Unified configuration |
-| [agent-command-sync](https://github.com/hatappo/agent-command-sync) | Individual | Format conversion & bidirectional sync |
+| [agent-command-sync](https://github.com/skill-mill/agent-command-sync) | Individual | Format conversion & bidirectional sync |
 
 ---
 
@@ -238,7 +238,7 @@ acs sync claude gemini --sync-delete    # Delete orphaned files
 - No Web UI
 - Limited platform support (Claude/Gemini/Codex only)
 
-**Repository**: https://github.com/hatappo/agent-command-sync
+**Repository**: https://github.com/skill-mill/agent-command-sync
 
 ---
 
@@ -284,7 +284,7 @@ Web dashboard for viewing skills, sync status, and audit results.
 - [agent-skills-cli](https://github.com/Karanjot786/agent-skills-cli)
 - [skillshare](https://github.com/runkids/skillshare)
 - [.agents](https://github.com/amtiYo/agents)
-- [agent-command-sync](https://github.com/hatappo/agent-command-sync)
+- [agent-command-sync](https://github.com/skill-mill/agent-command-sync)
 
 ### Community
 - [awesome-agent-skills](https://github.com/VoltAgent/awesome-agent-skills)

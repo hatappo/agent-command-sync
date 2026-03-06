@@ -1,6 +1,6 @@
 {
   "name": "agent-command-sync",
-  "version": "5.6.2",
+  "version": "5.7.0",
   "description": "A skill lifecycle management CLI for AI agents — Download and manage updates for any Skill, and convert formats across Claude Code and many other agents. Zero config, no extra files needed.",
   "type": "module",
   "main": "dist/index.js",
@@ -36,12 +36,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hatappo/agent-command-sync.git"
+    "url": "git+https://github.com/skill-mill/agent-command-sync.git"
   },
   "bugs": {
-    "url": "https://github.com/hatappo/agent-command-sync/issues"
+    "url": "https://github.com/skill-mill/agent-command-sync/issues"
   },
-  "homepage": "https://github.com/hatappo/agent-command-sync#readme",
+  "homepage": "https://github.com/skill-mill/agent-command-sync#readme",
   "engines": {
     "node": ">=18.0.0"
   },
