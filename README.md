@@ -15,7 +15,7 @@ A skill lifecycle management CLI for AI agents — Download and manage updates f
 
 ## CHANGELOG
 
-[CHANGELOG.txt](CHANGELOG.txt)
+[CHANGELOG.md](CHANGELOG.md)
 
 ## Installation
 

@@ -15,7 +15,7 @@ AI エージェント Skill のライフサイクル マネジメント CLI — 
 
 ## CHANGELOG
 
-[CHANGELOG_ja.txt](CHANGELOG_ja.txt)
+[CHANGELOG_ja.md](CHANGELOG_ja.md)
 
 ## インストール
 
