@@ -7,7 +7,7 @@
 [![npm version](https://badge.fury.io/js/agent-command-sync.svg)](https://www.npmjs.com/package/agent-command-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A skill lifecycle management CLI for AI agents — Download, update, and sync Skills across Claude Code, Gemini CLI, Codex CLI, OpenCode, GitHub Copilot, and Cursor. Zero config, no extra files needed.
+A skill lifecycle management CLI for AI agents — Download and manage updates for any Skill, and convert formats across Claude Code and many other agents. Zero config, no extra files needed.
 
 <div align="center">
   <img src="demo/acs-demo.svg" alt="ACS Demo" width="800">

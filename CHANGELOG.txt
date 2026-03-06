@@ -1,5 +1,10 @@
 # Changelog
 
+## [5.6.2] - 2026-03-06
+
+### Changed
+- **README cleanup**: Removed version upgrade/migration notes from READMEs. Updated project description to be more concise.
+
 ## [5.6.1] - 2026-03-01
 
 ### Added
