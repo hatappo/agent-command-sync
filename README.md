@@ -76,6 +76,7 @@ acs sync gemini claude -n
 
 - **Download from GitHub** — Fetch skills directly from GitHub repositories with `acs download`
 - **Update from Upstream** — Check and apply upstream changes to downloaded skills with `acs update`
+- **List Skills** — List all skills across agents with `acs list`
 - **Skill Info** — View skill metadata and source links with `acs info`
 - **Provenance Tracking** — Every download and sync records the source in `_from` (as `owner/repo@shortHash`, 7-char SHA by default; use `--full-hash` for full 40-char SHA). If a public skill is found to be compromised, trace affected local skills instantly. Disable with `--no-provenance`
 - **Cross-Agent Conversion** — Convert skill formats and placement across 7 agents, absorbing format differences automatically
@@ -111,6 +112,13 @@ acs update                                 # Check and update all agent skills
 acs update .claude/skills/my-skill         # Update a specific skill
 acs update skills/                         # Update all skills under a path
 acs update -n                              # Check for updates without applying
+```
+
+### `acs list` (alias: `acs ls`) — List skills across all agents
+
+```bash
+acs list                                   # List project-level skills
+acs list -g                                # List global (user-level) skills
 ```
 
 ### `acs info [skill-path]` — Show skill information

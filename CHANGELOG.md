@@ -1,5 +1,13 @@
 # Changelog
 
+## [5.8.0] - 2026-03-12
+
+### Added
+- **`acs list` subcommand** (alias: `acs ls`): List skills across all agents, grouped by agent with skill name and path. Supports `-g` for global (user-level) directories.
+
+### Fixed
+- **`acs info` interactive selection**: Escape key now gracefully exits the prompt (previously required Ctrl+C).
+
 ## [5.7.0] - 2026-03-06
 
 ### Changed
