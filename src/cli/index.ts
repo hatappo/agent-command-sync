@@ -10,6 +10,7 @@ import type { ContentFilter } from "../types/skill.js";
 import { findGitRoot } from "../utils/git-utils.js";
 import { downloadSkill } from "./download.js";
 import { runInfo } from "./info.js";
+import { showList } from "./list.js";
 import type { CLIOptions } from "./options.js";
 import { validateCLIOptions } from "./options.js";
 import { showStatus } from "./status.js";
@@ -112,6 +113,10 @@ function printHelp(detailed: boolean): void {
     console.log("  dl <url> [to]            Alias for download");
   }
   console.log("  update [skill-path]      Check for and apply upstream updates");
+  console.log("  list                     List skills across all agents");
+  if (detailed) {
+    console.log("  ls                       Alias for list");
+  }
   console.log("  info [skill-path]        Show skill information and source links");
   console.log("  sync <from> <to>         Convert commands/skills between agents");
   console.log("  status                   Show Chimera hub status");
@@ -131,6 +136,8 @@ function printHelp(detailed: boolean): void {
   console.log("  $ acs download <github-repo-url>     # Bulk download all skills from a repo");
   console.log("  $ acs update                         # Update all downloaded skills");
   console.log("  $ acs update .claude/skills/my-skill  # Update a specific skill");
+  console.log("  $ acs list                            # List all skills");
+  console.log("  $ acs list -g                         # List global (user-level) skills");
   console.log("  $ acs info                            # Interactively select and view a skill");
   console.log("  $ acs info .claude/skills/my-skill    # Show skill information");
   console.log("  $ acs sync claude gemini             # Convert skills between agents");
@@ -450,6 +457,24 @@ async function main(): Promise<void> {
       };
 
       await runSync(syncOptions, options.verbose);
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+  // ── list subcommand ─────────────────────────────────────────────
+
+  const listCmd = program.command("list").alias("ls").description("List skills across all agents");
+
+  registerCommonDirOptions(listCmd);
+
+  listCmd.action(async (options) => {
+    try {
+      await showList({
+        global: options.global,
+        gitRoot,
+        customDirs: buildCustomDirs(options),
+      });
     } catch (error) {
       handleError(error);
     }
