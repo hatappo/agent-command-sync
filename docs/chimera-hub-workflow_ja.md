@@ -1,12 +1,12 @@
-# Chimera Hub Workflow
+# Chimera Hub ワークフロー
 
-<div align="center"> en | <a href="chimera-hub-workflow_ja.md">ja</a> </div>
+<div align="center"> <a href="chimera-hub-workflow.md">en</a> | ja </div>
 
-## Overview
+## 概要
 
-Chimera Hub is a lossless conversion hub. It preserves all agent-specific settings (e.g., `model`, `allowed-tools`) in `_chimera.{agent}` frontmatter sections, enabling round-trip fidelity across agents.
+Chimera Hub はロスレス変換ハブです。エージェント固有の設定（例: `model`, `allowed-tools`）を `_chimera.{agent}` frontmatter セクションに保持し、エージェント間のラウンドトリップ変換の忠実性を実現します。
 
-## Architecture
+## アーキテクチャ
 
 ```
                         ┌──────────────────┐
@@ -32,34 +32,34 @@ Chimera Hub is a lossless conversion hub. It preserves all agent-specific settin
     ◄► asp sync X Y          direct conversion between agents
 ```
 
-## Commands
+## コマンド
 
-| Command | Direction | Description |
-|---------|-----------|-------------|
-| `asp import <agent>` | agent → chimera | Import commands/skills into the hub |
-| `asp drift <agent>` | agent → chimera | Preview import changes (dry run) |
-| `asp apply <agent>` | chimera → agent | Apply hub commands/skills to an agent |
-| `asp plan <agent>` | chimera → agent | Preview apply changes (dry run) |
-| `asp sync X Y` | agent → agent | Direct conversion (bypasses hub) |
+| コマンド | 方向 | 説明 |
+|---------|------|------|
+| `asp import <agent>` | agent → chimera | コマンド/スキルをハブにインポート |
+| `asp drift <agent>` | agent → chimera | インポートの変更をプレビュー（ドライラン） |
+| `asp apply <agent>` | chimera → agent | ハブのコマンド/スキルをエージェントに適用 |
+| `asp plan <agent>` | chimera → agent | 適用の変更をプレビュー（ドライラン） |
+| `asp sync X Y` | agent → agent | 直接変換（ハブをバイパス） |
 
-## Typical Workflow
+## 典型的なワークフロー
 
 ```bash
-# 1. Import from multiple agents into Chimera hub
+# 1. 複数のエージェントから Chimera ハブにインポート
 asp import claude
 asp import gemini
 
-# 2. Preview what would change before applying
+# 2. 適用前に変更内容をプレビュー
 asp plan codex
 
-# 3. Apply to target agents
+# 3. ターゲットエージェントに適用
 asp apply codex
 asp apply claude
 ```
 
-## How Chimera Preserves Extras
+## Chimera が Extras を保持する仕組み
 
-When importing from Claude, agent-specific fields are stored under `_chimera.claude`:
+Claude からインポートすると、エージェント固有フィールドは `_chimera.claude` に保存されます：
 
 ```yaml
 ---
@@ -75,8 +75,8 @@ _chimera:
 Review $ARGUMENTS and suggest improvements.
 ```
 
-When applying to a specific agent, only that agent's extras are restored:
+特定のエージェントに適用すると、そのエージェントの extras のみが復元されます：
 
-- `asp apply claude` → restores `allowed-tools`, `model`, `argument-hint`
-- `asp apply gemini` → restores `some-gemini-field`
-- `asp apply codex` → no extras (semantic fields only)
+- `asp apply claude` → `allowed-tools`, `model`, `argument-hint` を復元
+- `asp apply gemini` → `some-gemini-field` を復元
+- `asp apply codex` → extras なし（セマンティックフィールドのみ）

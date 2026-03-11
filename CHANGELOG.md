@@ -1,5 +1,20 @@
 # Changelog
 
+## [6.0.1] - 2026-03-12
+
+### Changed
+- **README restructured**: Moved Advanced (Chimera Hub, Commands, Architecture) and Development sections to `docs/` for a more concise README
+- **Node.js requirement**: Raised minimum version from 18 to 24
+- **Images reorganized**: Moved `docs/*.png` to `docs/img/`
+
+### Added
+- **`docs/advanced.md`** / **`docs/advanced_ja.md`**: Chimera Hub, Commands reference, and Architecture documentation
+- **`docs/development.md`** / **`docs/development_ja.md`**: Build, test, lint, and publishing instructions
+- **`docs/chimera-hub-workflow_ja.md`**: Japanese translation of Chimera Hub Workflow
+
+### Removed
+- **`docs/commands-reference.md`** / **`docs/commands-reference_ja.md`**: Merged into `docs/advanced.md`
+
 ## [6.0.0] - 2026-03-12
 
 ### Changed (BREAKING)

@@ -1,5 +1,20 @@
 # 変更履歴
 
+## [6.0.1] - 2026-03-12
+
+### 変更
+- **README 再編**: Advanced（Chimera Hub、Commands、Architecture）と Development セクションを `docs/` に分離し、README を簡潔化
+- **Node.js 要件**: 最低バージョンを 18 から 24 に引き上げ
+- **画像整理**: `docs/*.png` を `docs/img/` に移動
+
+### 追加
+- **`docs/advanced.md`** / **`docs/advanced_ja.md`**: Chimera Hub、Commands リファレンス、アーキテクチャのドキュメント
+- **`docs/development.md`** / **`docs/development_ja.md`**: ビルド、テスト、リント、パブリッシングの手順
+- **`docs/chimera-hub-workflow_ja.md`**: Chimera Hub ワークフローの日本語版
+
+### 削除
+- **`docs/commands-reference.md`** / **`docs/commands-reference_ja.md`**: `docs/advanced.md` に統合
+
 ## [6.0.0] - 2026-03-12
 
 ### 変更（破壊的変更）

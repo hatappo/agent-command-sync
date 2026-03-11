@@ -1,6 +1,6 @@
 {
   "name": "agent-skill-porter",
-  "version": "6.0.0",
+  "version": "6.0.1",
   "description": "A skill lifecycle management CLI for AI agents — Download and manage updates for any Skill, and convert formats across Claude Code and many other agents. Zero config, no extra files needed.",
   "type": "module",
   "main": "dist/index.js",
@@ -43,7 +43,7 @@
   },
   "homepage": "https://github.com/skill-mill/agent-skill-porter#readme",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=24.0.0"
   },
   "dependencies": {
     "@iarna/toml": "2.2.5",

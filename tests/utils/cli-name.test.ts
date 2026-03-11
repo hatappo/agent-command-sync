@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CLI_NAME, LEGACY_CLI_NAMES, getInvokedName, isLegacyInvocation, showDeprecationWarning } from "../../src/utils/cli-name.js";
+import {
+  CLI_NAME,
+  LEGACY_CLI_NAMES,
+  getInvokedName,
+  isLegacyInvocation,
+  showDeprecationWarning,
+} from "../../src/utils/cli-name.js";
 
 describe("cli-name", () => {
   describe("constants", () => {

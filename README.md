@@ -84,7 +84,7 @@ asp sync gemini claude -n
 - **Cross-Agent Conversion** — Convert skill formats and placement across 7 agents, absorbing format differences automatically
 - **Placeholder Conversion** — `$ARGUMENTS` ↔ `{{args}}`, file references, shell commands auto-converted
 - **Dry-Run Preview** — Preview changes with `-n` before applying them
-- **Chimera Hub** — Lossless conversion hub that preserves all agent-specific settings ([details](docs/chimera-hub-workflow.md))
+- **Lossless Conversion — Chimera Hub** — Preserves all agent-specific settings across round-trip conversions ([details](docs/chimera-hub-workflow.md))
 
 ## Subcommands
 
@@ -337,7 +337,7 @@ Support files (scripts, configs, images, etc.) are copied as-is during conversio
 
 ### Placeholder Conversion (Skills)
 
-Same as [Commands](docs/commands-reference.md):
+Same as [Commands](docs/advanced.md#content-placeholders-and-syntax):
 
 | Feature | Claude Code / Codex CLI / OpenCode | Gemini CLI | Copilot | Cursor |
 | ------- | ---------------------------------- | ---------- | ------- | ------ |
@@ -346,27 +346,13 @@ Same as [Commands](docs/commands-reference.md):
 | Shell command | `` !`command` `` | `!{command}` | Not supported | Not supported |
 | File reference | `@path/to/file` | `@{path/to/file}` | Not supported | Not supported |
 
-## Advanced: Chimera Hub
+## Advanced Reference
 
-Chimera Hub is a lossless conversion hub that preserves all agent-specific settings. Repeated direct conversions between agents may lose agent-specific fields (e.g., Claude's `allowed-tools`, Copilot's `tools`). Routing through Chimera Hub prevents this.
+For detailed documentation on the following topics, see [Advanced Reference](docs/advanced.md):
 
-```bash
-# Import from multiple agents (merges into hub)
-asp import claude
-asp import gemini
-
-# Preview and apply
-asp plan codex                             # Preview
-asp apply codex                            # Apply
-```
-
-Hub files are stored in `~/.config/asp/` (global) or `<repo>/.asp/` (project).
-
-For detailed workflow and examples, see [Chimera Hub Workflow](docs/chimera-hub-workflow.md).
-
-## Commands
-
-`asp` also supports converting single-file slash commands between agents. For command format details, metadata comparison, and placeholder syntax, see [Commands Reference](docs/commands-reference.md).
+- **Lossless Conversion — Chimera Hub** — Preserves all agent-specific settings across round-trip conversions ([details](docs/chimera-hub-workflow.md))
+- **Commands** — Single-file slash command format details, metadata comparison, and placeholder syntax
+- **Architecture** — Semantic IR design, body tokenization, and source layout
 
 ---
 
@@ -393,105 +379,12 @@ For detailed workflow and examples, see [Chimera Hub Workflow](docs/chimera-hub-
 
 ## Requirements
 
-- Node.js >= 18.0.0
+- Node.js >= 24.0.0
 - npm or compatible package manager
-
-## Architecture
-
-### Semantic IR (Intermediate Representation)
-
-All conversions go through a hub-and-spoke Semantic IR, eliminating the need for pairwise converters between every agent combination:
-
-```
-Source Format → Parser → toIR() → SemanticIR → fromIR() → Target Format
-```
-
-Each agent has a single class implementing all interfaces (`AgentConfig`, `BodyParser`, `CommandParser`, `CommandConverter`, `SkillParser`, `SkillConverter`). Adding a new agent requires only one agent class — not N converters for N existing agents.
-
-### SemanticIR Structure
-
-```typescript
-interface SemanticIR {
-  contentType: "command" | "skill";
-  body: BodySegment[];                  // Tokenized body content
-  semantic: SemanticProperties;         // Shared properties (description, name, from, etc.)
-  extras: Record<string, unknown>;      // Agent-specific passthrough properties
-  meta: SemanticMeta;                   // Conversion context (source path, type, etc.)
-}
-```
-
-- **`semantic`** — Properties with shared meaning across agents (e.g., `description`). Agent classes map between agent-specific field names and semantic properties.
-- **`extras`** — All other properties pass through unchanged. Agent-specific fields (e.g., Claude's `allowed-tools`) are preserved for round-trip fidelity and can be stripped with `--remove-unsupported`.
-- **`body`** — Tokenized as `BodySegment[]` (an array of plain strings and semantic placeholders), so placeholder syntax conversion (e.g., `$ARGUMENTS` ↔ `{{args}}`) happens automatically within each agent's `commandToIR()`/`commandFromIR()`.
-
-### Body Tokenization
-
-Body content is parsed into an array of `BodySegment` elements — plain strings interleaved with typed `ContentPlaceholder` objects:
-
-```typescript
-type ContentPlaceholder =
-  | { type: "arguments" }                // $ARGUMENTS / {{args}}
-  | { type: "individual-argument"; index: 1-9 }  // $1-$9
-  | { type: "shell-command"; command: string }    // !`cmd` / !{cmd}
-  | { type: "file-reference"; path: string };     // @path / @{path}
-```
-
-Each agent defines its own body patterns and serializers colocated within its agent class file (`src/agents/claude.ts`, `src/agents/gemini.ts`, etc.). Claude, Codex, and OpenCode share the same placeholder syntax via a common module (`src/agents/_claude-syntax-body-patterns.ts`), while Codex marks unsupported placeholder types (shell-command, file-reference) for best-effort output. A type-driven serializer registry (`PlaceholderSerializers`) ensures compile-time exhaustiveness — adding a new placeholder type causes a type error until every agent implements it.
-
-### Source Layout
-
-```
-src/
-├── agents/             # Agent classes (one file per agent: parsing, conversion, body handling)
-├── types/              # Type definitions (SemanticIR, BodySegment, agent formats)
-├── utils/              # Shared utilities (file ops, validation, body parsing engine)
-└── cli/                # CLI entry point and sync orchestration
-```
 
 ## Development
 
-```bash
-# Install dependencies
-npm install
-
-# Build the project
-npm run build
-
-# Run tests
-npm test
-
-# Run tests with coverage
-npm run test:coverage
-
-# Lint and format code
-npm run lint
-npm run format
-
-# Type check
-npm run lint:tsc
-
-# Development mode (watch)
-npm run dev
-```
-
-### Publishing
-
-```bash
-# Check package contents
-npm pack --dry-run
-
-# Update patch version (1.0.0 → 1.0.1)
-npm version patch
-
-# Update minor version (1.0.0 → 1.1.0)
-npm version minor
-
-# Update major version (1.0.0 → 2.0.0)
-npm version major
-
-# Publish a package
-npm publish
-```
+See [Development Guide](docs/development.md) for build, test, lint, and publishing instructions.
 
 ## License
 
