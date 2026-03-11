@@ -13,6 +13,10 @@ export interface AgentConfig {
     readonly userDefault: string;
   };
   readonly fileExtension: string;
+  readonly legacyDirs?: {
+    readonly projectBase: string;
+    readonly userDefault: string;
+  };
 }
 
 /**

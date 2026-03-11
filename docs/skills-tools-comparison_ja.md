@@ -210,17 +210,17 @@ npm install -g agent-command-sync
 **主なコマンド**:
 ```bash
 # Commands 同期
-acs sync claude gemini                  # Claude → Gemini
-acs sync gemini claude                  # Gemini → Claude
+asp sync claude gemini                  # Claude → Gemini
+asp sync gemini claude                  # Gemini → Claude
 
 # Skills 同期
-acs sync claude codex -t skills         # Skills のみ
-acs sync claude gemini -t both          # Commands + Skills
+asp sync claude codex -t skills         # Skills のみ
+asp sync claude gemini -t both          # Commands + Skills
 
 # オプション
-acs sync claude gemini -n               # ドライラン（プレビュー）
-acs sync claude gemini -f my-skill      # 特定スキルのみ
-acs sync claude gemini --sync-delete    # 孤立ファイル削除
+asp sync claude gemini -n               # ドライラン（プレビュー）
+asp sync claude gemini -f my-skill      # 特定スキルのみ
+asp sync claude gemini --sync-delete    # 孤立ファイル削除
 ```
 
 **特徴**:

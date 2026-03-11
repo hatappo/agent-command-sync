@@ -1,4 +1,4 @@
-import { promises as fs } from "node:fs";
+import { existsSync, promises as fs } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, extname, join, relative, resolve } from "node:path";
 import type { AgentDefinition } from "../agents/agent-definition.js";
@@ -136,29 +136,55 @@ export interface DirResolutionContext {
 /**
  * Resolve the effective command directory for an agent.
  * Priority: customDir > project-level (in git repo, not --global) > user-level
+ *
+ * For agents with legacyDirs (e.g. Chimera), falls back to legacy path
+ * if the primary directory does not yet exist.
  */
 export function resolveCommandDir(agent: AgentDefinition, context?: DirResolutionContext): string {
   if (context?.customDir) {
     return join(resolvePath(context.customDir), agent.dirs.commandSubdir);
   }
   if (context?.gitRoot && !context?.global) {
-    return join(context.gitRoot, agent.dirs.projectBase, agent.dirs.commandSubdir);
+    const primary = join(context.gitRoot, agent.dirs.projectBase, agent.dirs.commandSubdir);
+    if (agent.legacyDirs && !existsSync(primary)) {
+      const legacy = join(context.gitRoot, agent.legacyDirs.projectBase, agent.dirs.commandSubdir);
+      if (existsSync(legacy)) return legacy;
+    }
+    return primary;
   }
-  return join(homedir(), agent.dirs.userDefault, agent.dirs.commandSubdir);
+  const primary = join(homedir(), agent.dirs.userDefault, agent.dirs.commandSubdir);
+  if (agent.legacyDirs && !existsSync(primary)) {
+    const legacy = join(homedir(), agent.legacyDirs.userDefault, agent.dirs.commandSubdir);
+    if (existsSync(legacy)) return legacy;
+  }
+  return primary;
 }
 
 /**
  * Resolve the effective skill directory for an agent.
  * Priority: customDir > project-level (in git repo, not --global) > user-level
+ *
+ * For agents with legacyDirs (e.g. Chimera), falls back to legacy path
+ * if the primary directory does not yet exist.
  */
 export function resolveSkillDir(agent: AgentDefinition, context?: DirResolutionContext): string {
   if (context?.customDir) {
     return join(resolvePath(context.customDir), agent.dirs.skillSubdir);
   }
   if (context?.gitRoot && !context?.global) {
-    return join(context.gitRoot, agent.dirs.projectBase, agent.dirs.skillSubdir);
+    const primary = join(context.gitRoot, agent.dirs.projectBase, agent.dirs.skillSubdir);
+    if (agent.legacyDirs && !existsSync(primary)) {
+      const legacy = join(context.gitRoot, agent.legacyDirs.projectBase, agent.dirs.skillSubdir);
+      if (existsSync(legacy)) return legacy;
+    }
+    return primary;
   }
-  return join(homedir(), agent.dirs.userDefault, agent.dirs.skillSubdir);
+  const primary = join(homedir(), agent.dirs.userDefault, agent.dirs.skillSubdir);
+  if (agent.legacyDirs && !existsSync(primary)) {
+    const legacy = join(homedir(), agent.legacyDirs.userDefault, agent.dirs.skillSubdir);
+    if (existsSync(legacy)) return legacy;
+  }
+  return primary;
 }
 
 /**

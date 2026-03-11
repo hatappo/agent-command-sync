@@ -196,7 +196,7 @@ function isBinaryFile(filename: string): boolean {
 export async function githubApiRequest(url: string, token?: string): Promise<Response> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",
-    "User-Agent": "agent-command-sync",
+    "User-Agent": "agent-skill-porter",
   };
 
   if (token) {

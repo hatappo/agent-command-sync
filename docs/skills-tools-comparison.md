@@ -210,17 +210,17 @@ npm install -g agent-command-sync
 **Main Commands**:
 ```bash
 # Commands sync
-acs sync claude gemini                  # Claude → Gemini
-acs sync gemini claude                  # Gemini → Claude
+asp sync claude gemini                  # Claude → Gemini
+asp sync gemini claude                  # Gemini → Claude
 
 # Skills sync
-acs sync claude codex -t skills         # Skills only
-acs sync claude gemini -t both          # Commands + Skills
+asp sync claude codex -t skills         # Skills only
+asp sync claude gemini -t both          # Commands + Skills
 
 # Options
-acs sync claude gemini -n               # Dry run (preview)
-acs sync claude gemini -f my-skill      # Specific skill only
-acs sync claude gemini --sync-delete    # Delete orphaned files
+asp sync claude gemini -n               # Dry run (preview)
+asp sync claude gemini -f my-skill      # Specific skill only
+asp sync claude gemini --sync-delete    # Delete orphaned files
 ```
 
 **Strengths**:

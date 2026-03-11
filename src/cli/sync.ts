@@ -552,9 +552,9 @@ const operationStyles = {
 function getNoopMessage(rawSubCommand?: string): string {
   switch (rawSubCommand) {
     case "drift":
-      return "This was a dry run. Use `acs import` to apply changes.";
+      return "This was a dry run. Use `asp import` to apply changes.";
     case "plan":
-      return "This was a dry run. Use `acs apply` to apply changes.";
+      return "This was a dry run. Use `asp apply` to apply changes.";
     default:
       return "This was a dry run. Use without --noop to apply changes.";
   }

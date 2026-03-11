@@ -491,4 +491,52 @@ describe("FileUtils", () => {
       expect(result).toBe(join(homeDirPath, ".claude", "skills"));
     });
   });
+
+  describe("Chimera legacy directory fallback", () => {
+    const chimera = AGENT_REGISTRY.chimera;
+    let legacyDir: string;
+
+    beforeEach(async () => {
+      legacyDir = join(tmpdir(), `chimera-legacy-${Date.now()}`);
+      await ensureDirectory(legacyDir);
+    });
+
+    afterEach(async () => {
+      try {
+        await rm(legacyDir, { recursive: true });
+      } catch {
+        // Ignore
+      }
+    });
+
+    it("should return primary .asp path when neither exists", () => {
+      const result = resolveSkillDir(chimera, { gitRoot: "/nonexistent-repo" });
+      expect(result).toBe("/nonexistent-repo/.asp/skills");
+    });
+
+    it("should return primary .asp path when primary exists", async () => {
+      await mkdir(join(legacyDir, ".asp", "skills"), { recursive: true });
+      const result = resolveSkillDir(chimera, { gitRoot: legacyDir });
+      expect(result).toBe(join(legacyDir, ".asp", "skills"));
+    });
+
+    it("should fall back to .acs when primary does not exist but legacy does", async () => {
+      await mkdir(join(legacyDir, ".acs", "skills"), { recursive: true });
+      const result = resolveSkillDir(chimera, { gitRoot: legacyDir });
+      expect(result).toBe(join(legacyDir, ".acs", "skills"));
+    });
+
+    it("should prefer .asp over .acs when both exist", async () => {
+      await mkdir(join(legacyDir, ".asp", "skills"), { recursive: true });
+      await mkdir(join(legacyDir, ".acs", "skills"), { recursive: true });
+      const result = resolveSkillDir(chimera, { gitRoot: legacyDir });
+      expect(result).toBe(join(legacyDir, ".asp", "skills"));
+    });
+
+    it("should fall back to legacy .acs for commands too", async () => {
+      await mkdir(join(legacyDir, ".acs", "commands"), { recursive: true });
+      const result = resolveCommandDir(chimera, { gitRoot: legacyDir });
+      expect(result).toBe(join(legacyDir, ".acs", "commands"));
+    });
+  });
 });

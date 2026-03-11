@@ -1,5 +1,17 @@
 # Changelog
 
+## [6.0.0] - 2026-03-12
+
+### Changed (BREAKING)
+
+- Renamed package from `agent-command-sync` to `agent-skill-porter`
+- Renamed CLI command from `acs` to `asp` (`acs` remains as deprecated alias)
+- Renamed Chimera Hub directories from `.acs`/`.config/acs` to `.asp`/`.config/asp` (legacy `.acs` directories are auto-detected as fallback)
+
+### Added
+
+- **`asp migrate` subcommand**: Rename Chimera Hub directories from `.acs` to `.asp` (user-level + project-level, idempotent)
+
 ## [5.8.0] - 2026-03-12
 
 ### Added

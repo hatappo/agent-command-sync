@@ -290,7 +290,7 @@ async function downloadMultipleSkills(
 export async function downloadSkill(options: DownloadOptions): Promise<void> {
   // 0. Validate: -g requires destination
   if (options.global && !options.destination) {
-    throw new Error("acs download with -g/--global requires [to] argument.\nExample: acs download <url> claude -g");
+    throw new Error("asp download with -g/--global requires [to] argument.\nExample: asp download <url> claude -g");
   }
 
   // 1. Check for repo-level URL first

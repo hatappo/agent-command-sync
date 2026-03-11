@@ -353,7 +353,7 @@ describe("download command", () => {
         verbose: false,
         gitRoot: tempDir,
       }),
-    ).rejects.toThrow("acs download with -g/--global requires [to] argument");
+    ).rejects.toThrow("asp download with -g/--global requires [to] argument");
   });
 
   it("should throw for invalid GitHub URLs", async () => {

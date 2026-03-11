@@ -9,7 +9,7 @@
 import { debuglog } from "node:util";
 import type { BodySegment, ContentPlaceholder, PatternDef, PlaceholderSerializers } from "../types/body-segment.js";
 
-const debug = debuglog("acsync");
+const debug = debuglog("asp");
 
 // --- Internal types ---
 
