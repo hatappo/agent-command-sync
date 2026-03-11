@@ -3,13 +3,12 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 import select from "@inquirer/select";
 import matter from "gray-matter";
 import picocolors from "picocolors";
-import { AGENT_REGISTRY } from "../agents/registry.js";
-import { PRODUCT_TYPES } from "../types/intermediate.js";
 import type { ProductType } from "../types/intermediate.js";
 import { SKILL_CONSTANTS } from "../utils/constants.js";
-import { type DirResolutionContext, fileExists, findAgentSkills, readFile } from "../utils/file-utils.js";
+import { fileExists, readFile } from "../utils/file-utils.js";
 import { getOriginRemoteUrl } from "../utils/git-utils.js";
 import { fetchDefaultBranch, scanRepositoryForSkills } from "../utils/github-utils.js";
+import { discoverSkillsByAgent } from "./list.js";
 import { parseFromValue } from "./update.js";
 
 // ── Types ───────────────────────────────────────────────────────
@@ -61,7 +60,8 @@ export function buildSkillsmpUrl(owner: string, repo: string, repoSkillPath: str
 // ── Skill discovery ─────────────────────────────────────────────
 
 /**
- * Discover all skills across all agent directories.
+ * Discover all skills across all agent directories (deduplicated, with descriptions).
+ * Uses discoverSkillsByAgent() from list.ts for the core discovery logic.
  */
 export async function discoverAllSkills(options: {
   global: boolean;
@@ -69,30 +69,20 @@ export async function discoverAllSkills(options: {
   customDirs?: Partial<Record<ProductType, string>>;
 }): Promise<DiscoveredSkill[]> {
   const baseDir = options.gitRoot ?? process.cwd();
+  const groups = await discoverSkillsByAgent(options);
+
   const results: DiscoveredSkill[] = [];
   const seen = new Set<string>();
 
-  for (const agentName of PRODUCT_TYPES) {
-    const agent = AGENT_REGISTRY[agentName];
-    const context: DirResolutionContext = {
-      customDir: options.customDirs?.[agentName],
-      gitRoot: options.gitRoot,
-      global: options.global,
-    };
-    const skillDirs = await findAgentSkills(agent, undefined, context);
+  for (const group of groups) {
+    for (const skill of group.skills) {
+      if (seen.has(skill.relativePath)) continue;
+      seen.add(skill.relativePath);
 
-    for (const dir of skillDirs) {
-      const relativePath = relative(baseDir, dir);
-
-      // Deduplicate (multiple agents may resolve to the same directory)
-      if (seen.has(relativePath)) continue;
-      seen.add(relativePath);
-
-      const skillName = basename(dir);
       let description: string | undefined;
-
       try {
-        const content = await readFile(join(dir, SKILL_CONSTANTS.SKILL_FILE_NAME));
+        const skillMdPath = join(baseDir, skill.relativePath, SKILL_CONSTANTS.SKILL_FILE_NAME);
+        const content = await readFile(skillMdPath);
         const parsed = matter(content);
         if (parsed.data.description && typeof parsed.data.description === "string") {
           description = parsed.data.description;
@@ -101,7 +91,7 @@ export async function discoverAllSkills(options: {
         // Skip skills with unreadable SKILL.md
       }
 
-      results.push({ skillName, relativePath, description });
+      results.push({ skillName: skill.name, relativePath: skill.relativePath, description });
     }
   }
 
@@ -110,21 +100,39 @@ export async function discoverAllSkills(options: {
 
 // ── Interactive selection ───────────────────────────────────────
 
-async function selectSkillInteractively(skills: DiscoveredSkill[]): Promise<string> {
-  return select({
-    message: "Select a skill to view:\n",
-    choices: skills.map((s, i) => ({
-      name: `${i + 1}. ${s.skillName}  (${s.relativePath})`,
-      value: s.relativePath,
-      description: s.description,
-    })),
-    theme: {
-      style: {
-        description: (text: string) => `${picocolors.gray(text)}\n`,
-        help: (text: string) => picocolors.gray(text),
+async function selectSkillInteractively(skills: DiscoveredSkill[]): Promise<string | null> {
+  const ac = new AbortController();
+
+  // Listen for Escape key to cancel the prompt
+  const onKeypress = (_ch: string, key: { name: string }) => {
+    if (key?.name === "escape") ac.abort();
+  };
+  process.stdin.on("keypress", onKeypress);
+
+  try {
+    return await select(
+      {
+        message: "Select a skill to view:\n",
+        choices: skills.map((s, i) => ({
+          name: `${i + 1}. ${s.skillName}  (${s.relativePath})`,
+          value: s.relativePath,
+          description: s.description,
+        })),
+        theme: {
+          style: {
+            description: (text: string) => `${picocolors.gray(text)}\n`,
+            help: (text: string) => picocolors.gray(text),
+          },
+        },
       },
-    },
-  });
+      { signal: ac.signal },
+    );
+  } catch {
+    // ExitPromptError (Ctrl+C), AbortPromptError (Escape), CancelPromptError
+    return null;
+  } finally {
+    process.stdin.removeListener("keypress", onKeypress);
+  }
 }
 
 // ── Files listing ───────────────────────────────────────────────
@@ -306,5 +314,6 @@ export async function runInfo(options: InfoOptions): Promise<void> {
   console.log(`\nFound ${skills.length} skill${skills.length !== 1 ? "s" : ""}.`);
 
   const selectedPath = await selectSkillInteractively(skills);
+  if (!selectedPath) return;
   await showSkillInfo({ ...options, skillPath: selectedPath });
 }
