@@ -10,7 +10,7 @@
 A skill lifecycle management CLI for AI agents — Add and manage updates for any Skill, and convert formats across Claude Code and many other agents. Zero config, no extra files needed.
 
 <div align="center">
-  <img src="demo/acs-demo.svg" alt="SK Demo" width="800">
+  <img src="demo/sk-demo.svg" alt="SK Demo" width="800">
 </div>
 
 ## CHANGELOG

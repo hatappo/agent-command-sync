@@ -1,5 +1,5 @@
 #!/bin/bash
-# Record and build acs demo SVGs (English + Japanese)
+# Record and build sk demo SVGs (English + Japanese)
 set -e
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -28,8 +28,8 @@ fs.writeFileSync('$castfile', lines.join('\n'));
 }
 
 build_demo() {
-  local src="$1"   # e.g. acs-demo.md
-  local name="$2"  # e.g. acs-demo
+  local src="$1"   # e.g. sk-demo.md
+  local name="$2"  # e.g. sk-demo
 
   echo "Building $name ..."
 
@@ -39,7 +39,7 @@ build_demo() {
     --speed 1.5 --prompt "prj" --symbol '$' \
     > /dev/null 2>&1
 
-  # 2. Inject screen clear before `acs info`
+  # 2. Inject screen clear before `sk info`
   inject_clear "$DIR/$name.cast"
 
   # 3. Convert to SVG
@@ -51,7 +51,7 @@ build_demo() {
   echo "  -> $DIR/$name.svg"
 }
 
-build_demo "acs-demo.md"    "acs-demo"
-build_demo "acs-demo-ja.md" "acs-demo-ja"
+build_demo "sk-demo.md"    "sk-demo"
+build_demo "sk-demo-ja.md" "sk-demo-ja"
 
 echo "Done!"

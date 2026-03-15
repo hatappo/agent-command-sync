@@ -1,8 +1,8 @@
-# download
-Download skills from GitHub
+# add
+Add skills from GitHub
 
 ---
-$ asp dl https://github.com/anthropics/skills  # bulk download skills
+$ sk add https://github.com/anthropics/skills  # bulk add skills
 [spinner:1200] Fetching repository tree...
 >
 > Downloading [bold]3[/bold] skills from [cyan]github.com/anthropics/skills[/cyan]...
@@ -28,7 +28,7 @@ $ asp dl https://github.com/anthropics/skills  # bulk download skills
 Sync skills across agents
 
 ---
-$ asp sync claude gemini  # convert Claude → Gemini
+$ sk sync claude gemini  # convert Claude → Gemini
 > [cyan]Starting claude → gemini conversion... [project: ~/prj][/cyan]
 > Found 3 source skill(s)
 >
@@ -51,7 +51,7 @@ $ asp sync claude gemini  # convert Claude → Gemini
 Check for upstream updates
 
 ---
-$ asp update  # check & apply upstream updates
+$ sk update  # check & apply upstream updates
 > Checking for skill updates...
 >
 >   [cyan]anthropics/skills[/cyan]:
@@ -66,7 +66,7 @@ $ asp update  # check & apply upstream updates
 View skill information
 
 ---
-$ asp info  # view skill details
+$ sk info  # view skill details
 > Found 3 skills.
 >
 [select:3000] Select a skill to view: | 1. pdf  (.claude/skills/pdf), 2. mcp-builder  (.claude/skills/mcp-builder), 3. skill-creator  (.claude/skills/skill-creator) | 0
@@ -92,9 +92,9 @@ $ asp info  # view skill details
 View Chimera hub status
 
 ---
-$ asp status  # show Chimera hub status
+$ sk status  # show Chimera hub status
 >
-> [gray]asp v6.0.0 [project: ~/prj][/gray]
+> [gray]sk v7.0.0 [project: ~/prj][/gray]
 >
 > [cyan]      .────────────────────────────────────────────.[/cyan]
 > [cyan]     (  User:    0 commands, 3 skills (1 agent)    )[/cyan]

@@ -10,7 +10,7 @@
 AI エージェント Skill のライフサイクル マネジメント CLI — 任意の Skill を追加・更新管理し、Claude Code などの多数のエージェント間でフォーマットを相互変換。設定ファイル不要、追加ファイルなしですぐ使えます。
 
 <div align="center">
-  <img src="demo/acs-demo-ja.svg" alt="ACS Demo" width="800">
+  <img src="demo/sk-demo-ja.svg" alt="SK Demo" width="800">
 </div>
 
 ## CHANGELOG

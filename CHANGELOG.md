@@ -1,5 +1,11 @@
 # Changelog
 
+## [7.0.1] - 2026-03-15
+
+### Changed
+- **Documentation**: Renamed `download` to `add` in all documentation, help text, and demo animations
+- **Demo**: Rebuilt demo SVG/GIF animations with new `sk` CLI and `add` subcommand
+
 ## [7.0.0] - 2026-03-15
 
 ### Changed (BREAKING)
