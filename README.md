@@ -2,7 +2,7 @@
 
 --------------------------------------------------------------------------------
 
-# ASP / agent-skill-porter
+# SK / agent-skill-porter
 
 [![npm version](https://badge.fury.io/js/agent-skill-porter.svg)](https://www.npmjs.com/package/agent-skill-porter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -10,7 +10,7 @@
 A skill lifecycle management CLI for AI agents — Download and manage updates for any Skill, and convert formats across Claude Code and many other agents. Zero config, no extra files needed.
 
 <div align="center">
-  <img src="demo/acs-demo.svg" alt="ASP Demo" width="800">
+  <img src="demo/acs-demo.svg" alt="SK Demo" width="800">
 </div>
 
 ## CHANGELOG
@@ -23,7 +23,7 @@ A skill lifecycle management CLI for AI agents — Download and manage updates f
 npm install -g agent-skill-porter
 ```
 
-> **Note:** The `acs` and `agent-command-sync` commands are still available as deprecated aliases.
+> **Note:** The `asp`, `acs`, and `agent-command-sync` commands are still available as deprecated aliases.
 
 ## Quick Start
 
@@ -31,35 +31,35 @@ npm install -g agent-skill-porter
 
 ```bash
 # Download a specific skill to your project (to ./skills/skill-creator/)
-asp download https://github.com/anthropics/skills/tree/main/skills/skill-creator
+sk download https://github.com/anthropics/skills/tree/main/skills/skill-creator
 
 # Download all skills from a repository
-asp download https://github.com/anthropics/skills
+sk download https://github.com/anthropics/skills
 
 # Place into a specific agent's directory (to ./.gemini/skills/)
-asp download https://github.com/anthropics/skills gemini
+sk download https://github.com/anthropics/skills gemini
 
 # Place into user-level (global) directory (to ~/.claude/skills/)
-asp download https://github.com/anthropics/skills claude -g
+sk download https://github.com/anthropics/skills claude -g
 
 # Preview only, without downloading
-asp download https://github.com/anthropics/skills -n
+sk download https://github.com/anthropics/skills -n
 ```
 
 ### Reformat and relocate skills for other agents
 
 ```bash
 # Convert skill format and placement from Claude to Gemini
-asp sync claude gemini
+sk sync claude gemini
 
 # Convert in both directions
-asp sync gemini claude
+sk sync gemini claude
 
 # Convert skills in user-level (global) directories
-asp sync gemini claude -g
+sk sync gemini claude -g
 
 # Preview changes before applying
-asp sync gemini claude -n
+sk sync gemini claude -n
 ```
 
 ## Supported Agents
@@ -76,10 +76,10 @@ asp sync gemini claude -n
 
 ## Features
 
-- **Download from GitHub** — Fetch skills directly from GitHub repositories with `asp download`
-- **Update from Upstream** — Check and apply upstream changes to downloaded skills with `asp update`
-- **List Skills** — List all skills across agents with `asp list`
-- **Skill Info** — View skill metadata and source links with `asp info`
+- **Download from GitHub** — Fetch skills directly from GitHub repositories with `sk download`
+- **Update from Upstream** — Check and apply upstream changes to downloaded skills with `sk update`
+- **List Skills** — List all skills across agents with `sk list`
+- **Skill Info** — View skill metadata and source links with `sk info`
 - **Provenance Tracking** — Every download and sync records the source in `_from` (as `owner/repo@shortHash`, 7-char SHA by default; use `--full-hash` for full 40-char SHA). If a public skill is found to be compromised, trace affected local skills instantly. Disable with `--no-provenance`
 - **Cross-Agent Conversion** — Convert skill formats and placement across 7 agents, absorbing format differences automatically
 - **Placeholder Conversion** — `$ARGUMENTS` ↔ `{{args}}`, file references, shell commands auto-converted
@@ -88,13 +88,13 @@ asp sync gemini claude -n
 
 ## Subcommands
 
-### `asp download <url> [to]` (alias: `asp dl`) — Download a skill from GitHub
+### `sk download <url> [to]` (alias: `sk add`) — Download a skill from GitHub
 
 ```bash
-asp download https://github.com/anthropics/skills/tree/main/skills/skill-creator
-asp download <url> gemini                  # Place in Gemini skill directory
-asp download <url> claude -g               # Place in global Claude directory
-asp download <url> -n                      # Preview without downloading
+sk download https://github.com/anthropics/skills/tree/main/skills/skill-creator
+sk download <url> gemini                  # Place in Gemini skill directory
+sk download <url> claude -g               # Place in global Claude directory
+sk download <url> -n                      # Preview without downloading
 ```
 
 #### GitHub Authentication
@@ -107,57 +107,57 @@ export GITHUB_TOKEN=ghp_...
 
 **Token permissions**: Public repositories require no permissions. For private repositories, grant **Contents: Read** access to the target repository.
 
-### `asp update [skill-path]` — Update downloaded skills from upstream
+### `sk update [skill-path]` — Update downloaded skills from upstream
 
 ```bash
-asp update                                 # Check and update all agent skills
-asp update .claude/skills/my-skill         # Update a specific skill
-asp update skills/                         # Update all skills under a path
-asp update -n                              # Check for updates without applying
+sk update                                 # Check and update all agent skills
+sk update .claude/skills/my-skill         # Update a specific skill
+sk update skills/                         # Update all skills under a path
+sk update -n                              # Check for updates without applying
 ```
 
-### `asp list` (alias: `asp ls`) — List skills across all agents
+### `sk list` (alias: `sk ls`) — List skills across all agents
 
 ```bash
-asp list                                   # List project-level skills
-asp list -g                                # List global (user-level) skills
+sk list                                   # List project-level skills
+sk list -g                                # List global (user-level) skills
 ```
 
-### `asp info [skill-path]` — Show skill information
+### `sk info [skill-path]` — Show skill information
 
 ```bash
-asp info                                   # Interactively select and view a skill
-asp info .claude/skills/my-skill           # Show skill info and source links
-asp info .claude/skills/my-skill/SKILL.md  # SKILL.md path also accepted
+sk info                                   # Interactively select and view a skill
+sk info .claude/skills/my-skill           # Show skill info and source links
+sk info .claude/skills/my-skill/SKILL.md  # SKILL.md path also accepted
 ```
 
-### `asp sync <from> <to>` — Direct conversion between agents
+### `sk sync <from> <to>` — Direct conversion between agents
 
 ```bash
-asp sync claude gemini                     # Convert Claude → Gemini
-asp sync claude gemini -t commands          # Commands only
+sk sync claude gemini                     # Convert Claude → Gemini
+sk sync claude gemini -t commands          # Commands only
 ```
 
-### `asp import <agent>` / `asp apply <agent>` — Lossless conversion workflow
+### `sk import <agent>` / `sk apply <agent>` — Lossless conversion workflow
 
 ```bash
-asp import claude                          # Import Claude → Chimera Hub
-asp import gemini -t commands              # Import commands only
-asp apply gemini                           # Apply Chimera Hub → Gemini
-asp apply claude --remove-unsupported      # Remove unsupported fields
+sk import claude                          # Import Claude → Chimera Hub
+sk import gemini -t commands              # Import commands only
+sk apply gemini                           # Apply Chimera Hub → Gemini
+sk apply claude --remove-unsupported      # Remove unsupported fields
 ```
 
-### `asp drift <agent>` / `asp plan <agent>` — Preview (dry run)
+### `sk drift <agent>` / `sk plan <agent>` — Preview (dry run)
 
 ```bash
-asp drift claude                           # Preview import changes
-asp plan gemini                            # Preview apply changes
+sk drift claude                           # Preview import changes
+sk plan gemini                            # Preview apply changes
 ```
 
-### `asp migrate` — Migrate Chimera Hub directories from .acs to .asp
+### `sk migrate` — Migrate Chimera Hub directories from .acs/.asp to .agent-skill-porter
 
 ```bash
-asp migrate                                # Rename .acs → .asp (user-level + project-level)
+sk migrate                                # Rename .acs/.asp → .agent-skill-porter (user-level + project-level)
 ```
 
 ## Options (sync subcommand)
@@ -181,36 +181,36 @@ asp migrate                                # Rename .acs → .asp (user-level + 
 | `--opencode-dir <path>`     | OpenCode base directory (default: ~/.config/opencode)                 |
 | `--copilot-dir <path>`      | Copilot base directory (default: ~/.copilot)                          |
 | `--cursor-dir <path>`       | Cursor base directory (default: ~/.cursor)                            |
-| `--chimera-dir <path>`      | Chimera Hub base directory (default: ~/.config/asp)                   |
+| `--chimera-dir <path>`      | Chimera Hub base directory (default: ~/.config/agent-skill-porter)    |
 
 ## Examples
 
 ```bash
 # Direct conversion with preview
-asp sync claude gemini -n
+sk sync claude gemini -n
 
 # Convert specific file
-asp sync gemini claude -f analyze-code
+sk sync gemini claude -f analyze-code
 
 # Chimera hub workflow
-asp import claude                          # Import Claude → Chimera
-asp import gemini                          # Import Gemini → Chimera (merges)
-asp apply claude                           # Apply Chimera → Claude (with Claude extras)
-asp apply gemini                           # Apply Chimera → Gemini (with Gemini extras)
+sk import claude                          # Import Claude → Chimera
+sk import gemini                          # Import Gemini → Chimera (merges)
+sk apply claude                           # Apply Chimera → Claude (with Claude extras)
+sk apply gemini                           # Apply Chimera → Gemini (with Gemini extras)
 
 # Full sync with cleanup
-asp sync claude gemini --sync-delete --remove-unsupported
+sk sync claude gemini --sync-delete --remove-unsupported
 
 # Use custom directories
-asp sync claude gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
+sk sync claude gemini --claude-dir ~/my-claude --gemini-dir ~/my-gemini
 
 # Show verbose output for debugging
-asp sync claude gemini -v
+sk sync claude gemini -v
 ```
 
 ## Directory Resolution
 
-When running inside a Git repository, `asp` defaults to **project-level** directories (e.g., `<repo>/.claude`, `<repo>/.gemini`). Use `-g`/`--global` to use user-level directories instead.
+When running inside a Git repository, `sk` defaults to **project-level** directories (e.g., `<repo>/.claude`, `<repo>/.gemini`). Use `-g`/`--global` to use user-level directories instead.
 
 **Priority order:**
 1. `--{agent}-dir` (custom directory) — always takes precedence
@@ -227,7 +227,7 @@ When running inside a Git repository, `asp` defaults to **project-level** direct
 | **OpenCode** | `<repo>/.config/opencode/commands/*.md` | `<repo>/.config/opencode/skills/<name>/SKILL.md` |
 | **GitHub Copilot** | `<repo>/.copilot/prompts/*.prompt.md` | `<repo>/.copilot/skills/<name>/SKILL.md` |
 | **Cursor** | `<repo>/.cursor/commands/*.md` | `<repo>/.cursor/skills/<name>/SKILL.md` |
-| **Chimera** | `<repo>/.asp/commands/*.md` | `<repo>/.asp/skills/<name>/SKILL.md` |
+| **Chimera** | `<repo>/.agent-skill-porter/commands/*.md` | `<repo>/.agent-skill-porter/skills/<name>/SKILL.md` |
 
 ### User-level (with `-g` or outside Git repos)
 
@@ -239,7 +239,7 @@ When running inside a Git repository, `asp` defaults to **project-level** direct
 | **OpenCode** | `~/.config/opencode/commands/*.md` | `~/.config/opencode/skills/<name>/SKILL.md` |
 | **GitHub Copilot** | `~/.copilot/prompts/*.prompt.md` | `~/.copilot/skills/<name>/SKILL.md` |
 | **Cursor** | `~/.cursor/commands/*.md` | `~/.cursor/skills/<name>/SKILL.md` |
-| **Chimera** | `~/.config/asp/commands/*.md` | `~/.config/asp/skills/<name>/SKILL.md` |
+| **Chimera** | `~/.config/agent-skill-porter/commands/*.md` | `~/.config/agent-skill-porter/skills/<name>/SKILL.md` |
 
 ## Skills Format
 

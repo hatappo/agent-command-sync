@@ -21,25 +21,36 @@ describe("migrate subcommand", () => {
     }
   });
 
-  it("should rename .acs to .asp in project directory", async () => {
+  it("should rename .acs to .agent-skill-porter in project directory", async () => {
     await mkdir(join(tempDir, ".acs", "skills"), { recursive: true });
 
     const spy = vi.spyOn(console, "log").mockImplementation(() => {});
     await runMigrate({ gitRoot: tempDir });
     spy.mockRestore();
 
-    expect(await directoryExists(join(tempDir, ".asp", "skills"))).toBe(true);
+    expect(await directoryExists(join(tempDir, ".agent-skill-porter", "skills"))).toBe(true);
     expect(await directoryExists(join(tempDir, ".acs"))).toBe(false);
   });
 
-  it("should skip if .asp already exists (idempotent)", async () => {
+  it("should rename .asp to .agent-skill-porter in project directory", async () => {
     await mkdir(join(tempDir, ".asp", "skills"), { recursive: true });
 
     const spy = vi.spyOn(console, "log").mockImplementation(() => {});
     await runMigrate({ gitRoot: tempDir });
     spy.mockRestore();
 
-    expect(await directoryExists(join(tempDir, ".asp", "skills"))).toBe(true);
+    expect(await directoryExists(join(tempDir, ".agent-skill-porter", "skills"))).toBe(true);
+    expect(await directoryExists(join(tempDir, ".asp"))).toBe(false);
+  });
+
+  it("should skip if .agent-skill-porter already exists (idempotent)", async () => {
+    await mkdir(join(tempDir, ".agent-skill-porter", "skills"), { recursive: true });
+
+    const spy = vi.spyOn(console, "log").mockImplementation(() => {});
+    await runMigrate({ gitRoot: tempDir });
+    spy.mockRestore();
+
+    expect(await directoryExists(join(tempDir, ".agent-skill-porter", "skills"))).toBe(true);
   });
 
   it("should report not-found when neither exists", async () => {
@@ -79,7 +90,7 @@ describe("migrate subcommand", () => {
     await runMigrate({ gitRoot: null });
     spy.mockRestore();
 
-    expect(await directoryExists(join(tempDir, ".asp"))).toBe(true);
+    expect(await directoryExists(join(tempDir, ".agent-skill-porter"))).toBe(true);
     expect(await directoryExists(join(tempDir, ".acs"))).toBe(false);
 
     process.chdir(originalCwd);

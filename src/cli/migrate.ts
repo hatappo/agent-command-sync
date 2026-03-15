@@ -15,10 +15,10 @@ interface MigrateResult {
   status: "renamed" | "already-migrated" | "not-found";
 }
 
-const LEGACY_DIR = ".acs";
-const NEW_DIR = ".asp";
-const LEGACY_USER_DIR = ".config/acs";
-const NEW_USER_DIR = ".config/asp";
+const LEGACY_DIRS = [".acs", ".asp"];
+const NEW_DIR = ".agent-skill-porter";
+const LEGACY_USER_DIRS = [".config/acs", ".config/asp"];
+const NEW_USER_DIR = ".config/agent-skill-porter";
 
 async function migrateDir(parentDir: string, legacyName: string, newName: string): Promise<MigrateResult> {
   const legacyPath = join(parentDir, legacyName);
@@ -39,21 +39,20 @@ async function migrateDir(parentDir: string, legacyName: string, newName: string
 export async function runMigrate(options: MigrateOptions): Promise<void> {
   const results: MigrateResult[] = [];
 
-  // User-level: ~/.config/acs → ~/.config/asp
+  // User-level: ~/.config/acs or ~/.config/asp → ~/.config/agent-skill-porter
   const home = homedir();
-  results.push(await migrateDir(home, LEGACY_USER_DIR, NEW_USER_DIR));
+  for (const legacyUserDir of LEGACY_USER_DIRS) {
+    results.push(await migrateDir(home, legacyUserDir, NEW_USER_DIR));
+  }
 
-  // Project-level: .acs → .asp
-  if (options.gitRoot) {
-    results.push(await migrateDir(options.gitRoot, LEGACY_DIR, NEW_DIR));
-  } else {
-    // Not in a git repo — check current directory
-    const cwd = process.cwd();
-    results.push(await migrateDir(cwd, LEGACY_DIR, NEW_DIR));
+  // Project-level: .acs or .asp → .agent-skill-porter
+  const projectRoot = options.gitRoot || process.cwd();
+  for (const legacyDir of LEGACY_DIRS) {
+    results.push(await migrateDir(projectRoot, legacyDir, NEW_DIR));
   }
 
   // Display results
-  console.log(picocolors.bold("Chimera Hub directory migration (.acs → .asp):\n"));
+  console.log(picocolors.bold("Chimera Hub directory migration (.acs/.asp → .agent-skill-porter):\n"));
 
   for (const r of results) {
     switch (r.status) {

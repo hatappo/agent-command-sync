@@ -42,12 +42,12 @@ export class ChimeraAgent implements AgentDefinition {
   readonly dirs = {
     commandSubdir: "commands",
     skillSubdir: "skills",
-    projectBase: ".asp",
-    userDefault: ".config/asp",
+    projectBase: ".agent-skill-porter",
+    userDefault: ".config/agent-skill-porter",
   };
   readonly legacyDirs = {
-    projectBase: ".acs",
-    userDefault: ".config/acs",
+    projectBase: ".asp",
+    userDefault: ".config/asp",
   };
   readonly fileExtension = ".md";
 

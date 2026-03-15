@@ -11,7 +11,7 @@ A comparison of tools for managing Skills across AI coding agents (Claude Code, 
   - [agent-skills-cli](#agent-skills-cli)
   - [skillshare](#skillshare)
   - [.agents](#agents)
-  - [agent-command-sync](#agent-command-sync)
+  - [agent-skill-porter](#agent-skill-porter)
 - [Recommendations by Use Case](#recommendations-by-use-case)
 - [References](#references)
 
@@ -25,7 +25,7 @@ A comparison of tools for managing Skills across AI coding agents (Claude Code, 
 | [agent-skills-cli](https://github.com/Karanjot786/agent-skills-cli) | Community | Marketplace installation |
 | [skillshare](https://github.com/runkids/skillshare) | Community | Declarative skill sync |
 | [.agents](https://github.com/amtiYo/agents) | Community | Unified configuration |
-| [agent-command-sync](https://github.com/skill-mill/agent-command-sync) | Individual | Format conversion & bidirectional sync |
+| [agent-skill-porter](https://github.com/skill-mill/agent-skill-porter) | Individual | Format conversion & bidirectional sync |
 
 ---
 
@@ -33,7 +33,7 @@ A comparison of tools for managing Skills across AI coding agents (Claude Code, 
 
 ### Core Features
 
-| Feature | skills.sh | agent-skills-cli | skillshare | .agents | agent-command-sync |
+| Feature | skills.sh | agent-skills-cli | skillshare | .agents | agent-skill-porter |
 |---------|:---------:|:----------------:|:----------:|:-------:|:------------------:|
 | Skills support | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Commands support | - | - | - | - | ✓ |
@@ -45,7 +45,7 @@ A comparison of tools for managing Skills across AI coding agents (Claude Code, 
 
 ### Technical Characteristics
 
-| Feature | skills.sh | agent-skills-cli | skillshare | .agents | agent-command-sync |
+| Feature | skills.sh | agent-skills-cli | skillshare | .agents | agent-skill-porter |
 |---------|:---------:|:----------------:|:----------:|:-------:|:------------------:|
 | Distribution method | Copy | Copy | Symlink | Symlink | Copy |
 | Runtime | Node.js | Node.js | Go | Node.js | Node.js |
@@ -62,7 +62,7 @@ A comparison of tools for managing Skills across AI coding agents (Claude Code, 
 | agent-skills-cli | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | - | ✓ | 42+ |
 | skillshare | ✓ | - | - | - | - | - | - | - | ✓ | - | 49+ |
 | .agents | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | - | - | ✓ | ✓ | 8+ |
-| agent-command-sync | ✓ | ✓ | ✓ | - | - | - | - | - | - | - | 3 |
+| agent-skill-porter | ✓ | ✓ | ✓ | - | - | - | - | - | - | - | 3 |
 
 ---
 
@@ -198,29 +198,29 @@ npx @anthropic/agents init
 
 ---
 
-### agent-command-sync
+### agent-skill-porter
 
 **Concept**: Format conversion + real file copy for bidirectional sync
 
 **Installation**:
 ```bash
-npm install -g agent-command-sync
+npm install -g agent-skill-porter
 ```
 
 **Main Commands**:
 ```bash
 # Commands sync
-asp sync claude gemini                  # Claude → Gemini
-asp sync gemini claude                  # Gemini → Claude
+sk sync claude gemini                  # Claude → Gemini
+sk sync gemini claude                  # Gemini → Claude
 
 # Skills sync
-asp sync claude codex -t skills         # Skills only
-asp sync claude gemini -t both          # Commands + Skills
+sk sync claude codex -t skills         # Skills only
+sk sync claude gemini -t both          # Commands + Skills
 
 # Options
-asp sync claude gemini -n               # Dry run (preview)
-asp sync claude gemini -f my-skill      # Specific skill only
-asp sync claude gemini --sync-delete    # Delete orphaned files
+sk sync claude gemini -n               # Dry run (preview)
+sk sync claude gemini -f my-skill      # Specific skill only
+sk sync claude gemini --sync-delete    # Delete orphaned files
 ```
 
 **Strengths**:
@@ -238,7 +238,7 @@ asp sync claude gemini --sync-delete    # Delete orphaned files
 - No Web UI
 - Limited platform support (Claude/Gemini/Codex only)
 
-**Repository**: https://github.com/skill-mill/agent-command-sync
+**Repository**: https://github.com/skill-mill/agent-skill-porter
 
 ---
 
@@ -255,12 +255,12 @@ Easy search and install from large marketplaces. Security verification included.
 Define environments with declarative config files and share across the team. Easy version control with Git integration.
 
 ### "I want to distribute locally edited skills to each tool (without symlinks)"
-→ **agent-command-sync**
+→ **agent-skill-porter**
 
 Copies as real files, avoiding symlink issues. Natural Git tracking.
 
 ### "I need format conversion between Claude/Gemini/Codex"
-→ **agent-command-sync**
+→ **agent-skill-porter**
 
 The only tool supporting format conversion. Also useful for migrating from Commands (legacy) to Skills.
 
@@ -284,7 +284,7 @@ Web dashboard for viewing skills, sync status, and audit results.
 - [agent-skills-cli](https://github.com/Karanjot786/agent-skills-cli)
 - [skillshare](https://github.com/runkids/skillshare)
 - [.agents](https://github.com/amtiYo/agents)
-- [agent-command-sync](https://github.com/skill-mill/agent-command-sync)
+- [agent-skill-porter](https://github.com/skill-mill/agent-skill-porter)
 
 ### Community
 - [awesome-agent-skills](https://github.com/VoltAgent/awesome-agent-skills)

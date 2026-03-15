@@ -8,21 +8,21 @@ Chimera Hub is a lossless conversion hub that preserves all agent-specific setti
 
 ```bash
 # Import from multiple agents (merges into hub)
-asp import claude
-asp import gemini
+sk import claude
+sk import gemini
 
 # Preview and apply
-asp plan codex                             # Preview
-asp apply codex                            # Apply
+sk plan codex                             # Preview
+sk apply codex                            # Apply
 ```
 
-Hub files are stored in `~/.config/asp/` (global) or `<repo>/.asp/` (project).
+Hub files are stored in `~/.config/agent-skill-porter/` (global) or `<repo>/.agent-skill-porter/` (project).
 
 For detailed workflow, architecture diagrams, and examples, see [Chimera Hub Workflow](chimera-hub-workflow.md).
 
 ## Commands
 
-`asp` also supports converting single-file slash commands between agents.
+`sk` also supports converting single-file slash commands between agents.
 
 ### Commands vs Skills
 

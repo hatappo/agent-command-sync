@@ -9,11 +9,12 @@ import {
 
 describe("cli-name", () => {
   describe("constants", () => {
-    it("CLI_NAME should be asp", () => {
-      expect(CLI_NAME).toBe("asp");
+    it("CLI_NAME should be sk", () => {
+      expect(CLI_NAME).toBe("sk");
     });
 
-    it("LEGACY_CLI_NAMES should include acs and agent-command-sync", () => {
+    it("LEGACY_CLI_NAMES should include asp, acs and agent-command-sync", () => {
+      expect(LEGACY_CLI_NAMES).toContain("asp");
       expect(LEGACY_CLI_NAMES).toContain("acs");
       expect(LEGACY_CLI_NAMES).toContain("agent-command-sync");
     });
@@ -27,13 +28,13 @@ describe("cli-name", () => {
     });
 
     it("should return basename of argv[1]", () => {
-      process.argv = ["node", "/usr/local/bin/asp"];
-      expect(getInvokedName()).toBe("asp");
+      process.argv = ["node", "/usr/local/bin/sk"];
+      expect(getInvokedName()).toBe("sk");
     });
 
-    it("should return basename for legacy acs", () => {
-      process.argv = ["node", "/usr/local/bin/acs"];
-      expect(getInvokedName()).toBe("acs");
+    it("should return basename for legacy asp", () => {
+      process.argv = ["node", "/usr/local/bin/asp"];
+      expect(getInvokedName()).toBe("asp");
     });
   });
 
@@ -44,9 +45,14 @@ describe("cli-name", () => {
       process.argv = originalArgv;
     });
 
-    it("should return false for asp", () => {
-      process.argv = ["node", "/usr/local/bin/asp"];
+    it("should return false for sk", () => {
+      process.argv = ["node", "/usr/local/bin/sk"];
       expect(isLegacyInvocation()).toBe(false);
+    });
+
+    it("should return true for asp", () => {
+      process.argv = ["node", "/usr/local/bin/asp"];
+      expect(isLegacyInvocation()).toBe(true);
     });
 
     it("should return true for acs", () => {
@@ -67,40 +73,40 @@ describe("cli-name", () => {
 
   describe("showDeprecationWarning", () => {
     const originalArgv = process.argv;
-    const originalEnv = process.env.ASP_NO_DEPRECATION_WARNING;
+    const originalEnv = process.env.SK_NO_DEPRECATION_WARNING;
 
     beforeEach(() => {
-      process.env.ASP_NO_DEPRECATION_WARNING = undefined;
+      process.env.SK_NO_DEPRECATION_WARNING = undefined;
     });
 
     afterEach(() => {
       process.argv = originalArgv;
       if (originalEnv !== undefined) {
-        process.env.ASP_NO_DEPRECATION_WARNING = originalEnv;
+        process.env.SK_NO_DEPRECATION_WARNING = originalEnv;
       } else {
-        process.env.ASP_NO_DEPRECATION_WARNING = undefined;
+        process.env.SK_NO_DEPRECATION_WARNING = undefined;
       }
     });
 
     it("should output warning for legacy invocation", () => {
-      process.argv = ["node", "/usr/local/bin/acs"];
+      process.argv = ["node", "/usr/local/bin/asp"];
       const spy = vi.spyOn(console, "error").mockImplementation(() => {});
       showDeprecationWarning();
-      expect(spy).toHaveBeenCalledWith(expect.stringContaining("'acs' is deprecated"));
+      expect(spy).toHaveBeenCalledWith(expect.stringContaining("'asp' is deprecated"));
       spy.mockRestore();
     });
 
-    it("should not output warning for asp invocation", () => {
-      process.argv = ["node", "/usr/local/bin/asp"];
+    it("should not output warning for sk invocation", () => {
+      process.argv = ["node", "/usr/local/bin/sk"];
       const spy = vi.spyOn(console, "error").mockImplementation(() => {});
       showDeprecationWarning();
       expect(spy).not.toHaveBeenCalled();
       spy.mockRestore();
     });
 
-    it("should suppress warning when ASP_NO_DEPRECATION_WARNING=1", () => {
-      process.argv = ["node", "/usr/local/bin/acs"];
-      process.env.ASP_NO_DEPRECATION_WARNING = "1";
+    it("should suppress warning when SK_NO_DEPRECATION_WARNING=1", () => {
+      process.argv = ["node", "/usr/local/bin/asp"];
+      process.env.SK_NO_DEPRECATION_WARNING = "1";
       const spy = vi.spyOn(console, "error").mockImplementation(() => {});
       showDeprecationWarning();
       expect(spy).not.toHaveBeenCalled();

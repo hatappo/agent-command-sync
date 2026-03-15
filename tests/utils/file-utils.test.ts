@@ -509,34 +509,34 @@ describe("FileUtils", () => {
       }
     });
 
-    it("should return primary .asp path when neither exists", () => {
+    it("should return primary .agent-skill-porter path when neither exists", () => {
       const result = resolveSkillDir(chimera, { gitRoot: "/nonexistent-repo" });
-      expect(result).toBe("/nonexistent-repo/.asp/skills");
+      expect(result).toBe("/nonexistent-repo/.agent-skill-porter/skills");
     });
 
-    it("should return primary .asp path when primary exists", async () => {
+    it("should return primary .agent-skill-porter path when primary exists", async () => {
+      await mkdir(join(legacyDir, ".agent-skill-porter", "skills"), { recursive: true });
+      const result = resolveSkillDir(chimera, { gitRoot: legacyDir });
+      expect(result).toBe(join(legacyDir, ".agent-skill-porter", "skills"));
+    });
+
+    it("should fall back to .asp when primary does not exist but legacy does", async () => {
       await mkdir(join(legacyDir, ".asp", "skills"), { recursive: true });
       const result = resolveSkillDir(chimera, { gitRoot: legacyDir });
       expect(result).toBe(join(legacyDir, ".asp", "skills"));
     });
 
-    it("should fall back to .acs when primary does not exist but legacy does", async () => {
-      await mkdir(join(legacyDir, ".acs", "skills"), { recursive: true });
-      const result = resolveSkillDir(chimera, { gitRoot: legacyDir });
-      expect(result).toBe(join(legacyDir, ".acs", "skills"));
-    });
-
-    it("should prefer .asp over .acs when both exist", async () => {
+    it("should prefer .agent-skill-porter over .asp when both exist", async () => {
+      await mkdir(join(legacyDir, ".agent-skill-porter", "skills"), { recursive: true });
       await mkdir(join(legacyDir, ".asp", "skills"), { recursive: true });
-      await mkdir(join(legacyDir, ".acs", "skills"), { recursive: true });
       const result = resolveSkillDir(chimera, { gitRoot: legacyDir });
-      expect(result).toBe(join(legacyDir, ".asp", "skills"));
+      expect(result).toBe(join(legacyDir, ".agent-skill-porter", "skills"));
     });
 
-    it("should fall back to legacy .acs for commands too", async () => {
-      await mkdir(join(legacyDir, ".acs", "commands"), { recursive: true });
+    it("should fall back to legacy .asp for commands too", async () => {
+      await mkdir(join(legacyDir, ".asp", "commands"), { recursive: true });
       const result = resolveCommandDir(chimera, { gitRoot: legacyDir });
-      expect(result).toBe(join(legacyDir, ".acs", "commands"));
+      expect(result).toBe(join(legacyDir, ".asp", "commands"));
     });
   });
 });

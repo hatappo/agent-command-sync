@@ -1,5 +1,18 @@
 # Changelog
 
+## [7.0.0] - 2026-03-15
+
+### Changed (BREAKING)
+
+- Renamed CLI commands from `asp`/`acs` to `sk`/`agent-skill-porter` (`asp` and `acs` remain as deprecated aliases)
+- Renamed Chimera Hub directories from `.asp`/`.config/asp` to `.agent-skill-porter`/`.config/agent-skill-porter` (legacy `.asp` directories are auto-detected as fallback)
+- Renamed `download` alias from `dl` to `add`
+- Deprecation warning suppression env var changed from `ASP_NO_DEPRECATION_WARNING` to `SK_NO_DEPRECATION_WARNING`
+
+### Changed
+
+- **`migrate` subcommand**: Now migrates both `.acs` and `.asp` directories to `.agent-skill-porter`
+
 ## [6.0.1] - 2026-03-12
 
 ### Changed
@@ -91,7 +104,7 @@
 
 ### Changed
 - **Update status wording**: Changed "Up to date" to "No upstream changes" to accurately reflect that only the upstream state is checked, not local file identity
-- **`dl` alias for `download`**: `acs dl` can be used as a shorthand for `acs download`
+- **`dl` alias for `download`**: `acs dl` can be used as a shorthand for `acs download` (later renamed to `add`)
 
 ## [5.2.0] - 2026-02-27
 

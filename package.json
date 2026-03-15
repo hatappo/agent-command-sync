@@ -1,12 +1,12 @@
 {
   "name": "agent-skill-porter",
-  "version": "6.0.1",
+  "version": "7.0.0",
   "description": "A skill lifecycle management CLI for AI agents — Download and manage updates for any Skill, and convert formats across Claude Code and many other agents. Zero config, no extra files needed.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "asp": "./bin/agent-skill-porter",
-    "acs": "./bin/agent-skill-porter"
+    "sk": "./bin/agent-skill-porter",
+    "agent-skill-porter": "./bin/agent-skill-porter"
   },
   "scripts": {
     "build": "vite build",

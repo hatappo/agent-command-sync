@@ -1,5 +1,18 @@
 # 変更履歴
 
+## [7.0.0] - 2026-03-15
+
+### 変更（破壊的変更）
+
+- CLI コマンドを `asp`/`acs` から `sk`/`agent-skill-porter` に変更（`asp` と `acs` は非推奨エイリアスとして継続利用可能）
+- Chimera Hub ディレクトリを `.asp`/`.config/asp` から `.agent-skill-porter`/`.config/agent-skill-porter` に変更（レガシー `.asp` ディレクトリは自動検出でフォールバック）
+- `download` のエイリアスを `dl` から `add` に変更
+- 非推奨警告の抑制環境変数を `ASP_NO_DEPRECATION_WARNING` から `SK_NO_DEPRECATION_WARNING` に変更
+
+### 変更
+
+- **`migrate` サブコマンド**: `.acs` と `.asp` の両方から `.agent-skill-porter` へのマイグレーションに対応
+
 ## [6.0.1] - 2026-03-12
 
 ### 変更
@@ -91,7 +104,7 @@
 
 ### 変更
 - **更新ステータスの表現変更**: 「Up to date」を「No upstream changes」に変更。上流の変更状態のみをチェックしていることを正確に反映（ローカルファイルの同一性は確認していない）
-- **`dl` エイリアス**: `acs dl` を `acs download` の省略形として使用可能に
+- **`dl` エイリアス**: `acs dl` を `acs download` の省略形として使用可能に（後に `add` に変更）
 
 ## [5.2.0] - 2026-02-27
 

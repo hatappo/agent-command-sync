@@ -26,7 +26,7 @@ const displayNames = PRODUCT_TYPES.filter((p) => p !== "chimera")
 
 const program = new Command();
 
-program.name("asp").description(`Download, update, and sync AI agent skills across ${displayNames}`).version(version);
+program.name("sk").description(`Download, update, and sync AI agent skills across ${displayNames}`).version(version);
 
 // ── Helpers ───────────────────────────────────────────────────────
 
@@ -100,7 +100,7 @@ function registerCommonDirOptions(cmd: Command): Command {
 /** Print help text. Concise when detailed=false, full when detailed=true. */
 function printHelp(detailed: boolean): void {
   const desc = `Download, update, and sync AI agent skills across ${displayNames}`;
-  console.log("Usage: asp [command] [options]\n");
+  console.log("Usage: sk [command] [options]\n");
   console.log(desc);
 
   if (detailed) {
@@ -112,7 +112,7 @@ function printHelp(detailed: boolean): void {
   console.log("\nCommands:");
   console.log("  download <url> [to]      Download skill(s) from GitHub");
   if (detailed) {
-    console.log("  dl <url> [to]            Alias for download");
+    console.log("  add <url> [to]           Alias for download");
   }
   console.log("  update [skill-path]      Check for and apply upstream updates");
   console.log("  list                     List skills across all agents");
@@ -121,7 +121,7 @@ function printHelp(detailed: boolean): void {
   }
   console.log("  info [skill-path]        Show skill information and source links");
   console.log("  sync <from> <to>         Convert commands/skills between agents");
-  console.log("  migrate                  Migrate Chimera Hub directories (.acs → .asp)");
+  console.log("  migrate                  Migrate Chimera Hub directories (.acs/.asp → .agent-skill-porter)");
   console.log("  status                   Show Chimera hub status");
   console.log("  version                  Show version");
 
@@ -134,32 +134,32 @@ function printHelp(detailed: boolean): void {
   }
 
   console.log("\nExamples:");
-  console.log("  $ asp download <github-url>          # Download a skill from GitHub");
-  console.log("  $ asp download <github-url> gemini   # Download into Gemini skill directory");
-  console.log("  $ asp download <github-repo-url>     # Bulk download all skills from a repo");
-  console.log("  $ asp update                         # Update all downloaded skills");
-  console.log("  $ asp update .claude/skills/my-skill  # Update a specific skill");
-  console.log("  $ asp list                            # List all skills");
-  console.log("  $ asp list -g                         # List global (user-level) skills");
-  console.log("  $ asp info                            # Interactively select and view a skill");
-  console.log("  $ asp info .claude/skills/my-skill    # Show skill information");
-  console.log("  $ asp sync claude gemini             # Convert skills between agents");
-  console.log("  $ asp sync claude gemini -g          # Use global (user-level) directories");
-  console.log("  $ asp status                         # Show Chimera hub status");
+  console.log("  $ sk download <github-url>          # Download a skill from GitHub");
+  console.log("  $ sk download <github-url> gemini   # Download into Gemini skill directory");
+  console.log("  $ sk download <github-repo-url>     # Bulk download all skills from a repo");
+  console.log("  $ sk update                         # Update all downloaded skills");
+  console.log("  $ sk update .claude/skills/my-skill  # Update a specific skill");
+  console.log("  $ sk list                            # List all skills");
+  console.log("  $ sk list -g                         # List global (user-level) skills");
+  console.log("  $ sk info                            # Interactively select and view a skill");
+  console.log("  $ sk info .claude/skills/my-skill    # Show skill information");
+  console.log("  $ sk sync claude gemini             # Convert skills between agents");
+  console.log("  $ sk sync claude gemini -g          # Use global (user-level) directories");
+  console.log("  $ sk status                         # Show Chimera hub status");
 
   if (detailed) {
     console.log("\nAdvanced Examples:");
-    console.log("  $ asp import claude                            # Import into Chimera hub");
-    console.log("  $ asp drift claude                             # Preview import (dry run)");
-    console.log("  $ asp apply gemini                             # Apply Chimera hub to agent");
-    console.log("  $ asp plan gemini                              # Preview apply (dry run)");
-    console.log("  $ asp sync claude gemini --remove-unsupported  # Remove unsupported fields");
-    console.log("  $ asp sync gemini claude --no-overwrite        # Skip existing files");
-    console.log("  $ asp sync claude gemini --sync-delete         # Delete orphaned files");
+    console.log("  $ sk import claude                            # Import into Chimera hub");
+    console.log("  $ sk drift claude                             # Preview import (dry run)");
+    console.log("  $ sk apply gemini                             # Apply Chimera hub to agent");
+    console.log("  $ sk plan gemini                              # Preview apply (dry run)");
+    console.log("  $ sk sync claude gemini --remove-unsupported  # Remove unsupported fields");
+    console.log("  $ sk sync gemini claude --no-overwrite        # Skip existing files");
+    console.log("  $ sk sync claude gemini --sync-delete         # Delete orphaned files");
   }
 
   if (!detailed) {
-    console.log(`\nRun 'asp --help' for all commands and advanced usage.`);
+    console.log(`\nRun 'sk --help' for all commands and advanced usage.`);
   }
 }
 
@@ -188,7 +188,7 @@ async function main(): Promise<void> {
 
   const downloadCmd = program
     .command("download <url> [to]")
-    .alias("dl")
+    .alias("add")
     .description("Download skill(s) from GitHub (supports repo-level bulk download)")
     .option("-n, --noop", "Preview files without downloading", false)
     .option("-v, --verbose", "Show detailed debug information", false)
@@ -489,7 +489,7 @@ async function main(): Promise<void> {
 
   program
     .command("migrate")
-    .description("Migrate Chimera Hub directories from .acs to .asp")
+    .description("Migrate Chimera Hub directories from .acs/.asp to .agent-skill-porter")
     .action(async () => {
       try {
         await runMigrate({ gitRoot });
