@@ -7,7 +7,7 @@
 [![npm version](https://badge.fury.io/js/agent-skill-porter.svg)](https://www.npmjs.com/package/agent-skill-porter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-AI エージェント Skill のライフサイクル マネジメント CLI — 任意の Skill をダウンロードと更新管理し、Claude Code、などの多数のエージェント間でフォーマットを相互変換。設定ファイル不要、追加ファイルなしですぐ使えます。
+AI エージェント Skill のライフサイクル マネジメント CLI — 任意の Skill を追加・更新管理し、Claude Code などの多数のエージェント間でフォーマットを相互変換。設定ファイル不要、追加ファイルなしですぐ使えます。
 
 <div align="center">
   <img src="demo/acs-demo-ja.svg" alt="ACS Demo" width="800">
@@ -27,23 +27,23 @@ npm install -g agent-skill-porter
 
 ## クイックスタート
 
-### GitHub からスキルをダウンロード
+### GitHub からスキルを追加
 
 ```bash
-# 特定のスキルをプロジェクトにダウンロード （to ./skill/skill-creator/）
-sk download https://github.com/anthropics/skills/tree/main/skills/skill-creator
+# 特定のスキルをプロジェクトに追加 （to ./skill/skill-creator/）
+sk add https://github.com/anthropics/skills/tree/main/skills/skill-creator
 
-# リポジトリ上の全てのスキルをダウンロード
-sk download https://github.com/anthropics/skills
+# リポジトリ上の全てのスキルを追加
+sk add https://github.com/anthropics/skills
 
 # 特定のエージェント用ディレクトリへ配置 (to ./.gemini/skills/)
-sk download https://github.com/anthropics/skills gemini
+sk add https://github.com/anthropics/skills gemini
 
 # ユーザーレベル（グローバル）ディレクトリへ配置 (to ~/.claude/skills/）
-sk download https://github.com/anthropics/skills claude -g
+sk add https://github.com/anthropics/skills claude -g
 
 # ダウンロードせずにプレビューのみ
-sk download https://github.com/anthropics/skills -n
+sk add https://github.com/anthropics/skills -n
 ```
 
 ### スキルの形式と配置先を他のエージェント用に変換
@@ -76,7 +76,7 @@ sk sync gemini claude -n
 
 ## 機能
 
-- **GitHub からダウンロード** — `sk download` で GitHub リポジトリからスキルを直接取得
+- **GitHub から追加** — `sk add` で GitHub リポジトリからスキルを直接取得
 - **上流からの更新** — `sk update` でダウンロード済みスキルの上流変更をチェックし適用
 - **スキル一覧** — `sk list` で全エージェントのスキルを一覧表示
 - **スキル情報表示** — `sk info` でスキルのメタ情報とソースリンクを確認
@@ -88,13 +88,13 @@ sk sync gemini claude -n
 
 ## サブコマンド
 
-### `sk download <url> [to]`（エイリアス: `sk add`）— GitHub からスキルをダウンロード
+### `sk add <url> [to]`（エイリアス: `sk download`）— GitHub からスキルを追加
 
 ```bash
-sk download https://github.com/anthropics/skills/tree/main/skills/skill-creator
-sk download <url> gemini                  # Gemini のスキルディレクトリに配置
-sk download <url> claude -g               # グローバル Claude ディレクトリに配置
-sk download <url> -n                      # ダウンロードせずにプレビュー
+sk add https://github.com/anthropics/skills/tree/main/skills/skill-creator
+sk add <url> gemini                       # Gemini のスキルディレクトリに配置
+sk add <url> claude -g                    # グローバル Claude ディレクトリに配置
+sk add <url> -n                           # ダウンロードせずにプレビュー
 ```
 
 #### GitHub 認証

@@ -110,9 +110,9 @@ function printHelp(detailed: boolean): void {
   }
 
   console.log("\nCommands:");
-  console.log("  download <url> [to]      Download skill(s) from GitHub");
+  console.log("  add <url> [to]           Add skill(s) from GitHub");
   if (detailed) {
-    console.log("  add <url> [to]           Alias for download");
+    console.log("  download <url> [to]      Alias for add");
   }
   console.log("  update [skill-path]      Check for and apply upstream updates");
   console.log("  list                     List skills across all agents");
@@ -134,9 +134,9 @@ function printHelp(detailed: boolean): void {
   }
 
   console.log("\nExamples:");
-  console.log("  $ sk download <github-url>          # Download a skill from GitHub");
-  console.log("  $ sk download <github-url> gemini   # Download into Gemini skill directory");
-  console.log("  $ sk download <github-repo-url>     # Bulk download all skills from a repo");
+  console.log("  $ sk add <github-url>               # Add a skill from GitHub");
+  console.log("  $ sk add <github-url> gemini        # Add into Gemini skill directory");
+  console.log("  $ sk add <github-repo-url>          # Bulk add all skills from a repo");
   console.log("  $ sk update                         # Update all downloaded skills");
   console.log("  $ sk update .claude/skills/my-skill  # Update a specific skill");
   console.log("  $ sk list                            # List all skills");

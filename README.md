@@ -7,7 +7,7 @@
 [![npm version](https://badge.fury.io/js/agent-skill-porter.svg)](https://www.npmjs.com/package/agent-skill-porter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A skill lifecycle management CLI for AI agents — Download and manage updates for any Skill, and convert formats across Claude Code and many other agents. Zero config, no extra files needed.
+A skill lifecycle management CLI for AI agents — Add and manage updates for any Skill, and convert formats across Claude Code and many other agents. Zero config, no extra files needed.
 
 <div align="center">
   <img src="demo/acs-demo.svg" alt="SK Demo" width="800">
@@ -27,23 +27,23 @@ npm install -g agent-skill-porter
 
 ## Quick Start
 
-### Download a skill from GitHub
+### Add a skill from GitHub
 
 ```bash
-# Download a specific skill to your project (to ./skills/skill-creator/)
-sk download https://github.com/anthropics/skills/tree/main/skills/skill-creator
+# Add a specific skill to your project (to ./skills/skill-creator/)
+sk add https://github.com/anthropics/skills/tree/main/skills/skill-creator
 
-# Download all skills from a repository
-sk download https://github.com/anthropics/skills
+# Add all skills from a repository
+sk add https://github.com/anthropics/skills
 
 # Place into a specific agent's directory (to ./.gemini/skills/)
-sk download https://github.com/anthropics/skills gemini
+sk add https://github.com/anthropics/skills gemini
 
 # Place into user-level (global) directory (to ~/.claude/skills/)
-sk download https://github.com/anthropics/skills claude -g
+sk add https://github.com/anthropics/skills claude -g
 
 # Preview only, without downloading
-sk download https://github.com/anthropics/skills -n
+sk add https://github.com/anthropics/skills -n
 ```
 
 ### Reformat and relocate skills for other agents
@@ -76,11 +76,11 @@ sk sync gemini claude -n
 
 ## Features
 
-- **Download from GitHub** — Fetch skills directly from GitHub repositories with `sk download`
+- **Add from GitHub** — Fetch skills directly from GitHub repositories with `sk add`
 - **Update from Upstream** — Check and apply upstream changes to downloaded skills with `sk update`
 - **List Skills** — List all skills across agents with `sk list`
 - **Skill Info** — View skill metadata and source links with `sk info`
-- **Provenance Tracking** — Every download and sync records the source in `_from` (as `owner/repo@shortHash`, 7-char SHA by default; use `--full-hash` for full 40-char SHA). If a public skill is found to be compromised, trace affected local skills instantly. Disable with `--no-provenance`
+- **Provenance Tracking** — Every add and sync records the source in `_from` (as `owner/repo@shortHash`, 7-char SHA by default; use `--full-hash` for full 40-char SHA). If a public skill is found to be compromised, trace affected local skills instantly. Disable with `--no-provenance`
 - **Cross-Agent Conversion** — Convert skill formats and placement across 7 agents, absorbing format differences automatically
 - **Placeholder Conversion** — `$ARGUMENTS` ↔ `{{args}}`, file references, shell commands auto-converted
 - **Dry-Run Preview** — Preview changes with `-n` before applying them
@@ -88,13 +88,13 @@ sk sync gemini claude -n
 
 ## Subcommands
 
-### `sk download <url> [to]` (alias: `sk add`) — Download a skill from GitHub
+### `sk add <url> [to]` (alias: `sk download`) — Add a skill from GitHub
 
 ```bash
-sk download https://github.com/anthropics/skills/tree/main/skills/skill-creator
-sk download <url> gemini                  # Place in Gemini skill directory
-sk download <url> claude -g               # Place in global Claude directory
-sk download <url> -n                      # Preview without downloading
+sk add https://github.com/anthropics/skills/tree/main/skills/skill-creator
+sk add <url> gemini                       # Place in Gemini skill directory
+sk add <url> claude -g                    # Place in global Claude directory
+sk add <url> -n                           # Preview without downloading
 ```
 
 #### GitHub Authentication
