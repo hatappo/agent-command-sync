@@ -13,36 +13,33 @@ A skill lifecycle management CLI for AI agents — Add and manage updates for an
   <img src="demo/sk-demo.svg" alt="SK Demo" width="800">
 </div>
 
-## CHANGELOG
-
-[CHANGELOG.md](CHANGELOG.md)
-
 ## Installation
 
 ```bash
 npm install -g agent-skill-porter
 ```
 
-> **Note:** The `asp`, `acs`, and `agent-command-sync` commands are still available as deprecated aliases.
-
 ## Quick Start
 
 ### Add a skill from GitHub
 
 ```bash
-# Add a specific skill to your project (to ./skills/skill-creator/)
-sk add https://github.com/anthropics/skills/tree/main/skills/skill-creator
-
-# Add all skills from a repository
+# Add skills to your local project
 sk add https://github.com/anthropics/skills
 
-# Place into a specific agent's directory (to ./.gemini/skills/)
-sk add https://github.com/anthropics/skills gemini
+# Check for upstream updates
+sk update -n
+
+# Apply upstream updates
+sk update
+
+# Add a specific skill to a specific agent's directory (to ./.claude/skills/)
+sk add https://github.com/anthropics/skills/tree/main/skills/skill-creator claude
 
 # Place into user-level (global) directory (to ~/.claude/skills/)
-sk add https://github.com/anthropics/skills claude -g
+sk add https://github.com/anthropics/skills/tree/main/skills/skill-creator claude -g
 
-# Preview only, without downloading
+# Preview only, without downloading (dry run)
 sk add https://github.com/anthropics/skills -n
 ```
 
@@ -385,6 +382,13 @@ For detailed documentation on the following topics, see [Advanced Reference](doc
 ## Development
 
 See [Development Guide](docs/development.md) for build, test, lint, and publishing instructions.
+
+## CHANGELOG
+
+[CHANGELOG.md](CHANGELOG.md)
+
+> [!NOTE]
+> The `asp`, `acs`, and `agent-command-sync` commands are deprecated. Use `sk` or `agent-skill-porter` instead.
 
 ## License
 
