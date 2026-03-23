@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- **Documentation**: FAQ in `README.md` and `README_ja.md` — zero-config / no extra root files; provenance in `SKILL.md` frontmatter vs lock files; custom YAML frontmatter on `SKILL.md`; `_from` and `--no-provenance`; default project-level skill paths vs `~/.claude` and `-g` / `--{agent}-dir`
+
 ## [7.0.1] - 2026-03-15
 
 ### Changed

@@ -83,6 +83,28 @@ sk sync gemini claude -n
 - **Dry-Run Preview** — Preview changes with `-n` before applying them
 - **Lossless Conversion — Chimera Hub** — Preserves all agent-specific settings across round-trip conversions ([details](docs/chimera-hub-workflow.md))
 
+## FAQ
+
+### What does `_from` mean, and when should I use `--no-provenance`?
+
+`_from` records where a skill came from (typically `owner/repo@shortHash`) so you can trace local copies if an upstream public skill is later found to be compromised. Use **`--no-provenance`** when you do not want that metadata written into frontmatter—for example, internal mirrors or policies that discourage embedding repository references.
+
+### Why does `sk` write under my repo instead of `~/.claude`?
+
+Inside a Git repository, **`sk` defaults to project-level paths** (for example `<repo>/.claude/skills`) so skills live with the codebase. Use **`-g` / `--global`** for user-level directories, or **`--{agent}-dir`** for a custom base path. See [Directory Resolution](#directory-resolution) below.
+
+### Why is there no `xxx.config.js`-style configuration file?
+
+We intentionally avoid adding another config file at the repository root. **Zero config, no extra files** is a core product principle.
+
+### Why not track provenance with a lock file (like Vercel's agent-skills)?
+
+For the same reason: we do not want extra root-level files. `SKILL.md` already uses **YAML frontmatter** for metadata; a small amount of extra information there (for example `_from`) is enough. Token overhead stays minimal. **Zero config, no extra files** remains the guiding idea.
+
+### Is it OK to add custom properties to `SKILL.md` frontmatter?
+
+Yes. The [Agent Skills](https://agentskills.io/) standard is shared across tools, but **there is no ban on extra YAML frontmatter keys**. In practice, vendors extend `SKILL.md` with their own fields, and unknown properties are generally ignored. The cost is typically on the order of **10–20 tokens** per skill—even with dozens of skills in a project, the impact is minor.
+
 ## Subcommands
 
 ### `sk add <url> [to]` (alias: `sk download`) — Add a skill from GitHub

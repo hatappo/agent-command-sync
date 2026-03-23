@@ -1,5 +1,11 @@
 # 変更履歴
 
+## [Unreleased]
+
+### 追加
+
+- **ドキュメント**: `README.md` / `README_ja.md` に FAQ を追加 — ゼロ設定・ルートに余計なファイルを置かない方針；`SKILL.md` のフロントマターでの来歴管理と lock ファイル；`SKILL.md` の YAML フロントマター独自キー；`_from` と `--no-provenance`；デフォルトのプロジェクトレベル配置と `~/.claude`、`-g` / `--{agent}-dir`
+
 ## [7.0.1] - 2026-03-15
 
 ### 変更
