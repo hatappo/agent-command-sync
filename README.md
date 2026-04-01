@@ -77,7 +77,7 @@ sk sync gemini claude -n
 - **Update from Upstream** — Check and apply upstream changes to downloaded skills with `sk update`
 - **List Skills** — List all skills across agents with `sk list`
 - **Skill Info** — View skill metadata and source links with `sk info`
-- **Provenance Tracking** — Every add and sync records the source in `_from` (as `owner/repo@shortHash`, 7-char SHA by default; use `--full-hash` for full 40-char SHA). If a public skill is found to be compromised, trace affected local skills instantly. Disable with `--no-provenance`
+- **Provenance Tracking** — `add` / `download` record the source in `_from` (as `owner/repo@shortHash`, 7-char SHA by default; use `--full-hash` for full 40-char SHA). For skills, `sync` preserves `_from` only when the source skill already has it; commands may still record source provenance. Disable writing or copying with `--no-provenance`
 - **Cross-Agent Conversion** — Convert skill formats and placement across 7 agents, absorbing format differences automatically
 - **Placeholder Conversion** — `$ARGUMENTS` ↔ `{{args}}`, file references, shell commands auto-converted
 - **Dry-Run Preview** — Preview changes with `-n` before applying them
@@ -87,7 +87,7 @@ sk sync gemini claude -n
 
 ### What does `_from` mean, and when should I use `--no-provenance`?
 
-`_from` records where a skill came from (typically `owner/repo@shortHash`) so you can trace local copies if an upstream public skill is later found to be compromised. Use **`--no-provenance`** when you do not want that metadata written into frontmatter—for example, internal mirrors or policies that discourage embedding repository references.
+`_from` records where a skill came from (typically `owner/repo@shortHash`) so you can trace local copies if an upstream public skill is later found to be compromised. `add` / `download` generate it from the upstream repository, while skill `sync` only copies an existing `_from` from the source skill. Command sync remains separate and may still record source provenance. Use **`--no-provenance`** when you do not want that metadata written or copied into frontmatter—for example, internal mirrors or policies that discourage embedding repository references.
 
 ### Why does `sk` write under my repo instead of `~/.claude`?
 
@@ -203,7 +203,7 @@ sk migrate                                # Rename .acs/.asp → .agent-skill-po
 | `--no-overwrite`            | Skip existing files in target directory                               |
 | `--sync-delete`             | Delete orphaned files in target directory                             |
 | `--remove-unsupported`      | Remove fields not supported by target format                          |
-| `--no-provenance`           | Do not record source in `_from` frontmatter property                  |
+| `--no-provenance`           | Do not write or copy `_from` provenance into frontmatter              |
 | `--claude-dir <path>`       | Claude base directory (default: ~/.claude)                            |
 | `--gemini-dir <path>`       | Gemini base directory (default: ~/.gemini)                            |
 | `--codex-dir <path>`        | Codex base directory (default: ~/.codex)                              |

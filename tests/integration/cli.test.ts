@@ -502,6 +502,122 @@ This is a test skill with $ARGUMENTS.`,
       expect(content).toContain("{{args}}");
     });
 
+    it("should preserve existing _from when syncing skills", async () => {
+      const skillDir = join(claudeSkillsDir, "from-skill");
+      await ensureDirectory(skillDir);
+      await writeFile(
+        join(skillDir, "SKILL.md"),
+        `---
+name: from-skill
+description: Test skill
+_from: upstream-owner/upstream-repo@abc1234
+---
+
+This is a test skill with $ARGUMENTS.`,
+      );
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "gemini",
+        contentType: "skills",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        global: false,
+        gitRoot: testDir,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+
+      const targetSkillMd = join(geminiSkillsDir, "from-skill", "SKILL.md");
+      const content = await readFile(targetSkillMd);
+      expect(content).toContain("_from: upstream-owner/upstream-repo@abc1234");
+    });
+
+    it("should not generate _from from local git metadata when source skill does not define it", async () => {
+      await ensureDirectory(join(testDir, ".git"));
+      await writeFile(
+        join(testDir, ".git", "config"),
+        `[remote "origin"]
+	url = git@github.com:self-owner/self-repo.git
+`,
+      );
+
+      const skillDir = join(claudeSkillsDir, "local-skill");
+      await ensureDirectory(skillDir);
+      await writeFile(
+        join(skillDir, "SKILL.md"),
+        `---
+name: local-skill
+description: Local skill
+---
+
+This stays local.`,
+      );
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "gemini",
+        contentType: "skills",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        global: false,
+        gitRoot: testDir,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+
+      const targetSkillMd = join(geminiSkillsDir, "local-skill", "SKILL.md");
+      const content = await readFile(targetSkillMd);
+      expect(content).not.toContain("_from:");
+      expect(content).not.toContain("self-owner/self-repo");
+    });
+
+    it("should omit _from during sync when noProvenance is true", async () => {
+      const skillDir = join(claudeSkillsDir, "no-provenance-skill");
+      await ensureDirectory(skillDir);
+      await writeFile(
+        join(skillDir, "SKILL.md"),
+        `---
+name: no-provenance-skill
+description: Test skill
+_from: upstream-owner/upstream-repo@abc1234
+---
+
+This is a test skill with $ARGUMENTS.`,
+      );
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "gemini",
+        contentType: "skills",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        global: false,
+        noProvenance: true,
+        customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+
+      const targetSkillMd = join(geminiSkillsDir, "no-provenance-skill", "SKILL.md");
+      const content = await readFile(targetSkillMd);
+      expect(content).not.toContain("_from:");
+    });
+
     it("should convert Gemini skill to Claude", async () => {
       const skillDir = join(geminiSkillsDir, "gemini-skill");
       await ensureDirectory(skillDir);

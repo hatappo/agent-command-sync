@@ -192,7 +192,7 @@ async function main(): Promise<void> {
     .description("Download skill(s) from GitHub (supports repo-level bulk download)")
     .option("-n, --noop", "Preview files without downloading", false)
     .option("-v, --verbose", "Show detailed debug information", false)
-    .option("--no-provenance", "Do not record source URL in _from frontmatter property")
+    .option("--no-provenance", "Do not write or copy _from provenance in frontmatter")
     .option("--full-hash", "Use full 40-character tree hash in _from provenance", false);
 
   registerCommonDirOptions(downloadCmd);
@@ -278,7 +278,7 @@ async function main(): Promise<void> {
     .option("-f, --file <filename>", "Convert only the specified command/skill (without extension)")
     .option("-n, --noop", "Display a list of changes without applying them", false)
     .option("-v, --verbose", "Show detailed debug information", false)
-    .option("--no-provenance", "Do not record source URL in _from frontmatter property");
+    .option("--no-provenance", "Do not write or copy _from provenance in frontmatter");
 
   registerCommonDirOptions(syncCmd);
 
@@ -323,7 +323,7 @@ async function main(): Promise<void> {
     .option("-t, --type <type>", "Content type: skills, commands, or both", "skills")
     .option("-f, --file <filename>", "Convert only the specified command/skill (without extension)")
     .option("-v, --verbose", "Show detailed debug information", false)
-    .option("--no-provenance", "Do not record source URL in _from frontmatter property");
+    .option("--no-provenance", "Do not write or copy _from provenance in frontmatter");
 
   registerCommonDirOptions(importCmd);
 
@@ -360,7 +360,7 @@ async function main(): Promise<void> {
     .option("-t, --type <type>", "Content type: skills, commands, or both", "skills")
     .option("-f, --file <filename>", "Convert only the specified command/skill (without extension)")
     .option("-v, --verbose", "Show detailed debug information", false)
-    .option("--no-provenance", "Do not record source URL in _from frontmatter property");
+    .option("--no-provenance", "Do not write or copy _from provenance in frontmatter");
 
   registerCommonDirOptions(driftCmd);
 
@@ -400,7 +400,7 @@ async function main(): Promise<void> {
     .option("--sync-delete", "Delete commands in the target that don't exist in the source", false)
     .option("-f, --file <filename>", "Convert only the specified command/skill (without extension)")
     .option("-v, --verbose", "Show detailed debug information", false)
-    .option("--no-provenance", "Do not record source URL in _from frontmatter property");
+    .option("--no-provenance", "Do not write or copy _from provenance in frontmatter");
 
   registerCommonDirOptions(applyCmd);
 
@@ -438,7 +438,7 @@ async function main(): Promise<void> {
     .option("--remove-unsupported", "Remove keys that are not supported in the target format", false)
     .option("-f, --file <filename>", "Convert only the specified command/skill (without extension)")
     .option("-v, --verbose", "Show detailed debug information", false)
-    .option("--no-provenance", "Do not record source URL in _from frontmatter property");
+    .option("--no-provenance", "Do not write or copy _from provenance in frontmatter");
 
   registerCommonDirOptions(planCmd);
 

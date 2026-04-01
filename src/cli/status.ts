@@ -172,7 +172,7 @@ export async function showStatus(options: StatusOptions): Promise<void> {
 
   // Version and mode
   const modeLabel = options.gitRoot && !options.global ? `project: ${options.gitRoot}` : "global";
-  console.log(picocolors.dim(`asp v${version} [${modeLabel}]`));
+  console.log(picocolors.dim(`sk v${version} [${modeLabel}]`));
   console.log();
 
   // Collect agent stats for user-level (always) and project-level (if in git repo)
@@ -227,7 +227,7 @@ export async function showStatus(options: StatusOptions): Promise<void> {
   console.log();
 
   if (agentCount === 0) {
-    console.log(picocolors.dim("  No agents detected yet. Run `asp import <agent>` to start evolving!"));
+    console.log(picocolors.dim("  No agents detected yet. Run `sk import <agent>` to start evolving!"));
   } else {
     // List detected agents
     const agentList = [...allDetectedAgents].sort();

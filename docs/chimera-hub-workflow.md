@@ -11,7 +11,7 @@ Chimera Hub is a lossless conversion hub. It preserves all agent-specific settin
 ```
                         ┌──────────────────┐
                         │  Chimera (Hub)   │
-                        │    ~/.config/asp       │
+                        │ ~/.config/agent-skill-porter │
                         └────────┬─────────┘
                   ┌──────────────┴───────────────┐
                 ▲ │                              │ ▲
@@ -25,36 +25,36 @@ Chimera Hub is a lossless conversion hub. It preserves all agent-specific settin
   │   ~/.claude    │                           │  ~/.codex    │  │   │  │   │  │   │  ...
   └────────────────┘                           └──────────────┘  └───┘  └───┘  └───┘
 
-    ▲  asp import <agent>    agent → chimera            (shorthand for: asp sync <agent> chimera)
-    ▲  asp drift  <agent>    agent → chimera, dry run   (shorthand for: asp sync <agent> chimera -n)
-    ▼  asp apply  <agent>    chimera → agent            (shorthand for: asp sync chimera <agent>)
-    ▼  asp plan   <agent>    chimera → agent, dry run   (shorthand for: asp sync chimera <agent> -n)
-    ◄► asp sync X Y          direct conversion between agents
+    ▲  sk import <agent>     agent → chimera            (shorthand for: sk sync <agent> chimera)
+    ▲  sk drift  <agent>     agent → chimera, dry run   (shorthand for: sk sync <agent> chimera -n)
+    ▼  sk apply  <agent>     chimera → agent            (shorthand for: sk sync chimera <agent>)
+    ▼  sk plan   <agent>     chimera → agent, dry run   (shorthand for: sk sync chimera <agent> -n)
+    ◄► sk sync X Y           direct conversion between agents
 ```
 
 ## Commands
 
 | Command | Direction | Description |
 |---------|-----------|-------------|
-| `asp import <agent>` | agent → chimera | Import commands/skills into the hub |
-| `asp drift <agent>` | agent → chimera | Preview import changes (dry run) |
-| `asp apply <agent>` | chimera → agent | Apply hub commands/skills to an agent |
-| `asp plan <agent>` | chimera → agent | Preview apply changes (dry run) |
-| `asp sync X Y` | agent → agent | Direct conversion (bypasses hub) |
+| `sk import <agent>` | agent → chimera | Import commands/skills into the hub |
+| `sk drift <agent>` | agent → chimera | Preview import changes (dry run) |
+| `sk apply <agent>` | chimera → agent | Apply hub commands/skills to an agent |
+| `sk plan <agent>` | chimera → agent | Preview apply changes (dry run) |
+| `sk sync X Y` | agent → agent | Direct conversion (bypasses hub) |
 
 ## Typical Workflow
 
 ```bash
 # 1. Import from multiple agents into Chimera hub
-asp import claude
-asp import gemini
+sk import claude
+sk import gemini
 
 # 2. Preview what would change before applying
-asp plan codex
+sk plan codex
 
 # 3. Apply to target agents
-asp apply codex
-asp apply claude
+sk apply codex
+sk apply claude
 ```
 
 ## How Chimera Preserves Extras
@@ -77,6 +77,6 @@ Review $ARGUMENTS and suggest improvements.
 
 When applying to a specific agent, only that agent's extras are restored:
 
-- `asp apply claude` → restores `allowed-tools`, `model`, `argument-hint`
-- `asp apply gemini` → restores `some-gemini-field`
-- `asp apply codex` → no extras (semantic fields only)
+- `sk apply claude` → restores `allowed-tools`, `model`, `argument-hint`
+- `sk apply gemini` → restores `some-gemini-field`
+- `sk apply codex` → no extras (semantic fields only)

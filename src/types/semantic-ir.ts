@@ -18,7 +18,7 @@ export interface SemanticProperties {
   name?: string;
   /** Claude: !disable-model-invocation, Codex: allow_implicit_invocation */
   modelInvocationEnabled?: boolean;
-  /** Provenance tracking: most recent source origin (owner/repo) */
+  /** Provenance tracking stored in _from (for example owner/repo or owner/repo@treeHash) */
   from?: string;
 }
 

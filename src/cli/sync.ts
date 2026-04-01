@@ -6,7 +6,7 @@ import type { ConversionResult, FileOperation, SemanticIR } from "../types/index
 import type { ProductType } from "../types/intermediate.js";
 import { assertNever } from "../utils/assert-never.js";
 import { SKILL_CONSTANTS } from "../utils/constants.js";
-import { getGitHubRemoteUrl, getTreeHash } from "../utils/git-utils.js";
+import { getGitHubRemoteUrl } from "../utils/git-utils.js";
 
 const { SKILL_FILE_NAME } = SKILL_CONSTANTS;
 import {
@@ -102,7 +102,7 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
       // Convert each skill
       for (const skillDir of sourceSkills) {
         try {
-          const result = await convertSingleSkill(skillDir, options, sourceRepoUrl);
+          const result = await convertSingleSkill(skillDir, options);
           operations.push(...result.operations);
           errors.push(...result.errors);
           countStats(result.operations, stats);
@@ -160,11 +160,6 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
  */
 function setFromUrl(ir: SemanticIR, fromValue: string): void {
   ir.semantic.from = fromValue;
-}
-
-/** Format _from value with optional tree hash: `owner/repo` or `owner/repo@treeHash` */
-function formatFromValue(ownerRepo: string, treeHash?: string | null): string {
-  return treeHash ? `${ownerRepo}@${treeHash}` : ownerRepo;
 }
 
 /** Extract owner/repo from a GitHub URL (https://github.com/owner/repo → owner/repo) */
@@ -389,7 +384,6 @@ async function getSourceSkills(options: CLIOptions): Promise<string[]> {
 async function convertSingleSkill(
   skillDir: string,
   options: CLIOptions,
-  sourceRepoUrl?: string | null,
 ): Promise<{ operations: FileOperation[]; errors: Error[] }> {
   const operations: FileOperation[] = [];
   const errors: Error[] = [];
@@ -401,10 +395,9 @@ async function convertSingleSkill(
     const skill = await src.parseSkill(skillDir);
     const ir: SemanticIR = src.skillToIR(skill, { destinationType: options.destination });
 
-    // Append provenance tracking (owner/repo@treeHash for skills)
-    if (!options.noProvenance && sourceRepoUrl) {
-      const treeHash = options.gitRoot ? await getTreeHash(options.gitRoot, skillDir) : null;
-      setFromUrl(ir, formatFromValue(extractOwnerRepo(sourceRepoUrl), treeHash));
+    // Preserve existing _from from the source skill; do not synthesize one during sync.
+    if (options.noProvenance) {
+      ir.semantic.from = undefined;
     }
 
     // Get skill directories
@@ -561,9 +554,9 @@ const operationStyles = {
 function getNoopMessage(rawSubCommand?: string): string {
   switch (rawSubCommand) {
     case "drift":
-      return "This was a dry run. Use `asp import` to apply changes.";
+      return "This was a dry run. Use `sk import` to apply changes.";
     case "plan":
-      return "This was a dry run. Use `asp apply` to apply changes.";
+      return "This was a dry run. Use `sk apply` to apply changes.";
     default:
       return "This was a dry run. Use without --noop to apply changes.";
   }
