@@ -227,6 +227,31 @@ describe("update command", () => {
       expect(output).toContain("skill-g");
       expect(output).toContain("Updated");
     });
+
+    it("should scan cwd-based project directories when gitRoot is null", async () => {
+      const originalCwd = process.cwd();
+      process.chdir(tempDir);
+
+      try {
+        await createLocalSkill(".claude/skills", "cwd-skill", `owner/repo@${treeHash1}`);
+
+        mockDefaultBranch();
+        mockTreeScan([{ name: "cwd-skill", path: ".claude/skills/cwd-skill", treeHash: treeHash1 }]);
+
+        await updateSkills({
+          noop: false,
+          global: false,
+          verbose: false,
+          gitRoot: null,
+        });
+      } finally {
+        process.chdir(originalCwd);
+      }
+
+      const output = consoleOutput.join("\n");
+      expect(output).toContain("cwd-skill");
+      expect(output).toContain("No upstream changes");
+    });
   });
 
   // ── With skill-path argument ──────────────────────────────────
@@ -313,6 +338,32 @@ describe("update command", () => {
       const skillMd = await readFile(join(tempDir, "some/deep/path/my-skill/SKILL.md"), "utf-8");
       const parsed = matter(skillMd);
       expect(parsed.data._from).toBe(`owner/repo@${treeHash2.slice(0, 7)}`);
+    });
+
+    it("should resolve skillPath from cwd when gitRoot is null", async () => {
+      const originalCwd = process.cwd();
+      process.chdir(tempDir);
+
+      try {
+        await createLocalSkill("skills", "cwd-path-skill", `owner/repo@${treeHash1}`);
+
+        mockDefaultBranch();
+        mockTreeScan([{ name: "cwd-path-skill", path: "skills/cwd-path-skill", treeHash: treeHash1 }]);
+
+        await updateSkills({
+          skillPath: "skills/cwd-path-skill",
+          noop: true,
+          global: false,
+          verbose: false,
+          gitRoot: null,
+        });
+      } finally {
+        process.chdir(originalCwd);
+      }
+
+      const output = consoleOutput.join("\n");
+      expect(output).toContain("cwd-path-skill");
+      expect(output).toContain("No upstream changes");
     });
   });
 

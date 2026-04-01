@@ -91,7 +91,7 @@ sk sync gemini claude -n
 
 ### Why does `sk` write under my repo instead of `~/.claude`?
 
-Inside a Git repository, **`sk` defaults to project-level paths** (for example `<repo>/.claude/skills`) so skills live with the codebase. Use **`-g` / `--global`** for user-level directories, or **`--{agent}-dir`** for a custom base path. See [Directory Resolution](#directory-resolution) below.
+For `sk add`, `sk download`, `sk update`, and `sk sync`, **the default is project-level paths** so skills live with the codebase. Inside a Git repository that means the repo root (for example `<repo>/.claude/skills`); outside a Git repository that means the current working directory (for example `./.claude/skills`). Use **`-g` / `--global`** for user-level directories, or **`--{agent}-dir`** for a custom base path. See [Directory Resolution](#directory-resolution) below.
 
 ### Why is there no `xxx.config.js`-style configuration file?
 
@@ -112,6 +112,7 @@ Yes. The [Agent Skills](https://agentskills.io/) standard is shared across tools
 ```bash
 sk add https://github.com/anthropics/skills/tree/main/skills/skill-creator
 sk add <url> gemini                       # Place in Gemini skill directory
+sk add <url> -g                           # Keep the original agent path, but under your home directory
 sk add <url> claude -g                    # Place in global Claude directory
 sk add <url> -n                           # Preview without downloading
 ```
@@ -132,6 +133,7 @@ export GITHUB_TOKEN=ghp_...
 sk update                                 # Check and update all agent skills
 sk update .claude/skills/my-skill         # Update a specific skill
 sk update skills/                         # Update all skills under a path
+sk update -g                              # Target user-level directories instead
 sk update -n                              # Check for updates without applying
 ```
 
@@ -154,8 +156,16 @@ sk info .claude/skills/my-skill/SKILL.md  # SKILL.md path also accepted
 
 ```bash
 sk sync claude gemini                     # Convert Claude → Gemini
+sk sync claude gemini -g                 # Use user-level directories instead
 sk sync claude gemini -t commands          # Commands only
 ```
+
+By default, `sync` uses **project directories**:
+
+- inside a Git repository: `<repo>/.<agent>/...` from the repository root
+- outside a Git repository: `.<agent>/...` under the current working directory
+
+Use `-g` / `--global` to target **user-level** directories instead.
 
 ### `sk import <agent>` / `sk apply <agent>` — Lossless conversion workflow
 
@@ -229,14 +239,19 @@ sk sync claude gemini -v
 
 ## Directory Resolution
 
-When running inside a Git repository, `sk` defaults to **project-level** directories (e.g., `<repo>/.claude`, `<repo>/.gemini`). Use `-g`/`--global` to use user-level directories instead.
+For `sk add`, `sk download`, `sk update`, and `sk sync`, the default is **project-level** directories:
+
+- inside a Git repository: use the Git repository root (e.g. `<repo>/.claude`, `<repo>/.gemini`)
+- outside a Git repository: use the current working directory (e.g. `./.claude`, `./.gemini`)
+
+Use `-g`/`--global` to use user-level directories instead.
 
 **Priority order:**
 1. `--{agent}-dir` (custom directory) — always takes precedence
-2. **Project-level** — default when inside a Git repository
-3. **User-level** — default when outside a Git repository, or when `-g` is specified
+2. **Project-level** — default for `add` / `download` / `update` / `sync` (`gitRoot` or current working directory)
+3. **User-level** — when `-g` is specified
 
-### Project-level (default inside Git repos)
+### Project-level (default)
 
 | Agent | Commands | Skills |
 | ----- | -------- | ------ |
@@ -248,7 +263,7 @@ When running inside a Git repository, `sk` defaults to **project-level** directo
 | **Cursor** | `<repo>/.cursor/commands/*.md` | `<repo>/.cursor/skills/<name>/SKILL.md` |
 | **Chimera** | `<repo>/.agent-skill-porter/commands/*.md` | `<repo>/.agent-skill-porter/skills/<name>/SKILL.md` |
 
-### User-level (with `-g` or outside Git repos)
+### User-level (with `-g`)
 
 | Agent | Commands | Skills |
 | ----- | -------- | ------ |

@@ -11,6 +11,7 @@ describe("download command", () => {
   let mockFetch: Mock;
   let tempDir: string;
   let consoleOutput: string[];
+  let originalHome: string | undefined;
 
   beforeEach(async () => {
     // Clear gray-matter cache to prevent cross-test pollution
@@ -30,11 +31,18 @@ describe("download command", () => {
     vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
       consoleOutput.push(args.join(" "));
     });
+
+    originalHome = process.env.HOME;
   });
 
   afterEach(async () => {
     globalThis.fetch = originalFetch;
     vi.restoreAllMocks();
+    if (originalHome === undefined) {
+      process.env.HOME = undefined;
+    } else {
+      process.env.HOME = originalHome;
+    }
     await rm(tempDir, { recursive: true, force: true });
   });
 
@@ -128,6 +136,30 @@ describe("download command", () => {
 
     // With -d gemini and customDir=tempDir, files go to tempDir/skills/my-skill/
     const skillMd = await readFile(join(tempDir, "skills/my-skill/SKILL.md"), "utf-8");
+    expect(skillMd).toContain("description: My Skill");
+    expect(skillMd).toContain("owner/repo");
+  });
+
+  it("should download to cwd-based project directory when destination is set outside a git repository", async () => {
+    setupBasicMocks();
+
+    const originalCwd = process.cwd();
+    process.chdir(tempDir);
+
+    try {
+      await downloadSkill({
+        url: testUrl,
+        destination: "gemini",
+        global: false,
+        noop: false,
+        verbose: false,
+        gitRoot: null,
+      });
+    } finally {
+      process.chdir(originalCwd);
+    }
+
+    const skillMd = await readFile(join(tempDir, ".gemini/skills/my-skill/SKILL.md"), "utf-8");
     expect(skillMd).toContain("description: My Skill");
     expect(skillMd).toContain("owner/repo");
   });
@@ -344,16 +376,21 @@ describe("download command", () => {
     expect(output).toContain("DEBUG:");
   });
 
-  it("should throw when -g is used without -d", async () => {
-    await expect(
-      downloadSkill({
-        url: testUrl,
-        global: true,
-        noop: false,
-        verbose: false,
-        gitRoot: tempDir,
-      }),
-    ).rejects.toThrow("asp download with -g/--global requires [to] argument");
+  it("should download to home-relative path when -g is used without destination", async () => {
+    process.env.HOME = tempDir;
+    setupBasicMocks();
+
+    await downloadSkill({
+      url: testUrl,
+      global: true,
+      noop: false,
+      verbose: false,
+      gitRoot: tempDir,
+    });
+
+    const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
+    expect(skillMd).toContain("description: My Skill");
+    expect(skillMd).toContain("owner/repo");
   });
 
   it("should throw for invalid GitHub URLs", async () => {

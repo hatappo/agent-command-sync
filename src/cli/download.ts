@@ -1,4 +1,5 @@
 import { promises as fs } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import matter from "gray-matter";
 import picocolors from "picocolors";
@@ -54,12 +55,26 @@ const operationStyles = {
 // ── Helpers ─────────────────────────────────────────────────────
 
 /**
- * Resolve the base directory for download when no destination agent is specified.
- * - In a git repo: gitRoot (project-level)
+ * Resolve the project root for download target resolution.
+ * - In a git repo: gitRoot
  * - Outside a git repo: cwd
+ * - With --global: undefined (user-level mode)
+ */
+function getDownloadProjectRoot(options: DownloadOptions): string | undefined {
+  if (options.global) {
+    return undefined;
+  }
+
+  return options.gitRoot ?? process.cwd();
+}
+
+/**
+ * Resolve the base directory for download when no destination agent is specified.
+ * - Project mode: gitRoot or cwd
+ * - Global mode: home directory
  */
 function resolveDownloadBaseDir(options: DownloadOptions): string {
-  return options.gitRoot && !options.global ? options.gitRoot : process.cwd();
+  return getDownloadProjectRoot(options) ?? homedir();
 }
 
 /**
@@ -72,7 +87,7 @@ function resolveTargetDir(parsed: ParsedGitHubUrl, options: DownloadOptions): st
     const agent = AGENT_REGISTRY[options.destination];
     const context: DirResolutionContext = {
       customDir: options.customDirs?.[options.destination],
-      gitRoot: options.gitRoot,
+      gitRoot: getDownloadProjectRoot(options),
       global: options.global,
     };
     const skillDir = resolveSkillDir(agent, context);
@@ -87,8 +102,9 @@ function resolveTargetDir(parsed: ParsedGitHubUrl, options: DownloadOptions): st
  * Get the mode label for display
  */
 function getModeLabel(options: DownloadOptions): string {
-  if (options.gitRoot && !options.global) {
-    return `[project: ${options.gitRoot}]`;
+  const projectRoot = getDownloadProjectRoot(options);
+  if (projectRoot) {
+    return `[project: ${projectRoot}]`;
   }
   if (options.global) {
     return "[global]";
@@ -156,7 +172,7 @@ function resolveTargetDirForRepoSkill(skill: DiscoveredSkill, options: DownloadO
     const agent = AGENT_REGISTRY[options.destination];
     const context: DirResolutionContext = {
       customDir: options.customDirs?.[options.destination],
-      gitRoot: options.gitRoot,
+      gitRoot: getDownloadProjectRoot(options),
       global: options.global,
     };
     const skillDir = resolveSkillDir(agent, context);
@@ -288,11 +304,6 @@ async function downloadMultipleSkills(
  * Supports both single skill URLs and repository-level URLs for bulk download.
  */
 export async function downloadSkill(options: DownloadOptions): Promise<void> {
-  // 0. Validate: -g requires destination
-  if (options.global && !options.destination) {
-    throw new Error("asp download with -g/--global requires [to] argument.\nExample: asp download <url> claude -g");
-  }
-
   // 1. Check for repo-level URL first
   const repoUrl = tryParseRepoUrl(options.url);
   if (repoUrl) {

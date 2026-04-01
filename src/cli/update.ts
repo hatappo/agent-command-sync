@@ -30,6 +30,14 @@ export interface LocalSkillInfo {
 
 // ── Helpers ─────────────────────────────────────────────────────
 
+function getUpdateProjectRoot(options: UpdateOptions): string | undefined {
+  if (options.global) {
+    return undefined;
+  }
+
+  return options.gitRoot ?? process.cwd();
+}
+
 /**
  * Parse _from value: "owner/repo@treeHash" or "owner/repo".
  * Accepts any hex string after @ (not just 40-char) to handle truncated or
@@ -112,11 +120,12 @@ async function findSkillsUnderPath(dirPath: string): Promise<string[]> {
  */
 async function scanAgentSkillDirs(options: UpdateOptions): Promise<LocalSkillInfo[]> {
   const results: LocalSkillInfo[] = [];
+  const projectRoot = getUpdateProjectRoot(options);
   for (const agentName of PRODUCT_TYPES) {
     const agent = AGENT_REGISTRY[agentName];
     const context: DirResolutionContext = {
       customDir: options.customDirs?.[agentName],
-      gitRoot: options.gitRoot,
+      gitRoot: projectRoot,
       global: options.global,
     };
     const skillDirs = await findAgentSkills(agent, undefined, context);
@@ -135,8 +144,8 @@ async function scanAgentSkillDirs(options: UpdateOptions): Promise<LocalSkillInf
  */
 async function discoverLocalSkills(options: UpdateOptions): Promise<LocalSkillInfo[]> {
   if (options.skillPath) {
-    // Resolve path relative to gitRoot (or cwd)
-    const baseDir = options.gitRoot ?? process.cwd();
+    // Resolve path relative to project root (gitRoot or cwd) / current cwd in global mode
+    const baseDir = getUpdateProjectRoot(options) ?? process.cwd();
     const resolvedPath = resolve(baseDir, options.skillPath);
 
     const skillDirs = await findSkillsUnderPath(resolvedPath);
@@ -153,7 +162,7 @@ async function discoverLocalSkills(options: UpdateOptions): Promise<LocalSkillIn
 }
 
 function getDisplayPath(skill: LocalSkillInfo, options: UpdateOptions): string {
-  const baseDir = options.gitRoot && !options.global ? options.gitRoot : process.cwd();
+  const baseDir = getUpdateProjectRoot(options) ?? process.cwd();
   return relative(baseDir, skill.skillDir);
 }
 
