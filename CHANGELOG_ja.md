@@ -2,10 +2,26 @@
 
 ## [Unreleased]
 
+
+## [8.0.0] - 2026-04-02
+
+### 変更（破壊的変更）
+
+- **`add` / `download` / `update` の upstream 解決をローカル Git 履歴ベースに変更**。GitHub API ベースの取得専用経路を廃止
+- **プライベートリポジトリ認証はローカル `git` 認証に追従**。CLI から `GITHUB_TOKEN` を渡す前提ではなく、`git clone` / `git fetch` が通る設定を使用
+- **`update` は `--min-age <days>` 指定時に古い eligible tree へ re-pin しうる**。HEAD より古い版へ戻る更新が発生する
+
 ### 追加
 
+- **`add` / `download` / `update` に `--min-age <days>` を追加**。committer timestamp が N 日以上前の版のうち最新を選択
+- **bare リポジトリキャッシュ**: `~/.cache/agent-skill-porter/repos/` に `git clone --bare --filter=blob:none` で upstream をキャッシュ
+- **eligible 判定に対応した更新ステータス**: `Updated`、`Re-pinned`、`Already eligible`、`Skipped: no eligible version found`
+- **実 Git / bare cache の統合テスト**: `add -> update --min-age` を通す結合テストを追加
 - **ドキュメント**: `README.md` / `README_ja.md` に FAQ を追加 — ゼロ設定・ルートに余計なファイルを置かない方針；`SKILL.md` のフロントマターでの来歴管理と lock ファイル；`SKILL.md` の YAML フロントマター独自キー；`_from` と `--no-provenance`；デフォルトのプロジェクトレベル配置と `~/.claude`、`-g` / `--{agent}-dir`
 
+### 修正
+
+- **ビルド warning**: `package.json` の version import を共通 utility に集約し、`pnpm build` 時の JSON import attribute 不一致 warning を解消
 ## [7.0.1] - 2026-03-15
 
 ### 変更

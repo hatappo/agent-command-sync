@@ -1,9 +1,9 @@
 import picocolors from "picocolors";
-import { version } from "../../package.json" assert { type: "json" };
 import { AGENT_REGISTRY } from "../agents/registry.js";
 import type { ProductType } from "../types/intermediate.js";
 import { PRODUCT_TYPES } from "../types/intermediate.js";
 import { type DirResolutionContext, findAgentCommands, findAgentSkills } from "../utils/file-utils.js";
+import { version } from "../utils/version.js";
 
 /** Chimera parts indexed by level: Lv.0 = Ghost, Lv.1 = Cat, ... */
 const CHIMERA_PARTS: { name: string; emoji: string; trait?: string }[] = [

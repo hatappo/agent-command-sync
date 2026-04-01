@@ -2,9 +2,26 @@
 
 ## [Unreleased]
 
+## [8.0.0] - 2026-04-02
+
+### Changed (BREAKING)
+
+- **`add` / `download` / `update` now resolve upstream content through local Git history** instead of GitHub API-only fetching
+- **Private repository authentication now follows local `git` credentials** (`git clone` / `git fetch`) rather than `GITHUB_TOKEN` passed through the CLI
+- **`update` can now re-pin to an older eligible tree** when `--min-age <days>` excludes a newer HEAD commit
+
 ### Added
 
+- **`--min-age <days>` for `add`, `download`, and `update`**: selects the newest version whose committer timestamp is at least N days old
+- **Bare repository cache**: upstream repositories are cached under `~/.cache/agent-skill-porter/repos/` using `git clone --bare --filter=blob:none`
+- **Eligibility-aware update statuses**: `Updated`, `Re-pinned`, `Already eligible`, and `Skipped: no eligible version found`
+- **Integration coverage for cache-backed updates**: added a real Git/bare-cache integration test for `add -> update --min-age`
 - **Documentation**: FAQ in `README.md` and `README_ja.md` — zero-config / no extra root files; provenance in `SKILL.md` frontmatter vs lock files; custom YAML frontmatter on `SKILL.md`; `_from` and `--no-provenance`; default project-level skill paths vs `~/.claude` and `-g` / `--{agent}-dir`
+
+### Fixed
+
+- **Build warning**: unified `package.json` version imports through a shared utility to remove the JSON import attribute mismatch warning during `pnpm build`
+
 
 ## [7.0.1] - 2026-03-15
 

@@ -2,13 +2,13 @@
 
 import { Command } from "commander";
 import picocolors from "picocolors";
-import { version } from "../../package.json" assert { type: "json" };
 import { AGENT_REGISTRY } from "../agents/registry.js";
 import { PRODUCT_TYPES } from "../types/intermediate.js";
 import type { ProductType } from "../types/intermediate.js";
 import type { ContentFilter } from "../types/skill.js";
 import { showDeprecationWarning } from "../utils/cli-name.js";
 import { findGitRoot } from "../utils/git-utils.js";
+import { version } from "../utils/version.js";
 import { downloadSkill } from "./download.js";
 import { runInfo } from "./info.js";
 import { showList } from "./list.js";
