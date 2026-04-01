@@ -18,22 +18,29 @@ pnpm dev
 ## テスト
 
 ```bash
+# 整形状態だけ確認
+pnpm format:check
+
+# ファイルを整形して保存
+pnpm format
+
+# lint の確認だけ実行
+pnpm lint
+
+# 自動修正と整形を適用してから検証
+pnpm tidy
+
+# 型チェック
+pnpm typecheck
+
 # テストを実行
 pnpm test
 
 # カバレッジ付きでテストを実行
 pnpm test:coverage
-```
 
-## リント & フォーマット
-
-```bash
-# コードのリントとフォーマット
-pnpm lint
-pnpm format
-
-# 型チェック
-pnpm lint:tsc
+# PR 前や CI 向けの総合検証
+pnpm verify
 ```
 
 ## パブリッシング

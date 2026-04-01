@@ -347,5 +347,5 @@ Update the following sections:
 ## Verification
 
 ```bash
-pnpm lint && pnpm lint:tsc && pnpm test && pnpm build
+pnpm verify && pnpm build
 ```

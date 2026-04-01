@@ -12,18 +12,18 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
-    "test": "vitest --run",
-    "test:coverage": "vitest --run --coverage",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
     "lint": "biome lint .",
     "lint:fix": "biome check --apply .",
-    "lint:tsc": "tsc --noEmit",
-    "format": "biome format --write .",
-    "check": "pnpm lint && pnpm lint:tsc && pnpm test",
-    "prepublishOnly": "pnpm check && pnpm build",
-    "preversion": "pnpm check",
-    "version": "pnpm format && git add -A",
-    "registry:login": "pnpm login",
-    "registry:whoami": "pnpm whoami"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest --run",
+    "test:coverage": "vitest --run --coverage",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
+    "tidy": "pnpm format && pnpm lint:fix && pnpm typecheck && pnpm test",
+    "prepublishOnly": "pnpm verify && pnpm build",
+    "preversion": "pnpm verify",
+    "version": "pnpm format && git add -A"
   },
   "files": ["dist", "bin"],
   "exports": {

@@ -18,22 +18,29 @@ pnpm dev
 ## Testing
 
 ```bash
+# Check formatting only
+pnpm format:check
+
+# Format files in place
+pnpm format
+
+# Lint only
+pnpm lint
+
+# Apply auto-fixable lint and formatting changes, then validate
+pnpm tidy
+
+# Type check
+pnpm typecheck
+
 # Run tests
 pnpm test
 
 # Run tests with coverage
 pnpm test:coverage
-```
 
-## Lint & Format
-
-```bash
-# Lint and format code
-pnpm lint
-pnpm format
-
-# Type check
-pnpm lint:tsc
+# Full validation for CI or before opening a PR
+pnpm verify
 ```
 
 ## Publishing
