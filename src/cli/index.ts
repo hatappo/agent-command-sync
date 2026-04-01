@@ -97,6 +97,14 @@ function registerCommonDirOptions(cmd: Command): Command {
   return cmd;
 }
 
+function parseMinAge(value: string): number {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    throw new Error("--min-age must be a non-negative integer number of days");
+  }
+  return parsed;
+}
+
 /** Print help text. Concise when detailed=false, full when detailed=true. */
 function printHelp(detailed: boolean): void {
   const desc = `Download, update, and sync AI agent skills across ${displayNames}`;
@@ -136,8 +144,10 @@ function printHelp(detailed: boolean): void {
   console.log("\nExamples:");
   console.log("  $ sk add <github-url>               # Add a skill from GitHub");
   console.log("  $ sk add <github-url> gemini        # Add into Gemini skill directory");
+  console.log("  $ sk add <github-url> --min-age 14  # Use the newest version at least 14 days old");
   console.log("  $ sk add <github-repo-url>          # Bulk add all skills from a repo");
   console.log("  $ sk update                         # Update all downloaded skills");
+  console.log("  $ sk update --min-age 7             # Use the newest version at least 7 days old");
   console.log("  $ sk update .claude/skills/my-skill  # Update a specific skill");
   console.log("  $ sk list                            # List all skills");
   console.log("  $ sk list -g                         # List global (user-level) skills");
@@ -192,6 +202,7 @@ async function main(): Promise<void> {
     .description("Download skill(s) from GitHub (supports repo-level bulk download)")
     .option("-n, --noop", "Preview files without downloading", false)
     .option("-v, --verbose", "Show detailed debug information", false)
+    .option("--min-age <days>", "Use the newest version at least N days old", parseMinAge)
     .option("--no-provenance", "Do not write or copy _from provenance in frontmatter")
     .option("--full-hash", "Use full 40-character tree hash in _from provenance", false);
 
@@ -203,13 +214,13 @@ async function main(): Promise<void> {
         url,
         destination: to as ProductType | undefined,
         global: options.global,
-        githubToken: process.env.GITHUB_TOKEN,
         noop: options.noop,
         verbose: options.verbose,
         gitRoot,
         customDirs: buildCustomDirs(options),
         noProvenance: !options.provenance,
         fullHash: options.fullHash,
+        minAge: options.minAge,
       });
     } catch (error) {
       handleError(error);
@@ -223,6 +234,7 @@ async function main(): Promise<void> {
     .description("Check for and apply upstream updates to downloaded skills")
     .option("-n, --noop", "Check for updates without applying them", false)
     .option("-v, --verbose", "Show detailed debug information", false)
+    .option("--min-age <days>", "Use the newest version at least N days old", parseMinAge)
     .option("--full-hash", "Use full 40-character tree hash in _from provenance", false);
 
   registerCommonDirOptions(updateCmd);
@@ -237,6 +249,7 @@ async function main(): Promise<void> {
         global: options.global,
         customDirs: buildCustomDirs(options),
         fullHash: options.fullHash,
+        minAge: options.minAge,
       });
     } catch (error) {
       handleError(error);
