@@ -347,5 +347,5 @@ Update the following sections:
 ## Verification
 
 ```bash
-npm run lint && npm run lint:tsc && npm test && npm run build
+pnpm lint && pnpm lint:tsc && pnpm test && pnpm build
 ```

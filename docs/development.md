@@ -6,51 +6,51 @@
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Build the project
-npm run build
+pnpm build
 
 # Development mode (watch)
-npm run dev
+pnpm dev
 ```
 
 ## Testing
 
 ```bash
 # Run tests
-npm test
+pnpm test
 
 # Run tests with coverage
-npm run test:coverage
+pnpm test:coverage
 ```
 
 ## Lint & Format
 
 ```bash
 # Lint and format code
-npm run lint
-npm run format
+pnpm lint
+pnpm format
 
 # Type check
-npm run lint:tsc
+pnpm lint:tsc
 ```
 
 ## Publishing
 
 ```bash
 # Check package contents
-npm pack --dry-run
+pnpm pack --dry-run
 
 # Update patch version (1.0.0 → 1.0.1)
-npm version patch
+pnpm version patch
 
 # Update minor version (1.0.0 → 1.1.0)
-npm version minor
+pnpm version minor
 
 # Update major version (1.0.0 → 2.0.0)
-npm version major
+pnpm version major
 
 # Publish a package
-npm publish
+pnpm publish
 ```

@@ -204,7 +204,7 @@ npx @anthropic/agents init
 
 **インストール**:
 ```bash
-npm install -g agent-skill-porter
+pnpm add -g agent-skill-porter
 ```
 
 **主なコマンド**:

@@ -16,7 +16,7 @@ A skill lifecycle management CLI for AI agents — Add and manage updates for an
 ## Installation
 
 ```bash
-npm install -g agent-skill-porter
+pnpm add -g agent-skill-porter
 ```
 
 ## Quick Start
@@ -399,7 +399,7 @@ For detailed documentation on the following topics, see [Advanced Reference](doc
 ## Requirements
 
 - Node.js >= 24.0.0
-- npm or compatible package manager
+- pnpm >= 10
 
 ## Development
 

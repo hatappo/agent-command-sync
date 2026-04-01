@@ -6,51 +6,51 @@
 
 ```bash
 # 依存関係をインストール
-npm install
+pnpm install
 
 # プロジェクトをビルド
-npm run build
+pnpm build
 
 # 開発モード（ウォッチ）
-npm run dev
+pnpm dev
 ```
 
 ## テスト
 
 ```bash
 # テストを実行
-npm test
+pnpm test
 
 # カバレッジ付きでテストを実行
-npm run test:coverage
+pnpm test:coverage
 ```
 
 ## リント & フォーマット
 
 ```bash
 # コードのリントとフォーマット
-npm run lint
-npm run format
+pnpm lint
+pnpm format
 
 # 型チェック
-npm run lint:tsc
+pnpm lint:tsc
 ```
 
 ## パブリッシング
 
 ```bash
 # パッケージ内容を確認
-npm pack --dry-run
+pnpm pack --dry-run
 
 # パッチバージョンを更新（1.0.0 → 1.0.1）
-npm version patch
+pnpm version patch
 
 # マイナーバージョンを更新（1.0.0 → 1.1.0）
-npm version minor
+pnpm version minor
 
 # メジャーバージョンを更新（1.0.0 → 2.0.0）
-npm version major
+pnpm version major
 
 # パッケージを公開
-npm publish
+pnpm publish
 ```
