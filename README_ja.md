@@ -74,7 +74,7 @@ sk sync gemini claude -n
 ## 機能
 
 - **GitHub から追加** — `sk add` で GitHub リポジトリからスキルを直接取得
-- **上流からの更新** — `sk update` でダウンロード済みスキルの上流変更をチェックし適用
+- **上流からの更新** — `sk update` でダウンロード済みスキルの上流変更をチェックし適用。`--min-age` で「公開後 N 日以上経過した版のうち最新」に固定可能
 - **スキル一覧** — `sk list` で全エージェントのスキルを一覧表示
 - **スキル情報表示** — `sk info` でスキルのメタ情報とソースリンクを確認
 - **来歴トラッキング** — `add` / `download` はソース情報を `_from` に記録します（`owner/repo@shortHash` 形式、デフォルト 7 文字の短縮 SHA。`--full-hash` でフル 40 文字 SHA も選択可能）。skills の `sync` は変換元スキルがすでに `_from` を持っている場合だけそれを保持し、commands は従来どおりソース来歴を記録する場合があります。書き込みやコピーを抑止するには `--no-provenance`
@@ -88,6 +88,10 @@ sk sync gemini claude -n
 ### `_from` は何を表し、`--no-provenance` はいつ使えばよいのですか？
 
 `_from` はスキルの取得元（通常は `owner/repo@shortHash`）を記録し、公開スキルに問題があったときにローカルへ影響があるか追跡しやすくします。`add` / `download` は upstream リポジトリからこれを生成し、skill の `sync` は変換元スキルにすでにある `_from` だけをコピーします。command の `sync` は別で、従来どおりソース来歴を記録する場合があります。**`--no-provenance`** は、そのようなメタデータをフロントマターに書き込みまたはコピーしたくないときに使います。社内向けの複製や、リポジトリ参照を残したくないポリシーがある場合などです。
+
+### `--min-age` は何をするオプションですか？
+
+`--min-age <days>` は、「committer timestamp がその日数以上前の commit の中で最新の版」を選びます。`sk add`、`sk download`、`sk update` はすべて同じ Git 履歴ベースの解決を使うため、`sk update --min-age 14` では、最新の HEAD が新しすぎる場合に、より古い安定版へ **re-pin** されることがあります。
 
 ### なぜ `~/.claude` ではなく、リポジトリ配下に書き込まれるのですか？
 
@@ -114,20 +118,24 @@ sk sync gemini claude -n
 ```bash
 sk add https://github.com/anthropics/skills/tree/main/skills/skill-creator
 sk add <url> gemini                       # Gemini のスキルディレクトリに配置
+sk add <url> --min-age 14                # 14日以上経過した版のうち最新を使う
 sk add <url> -g                           # 元のエージェントのパスを保ったままホームディレクトリ配下に配置
 sk add <url> claude -g                    # グローバル Claude ディレクトリに配置
 sk add <url> -n                           # ダウンロードせずにプレビュー
 ```
 
-#### GitHub 認証
+`add` / `download` はローカルの bare Git cache（`git clone --bare --filter=blob:none`）を使って取得するため、`--min-age` 未指定時も Git 履歴ベースで tree を選び、`_from` を生成します。
 
-プライベートリポジトリからダウンロードするには [Personal access token](https://github.com/settings/tokens?type=beta) を設定してください。
+#### Git 認証
+
+プライベートリポジトリを扱う場合は、ローカルの `git` が GitHub に認証できる状態にしてください。例:
 
 ```bash
-export GITHUB_TOKEN=ghp_...
+gh auth setup-git
+# または SSH キー / credential helper を利用
 ```
 
-**トークン権限**: パブリックリポジトリは権限設定不要です。プライベートリポジトリの場合、対象リポジトリに **Contents: Read** 権限を付与してください。
+`git clone` や `git fetch` がそのリポジトリに対して通るなら、`sk add` / `sk update` も同じ認証経路を使います。
 
 ### `sk update [skill-path]` — ダウンロード済みスキルを上流から更新
 
@@ -135,9 +143,17 @@ export GITHUB_TOKEN=ghp_...
 sk update                                 # 全エージェントスキルをチェック＆更新
 sk update .claude/skills/my-skill         # 特定のスキルを更新
 sk update skills/                         # パス配下の全スキルを更新
+sk update --min-age 7                     # 7日以上経過した版のうち最新を使う
 sk update -g                              # 代わりにユーザーレベルのディレクトリを対象にする
 sk update -n                              # 更新チェックのみ（適用なし）
 ```
+
+`--min-age` 指定時の主な結果は次のとおりです。
+
+- `Updated`: より新しい eligible tree に更新
+- `Re-pinned`: 新しすぎる HEAD から、より古い eligible tree に戻す
+- `Already eligible`: すでに選ばれた eligible tree を参照している
+- `Skipped: no eligible version found`: 条件を満たす commit がまだない
 
 ### `sk list`（エイリアス: `sk ls`）— スキル一覧を表示
 

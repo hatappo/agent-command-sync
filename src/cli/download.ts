@@ -15,17 +15,21 @@ import {
 } from "../utils/file-utils.js";
 import {
   type DiscoveredSkill,
-  type DownloadedFile,
   type ParsedGitHubUrl,
   type ParsedRepoUrl,
   extractSkillName,
-  fetchDefaultBranch,
-  fetchSkillDirectory,
-  fetchSkillFromTree,
   parseGitHubUrl,
-  scanRepositoryForSkills,
   tryParseRepoUrl,
 } from "../utils/github-utils.js";
+import {
+  ensureGitHubRepoCache,
+  getSkillAtPath,
+  listSkillsAtRef,
+  readSkillFilesAtCommit,
+  resolveCommitForPath,
+  resolveDefaultBranch,
+  resolveTreeHashAtCommit,
+} from "../utils/git-repo-cache.js";
 
 // ── Types ───────────────────────────────────────────────────────
 
@@ -33,13 +37,13 @@ export interface DownloadOptions {
   url: string;
   destination?: ProductType;
   global: boolean;
-  githubToken?: string;
   noop: boolean;
   verbose: boolean;
   gitRoot?: string | null;
   customDirs?: Partial<Record<ProductType, string>>;
   noProvenance?: boolean;
   fullHash?: boolean;
+  minAge?: number;
 }
 
 // ── Operation display ───────────────────────────────────────────
@@ -136,7 +140,10 @@ export async function determineOperation(filePath: string, newContent: string | 
 /**
  * Write a single downloaded file to disk
  */
-export async function writeDownloadedFile(filePath: string, file: DownloadedFile): Promise<void> {
+export async function writeDownloadedFile(
+  filePath: string,
+  file: { content: string | Buffer; relativePath: string },
+): Promise<void> {
   await ensureDirectory(dirname(filePath));
   if (Buffer.isBuffer(file.content)) {
     await fs.writeFile(filePath, file.content);
@@ -182,10 +189,52 @@ function resolveTargetDirForRepoSkill(skill: DiscoveredSkill, options: DownloadO
   return join(resolveDownloadBaseDir(options), skill.path);
 }
 
+async function resolveTargetRef(
+  owner: string,
+  repo: string,
+  requestedRef?: string,
+): Promise<{ repoDir: string; ref: string }> {
+  const cache = await ensureGitHubRepoCache(owner, repo);
+  const ref = requestedRef ?? (await resolveDefaultBranch(cache.dir));
+  return { repoDir: cache.dir, ref };
+}
+
+async function resolveDownloadedSkillFiles(
+  repoDir: string,
+  ref: string,
+  skillPath: string,
+  minAge?: number,
+): Promise<{ files: Awaited<ReturnType<typeof readSkillFilesAtCommit>>; treeHash: string; commitSha: string } | null> {
+  const commitSha = await resolveCommitForPath(repoDir, ref, skillPath, minAge);
+  if (!commitSha) {
+    return null;
+  }
+
+  const treeHash = await resolveTreeHashAtCommit(repoDir, commitSha, skillPath);
+  if (!treeHash) {
+    return null;
+  }
+
+  const files = await readSkillFilesAtCommit(repoDir, commitSha, skillPath);
+  if (!files.some((file) => file.relativePath === SKILL_CONSTANTS.SKILL_FILE_NAME)) {
+    return null;
+  }
+
+  return { files, treeHash, commitSha };
+}
+
+function printNoEligibleWarning(skillLabel: string, options: DownloadOptions): void {
+  const ageLabel = options.minAge === undefined ? "" : ` for min-age=${options.minAge}d`;
+  console.log(
+    `  ${picocolors.yellow("[!]")} ${skillLabel} - ${picocolors.yellow(`Skipped: no eligible version found${ageLabel}`)}`,
+  );
+}
+
 /**
  * Download all skills found in a repository.
  */
 async function downloadMultipleSkills(
+  repoDir: string,
   repoUrl: ParsedRepoUrl & { ref: string },
   skills: DiscoveredSkill[],
   options: DownloadOptions,
@@ -204,12 +253,17 @@ async function downloadMultipleSkills(
 
   for (const skill of skills) {
     try {
-      // Use raw.githubusercontent.com to avoid API rate limits
-      const files = await fetchSkillFromTree(repoUrl.owner, repoUrl.repo, ref, skill);
+      const resolved = await resolveDownloadedSkillFiles(repoDir, ref, skill.path, options.minAge);
+      if (!resolved) {
+        printNoEligibleWarning(skill.path, options);
+        continue;
+      }
+
+      const files = resolved.files;
       const targetDir = resolveTargetDirForRepoSkill(skill, options);
 
       if (!options.noProvenance) {
-        const fromValue = formatFromValue(ownerRepo, skill.treeHash, options.fullHash);
+        const fromValue = formatFromValue(ownerRepo, resolved.treeHash, options.fullHash);
         for (const file of files) {
           if (file.relativePath === SKILL_CONSTANTS.SKILL_FILE_NAME && typeof file.content === "string") {
             file.content = injectFromUrl(file.content, fromValue);
@@ -307,20 +361,14 @@ export async function downloadSkill(options: DownloadOptions): Promise<void> {
   // 1. Check for repo-level URL first
   const repoUrl = tryParseRepoUrl(options.url);
   if (repoUrl) {
-    const ref = repoUrl.ref ?? (await fetchDefaultBranch(repoUrl.owner, repoUrl.repo, options.githubToken));
+    const { repoDir, ref } = await resolveTargetRef(repoUrl.owner, repoUrl.repo, repoUrl.ref);
     const resolvedRepoUrl = { ...repoUrl, ref };
 
     if (options.verbose) {
       console.log(`DEBUG: Repository URL detected: ${repoUrl.owner}/${repoUrl.repo} ref=${ref}`);
     }
 
-    const { skills, truncated } = await scanRepositoryForSkills(repoUrl.owner, repoUrl.repo, ref, options.githubToken);
-
-    if (truncated) {
-      console.log(
-        picocolors.yellow("Warning: Repository tree was truncated by GitHub API. Some skills may not be found."),
-      );
-    }
+    const skills = await listSkillsAtRef(repoDir, ref);
 
     if (skills.length === 0) {
       throw new Error(
@@ -332,7 +380,7 @@ export async function downloadSkill(options: DownloadOptions): Promise<void> {
       console.log(`DEBUG: Found ${skills.length} skills: ${skills.map((s) => s.path).join(", ")}`);
     }
 
-    await downloadMultipleSkills(resolvedRepoUrl, skills, options);
+    await downloadMultipleSkills(repoDir, resolvedRepoUrl, skills, options);
     return;
   }
 
@@ -350,11 +398,24 @@ export async function downloadSkill(options: DownloadOptions): Promise<void> {
     `\nDownloading skill from ${picocolors.cyan(`github.com/${parsed.owner}/${parsed.repo}`)}... ${picocolors.dim(modeLabel)}${dryRunLabel}`,
   );
 
-  // 3. Fetch files from GitHub
-  const { files, treeHash } = await fetchSkillDirectory(parsed, options.githubToken);
+  const { repoDir, ref } = await resolveTargetRef(parsed.owner, parsed.repo, parsed.ref);
+  const skill = await getSkillAtPath(repoDir, ref, parsed.path);
+  if (!skill) {
+    throw new Error(
+      `SKILL.md not found in ${parsed.path}. Make sure the URL points to a valid skill directory containing SKILL.md.`,
+    );
+  }
+
+  const resolved = await resolveDownloadedSkillFiles(repoDir, ref, parsed.path, options.minAge);
+  if (!resolved) {
+    printNoEligibleWarning(parsed.path, options);
+    return;
+  }
+
+  const { files, treeHash } = resolved;
 
   if (options.verbose) {
-    console.log(`DEBUG: Fetched ${files.length} files`);
+    console.log(`DEBUG: Fetched ${files.length} files from ${resolved.commitSha}`);
   }
 
   // 4. Determine target directory

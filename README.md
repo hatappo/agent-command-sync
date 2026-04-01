@@ -74,7 +74,7 @@ sk sync gemini claude -n
 ## Features
 
 - **Add from GitHub** — Fetch skills directly from GitHub repositories with `sk add`
-- **Update from Upstream** — Check and apply upstream changes to downloaded skills with `sk update`
+- **Update from Upstream** — Check and apply upstream changes to downloaded skills with `sk update`, optionally pinning to the newest version at least N days old via `--min-age`
 - **List Skills** — List all skills across agents with `sk list`
 - **Skill Info** — View skill metadata and source links with `sk info`
 - **Provenance Tracking** — `add` / `download` record the source in `_from` (as `owner/repo@shortHash`, 7-char SHA by default; use `--full-hash` for full 40-char SHA). For skills, `sync` preserves `_from` only when the source skill already has it; commands may still record source provenance. Disable writing or copying with `--no-provenance`
@@ -88,6 +88,10 @@ sk sync gemini claude -n
 ### What does `_from` mean, and when should I use `--no-provenance`?
 
 `_from` records where a skill came from (typically `owner/repo@shortHash`) so you can trace local copies if an upstream public skill is later found to be compromised. `add` / `download` generate it from the upstream repository, while skill `sync` only copies an existing `_from` from the source skill. Command sync remains separate and may still record source provenance. Use **`--no-provenance`** when you do not want that metadata written or copied into frontmatter—for example, internal mirrors or policies that discourage embedding repository references.
+
+### What does `--min-age` do?
+
+`--min-age <days>` selects the newest version whose **committer timestamp** is at least that many days old. `sk add`, `sk download`, and `sk update` all use the same Git-history-based resolution. That means `sk update --min-age 14` may intentionally **re-pin** a local skill from today's HEAD back to an older stable version if the latest commit is still too new.
 
 ### Why does `sk` write under my repo instead of `~/.claude`?
 
@@ -112,20 +116,24 @@ Yes. The [Agent Skills](https://agentskills.io/) standard is shared across tools
 ```bash
 sk add https://github.com/anthropics/skills/tree/main/skills/skill-creator
 sk add <url> gemini                       # Place in Gemini skill directory
+sk add <url> --min-age 14                # Use the newest version at least 14 days old
 sk add <url> -g                           # Keep the original agent path, but under your home directory
 sk add <url> claude -g                    # Place in global Claude directory
 sk add <url> -n                           # Preview without downloading
 ```
 
-#### GitHub Authentication
+`add` / `download` resolve content through a local bare Git cache (`git clone --bare --filter=blob:none`), so tree selection and `_from` hashes come from Git history even when `--min-age` is not set.
 
-For private repositories, set a [personal access token](https://github.com/settings/tokens?type=beta):
+#### Git Authentication
+
+For private repositories, make sure your local `git` can authenticate to GitHub. Examples:
 
 ```bash
-export GITHUB_TOKEN=ghp_...
+gh auth setup-git
+# or configure your SSH key / credential helper
 ```
 
-**Token permissions**: Public repositories require no permissions. For private repositories, grant **Contents: Read** access to the target repository.
+If `git clone` / `git fetch` already works for the repository, `sk add` and `sk update` will use the same credentials.
 
 ### `sk update [skill-path]` — Update downloaded skills from upstream
 
@@ -133,9 +141,17 @@ export GITHUB_TOKEN=ghp_...
 sk update                                 # Check and update all agent skills
 sk update .claude/skills/my-skill         # Update a specific skill
 sk update skills/                         # Update all skills under a path
+sk update --min-age 7                     # Use the newest version at least 7 days old
 sk update -g                              # Target user-level directories instead
 sk update -n                              # Check for updates without applying
 ```
+
+With `--min-age`, update results can be:
+
+- `Updated`: moved to a newer eligible tree
+- `Re-pinned`: moved from a too-new HEAD tree back to an older eligible tree
+- `Already eligible`: local `_from` already points at the selected eligible tree
+- `Skipped: no eligible version found`: no commit for that skill is old enough yet
 
 ### `sk list` (alias: `sk ls`) — List skills across all agents
 

@@ -6,7 +6,14 @@ import { AGENT_REGISTRY } from "../agents/registry.js";
 import { PRODUCT_TYPES, type ProductType } from "../types/intermediate.js";
 import { SKILL_CONSTANTS } from "../utils/constants.js";
 import { type DirResolutionContext, fileExists, findAgentSkills, readFile } from "../utils/file-utils.js";
-import { fetchDefaultBranch, fetchSkillFromTree, scanRepositoryForSkills } from "../utils/github-utils.js";
+import {
+  ensureGitHubRepoCache,
+  listSkillsAtRef,
+  readSkillFilesAtCommit,
+  resolveCommitForPath,
+  resolveDefaultBranch,
+  resolveTreeHashAtCommit,
+} from "../utils/git-repo-cache.js";
 import { formatFromValue, injectFromUrl, writeDownloadedFile } from "./download.js";
 
 // ── Types ───────────────────────────────────────────────────────
@@ -19,6 +26,7 @@ export interface UpdateOptions {
   gitRoot?: string | null;
   customDirs?: Partial<Record<ProductType, string>>;
   fullHash?: boolean;
+  minAge?: number;
 }
 
 export interface LocalSkillInfo {
@@ -200,8 +208,7 @@ export async function updateSkills(options: UpdateOptions): Promise<void> {
   }
 
   // 3. Process each repo
-  const token = process.env.GITHUB_TOKEN;
-  const stats = { updated: 0, upToDate: 0, notFound: 0, error: 0 };
+  const stats = { updated: 0, repinned: 0, upToDate: 0, noEligible: 0, notFound: 0, error: 0 };
 
   for (const [ownerRepo, skills] of byRepo) {
     const [owner, repo] = ownerRepo.split("/");
@@ -209,17 +216,14 @@ export async function updateSkills(options: UpdateOptions): Promise<void> {
     console.log(`\n  ${picocolors.cyan(ownerRepo)}:`);
 
     try {
-      const defaultBranch = await fetchDefaultBranch(owner, repo, token);
+      const cache = await ensureGitHubRepoCache(owner, repo);
+      const defaultBranch = await resolveDefaultBranch(cache.dir);
 
       if (options.verbose) {
         console.log(`  DEBUG: Default branch: ${defaultBranch}`);
       }
 
-      const { skills: remoteSkills, truncated } = await scanRepositoryForSkills(owner, repo, defaultBranch, token);
-
-      if (truncated) {
-        console.log(picocolors.yellow("    Warning: Repository tree was truncated. Some skills may not be found."));
-      }
+      const remoteSkills = await listSkillsAtRef(cache.dir, defaultBranch);
 
       if (options.verbose) {
         console.log(
@@ -228,10 +232,10 @@ export async function updateSkills(options: UpdateOptions): Promise<void> {
       }
 
       for (const local of skills) {
-        const remote = remoteSkills.find((s) => s.name === local.skillName);
         const displayPath = getDisplayPath(local, options);
+        const matches = remoteSkills.filter((s) => s.name === local.skillName);
 
-        if (!remote) {
+        if (matches.length === 0) {
           console.log(
             `    ${picocolors.gray("[?]")} ${local.skillName} ${picocolors.dim(`(${displayPath})`)} - ${picocolors.gray("Not found in remote")}`,
           );
@@ -239,31 +243,64 @@ export async function updateSkills(options: UpdateOptions): Promise<void> {
           continue;
         }
 
-        // Compare tree hashes
-        const remoteHash = remote.treeHash ?? "";
-        if (local.localTreeHash !== "" && hashesMatch(local.localTreeHash, remoteHash)) {
+        if (matches.length > 1) {
           console.log(
-            `    ${picocolors.blue("[=]")} ${local.skillName} ${picocolors.dim(`(${displayPath})`)} - ${picocolors.blue("No upstream changes")}`,
+            `    ${picocolors.yellow("[!]")} ${local.skillName} ${picocolors.dim(`(${displayPath})`)} - ${picocolors.yellow("Skipped: multiple remote skills share this name")}`,
+          );
+          stats.error++;
+          continue;
+        }
+
+        const remote = matches[0];
+        const headTreeHash = remote.treeHash ?? "";
+        const eligibleCommit = await resolveCommitForPath(cache.dir, defaultBranch, remote.path, options.minAge);
+
+        if (!eligibleCommit) {
+          console.log(
+            `    ${picocolors.yellow("[!]")} ${local.skillName} ${picocolors.dim(`(${displayPath})`)} - ${picocolors.yellow("Skipped: no eligible version found")}`,
+          );
+          stats.noEligible++;
+          continue;
+        }
+
+        const eligibleTreeHash = await resolveTreeHashAtCommit(cache.dir, eligibleCommit, remote.path);
+        if (!eligibleTreeHash) {
+          console.log(
+            `    ${picocolors.red("[!]")} ${local.skillName} ${picocolors.dim(`(${displayPath})`)} - ${picocolors.red("Error: failed to resolve eligible tree hash")}`,
+          );
+          stats.error++;
+          continue;
+        }
+
+        if (local.localTreeHash !== "" && hashesMatch(local.localTreeHash, eligibleTreeHash)) {
+          console.log(
+            `    ${picocolors.blue("[=]")} ${local.skillName} ${picocolors.dim(`(${displayPath})`)} - ${picocolors.blue("Already eligible")}`,
           );
           stats.upToDate++;
           continue;
         }
 
-        // Need update
+        const repinned =
+          headTreeHash !== "" &&
+          hashesMatch(local.localTreeHash, headTreeHash) &&
+          !hashesMatch(eligibleTreeHash, headTreeHash);
+
         if (options.noop) {
           console.log(
-            `    ${picocolors.yellow("[M]")} ${local.skillName} ${picocolors.dim(`(${displayPath})`)} - ${picocolors.yellow("Update available")}`,
+            `    ${picocolors.yellow("[M]")} ${local.skillName} ${picocolors.dim(`(${displayPath})`)} - ${picocolors.yellow(repinned ? "Would re-pin" : "Update available")}`,
           );
-          stats.updated++;
+          if (repinned) {
+            stats.repinned++;
+          } else {
+            stats.updated++;
+          }
           continue;
         }
 
-        // Download and update
         try {
-          const files = await fetchSkillFromTree(owner, repo, defaultBranch, remote);
+          const files = await readSkillFilesAtCommit(cache.dir, eligibleCommit, remote.path);
 
-          // Inject updated _from with new tree hash
-          const fromValue = formatFromValue(ownerRepo, remote.treeHash, options.fullHash);
+          const fromValue = formatFromValue(ownerRepo, eligibleTreeHash, options.fullHash);
           for (const file of files) {
             if (file.relativePath === SKILL_CONSTANTS.SKILL_FILE_NAME && typeof file.content === "string") {
               file.content = injectFromUrl(file.content, fromValue);
@@ -277,9 +314,13 @@ export async function updateSkills(options: UpdateOptions): Promise<void> {
           }
 
           console.log(
-            `    ${picocolors.yellow("[M]")} ${local.skillName} ${picocolors.dim(`(${displayPath})`)} - ${picocolors.yellow("Updated")}`,
+            `    ${picocolors.yellow("[M]")} ${local.skillName} ${picocolors.dim(`(${displayPath})`)} - ${picocolors.yellow(repinned ? "Re-pinned" : "Updated")}`,
           );
-          stats.updated++;
+          if (repinned) {
+            stats.repinned++;
+          } else {
+            stats.updated++;
+          }
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           console.log(
@@ -301,7 +342,10 @@ export async function updateSkills(options: UpdateOptions): Promise<void> {
   if (options.noop) {
     if (stats.updated > 0)
       parts.push(picocolors.yellow(`${stats.updated} update${stats.updated !== 1 ? "s" : ""} available`));
-    if (stats.upToDate > 0) parts.push(picocolors.blue(`${stats.upToDate} unchanged`));
+    if (stats.repinned > 0)
+      parts.push(picocolors.yellow(`${stats.repinned} re-pin${stats.repinned !== 1 ? "s" : ""} available`));
+    if (stats.upToDate > 0) parts.push(picocolors.blue(`${stats.upToDate} already eligible`));
+    if (stats.noEligible > 0) parts.push(picocolors.yellow(`${stats.noEligible} with no eligible version`));
     if (stats.notFound > 0) parts.push(picocolors.gray(`${stats.notFound} not found`));
     if (stats.error > 0) parts.push(picocolors.red(`${stats.error} error${stats.error !== 1 ? "s" : ""}`));
     if (parts.length > 0) console.log(`${parts.join(", ")}.`);
@@ -309,7 +353,10 @@ export async function updateSkills(options: UpdateOptions): Promise<void> {
   } else {
     if (stats.updated > 0)
       parts.push(picocolors.yellow(`${stats.updated} skill${stats.updated !== 1 ? "s" : ""} updated`));
-    if (stats.upToDate > 0) parts.push(picocolors.blue(`${stats.upToDate} unchanged`));
+    if (stats.repinned > 0)
+      parts.push(picocolors.yellow(`${stats.repinned} skill${stats.repinned !== 1 ? "s" : ""} re-pinned`));
+    if (stats.upToDate > 0) parts.push(picocolors.blue(`${stats.upToDate} already eligible`));
+    if (stats.noEligible > 0) parts.push(picocolors.yellow(`${stats.noEligible} with no eligible version`));
     if (stats.notFound > 0) parts.push(picocolors.gray(`${stats.notFound} not found`));
     if (stats.error > 0) parts.push(picocolors.red(`${stats.error} error${stats.error !== 1 ? "s" : ""}`));
     if (parts.length > 0) console.log(`Done! ${parts.join(", ")}.`);

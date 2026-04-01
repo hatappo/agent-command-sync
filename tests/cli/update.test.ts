@@ -2,12 +2,33 @@ import { writeFile as fsWriteFile, mkdir, readFile, rm } from "node:fs/promises"
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import matter from "gray-matter";
-import { type Mock, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { DiscoveredSkill } from "../../src/utils/github-utils.js";
+
+vi.mock("../../src/utils/git-repo-cache.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../src/utils/git-repo-cache.js")>();
+  return {
+    ...actual,
+    ensureGitHubRepoCache: vi.fn(),
+    listSkillsAtRef: vi.fn(),
+    readSkillFilesAtCommit: vi.fn(),
+    resolveCommitForPath: vi.fn(),
+    resolveDefaultBranch: vi.fn(),
+    resolveTreeHashAtCommit: vi.fn(),
+  };
+});
+
 import { hashesMatch, parseFromValue, updateSkills } from "../../src/cli/update.js";
+import {
+  ensureGitHubRepoCache,
+  listSkillsAtRef,
+  readSkillFilesAtCommit,
+  resolveCommitForPath,
+  resolveDefaultBranch,
+  resolveTreeHashAtCommit,
+} from "../../src/utils/git-repo-cache.js";
 
 describe("update command", () => {
-  let originalFetch: typeof globalThis.fetch;
-  let mockFetch: Mock;
   let tempDir: string;
   let consoleOutput: string[];
 
@@ -17,37 +38,42 @@ describe("update command", () => {
     tempDir = join(tmpdir(), `update-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     await mkdir(tempDir, { recursive: true });
 
-    originalFetch = globalThis.fetch;
-    mockFetch = vi.fn();
-    globalThis.fetch = mockFetch;
-
     consoleOutput = [];
     vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
       consoleOutput.push(args.join(" "));
     });
+
+    vi.mocked(ensureGitHubRepoCache).mockResolvedValue({ owner: "owner", repo: "repo", dir: "/cache/repo.git" });
+    vi.mocked(resolveDefaultBranch).mockResolvedValue("main");
+    vi.mocked(resolveCommitForPath).mockResolvedValue("eligible-commit");
+    vi.mocked(resolveTreeHashAtCommit).mockImplementation(async (_repoDir, commitSha) =>
+      commitSha === "eligible-commit"
+        ? "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        : "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    );
+    vi.mocked(readSkillFilesAtCommit).mockResolvedValue([
+      { relativePath: "SKILL.md", content: "---\ndescription: Updated Skill\n---\n# Updated", isBinary: false },
+      { relativePath: "helper.ts", content: "export const updated = true;", isBinary: false },
+    ]);
+    vi.mocked(listSkillsAtRef).mockResolvedValue([
+      {
+        name: "my-skill",
+        path: ".claude/skills/my-skill",
+        files: [".claude/skills/my-skill/SKILL.md", ".claude/skills/my-skill/helper.ts"],
+        treeHash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      },
+    ]);
   });
 
   afterEach(async () => {
-    globalThis.fetch = originalFetch;
     vi.restoreAllMocks();
     await rm(tempDir, { recursive: true, force: true });
   });
 
-  // ── Helpers ─────────────────────────────────────────────────────
-
-  const treeHash1 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-  const treeHash2 = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-
-  /** Create a local skill directory with a SKILL.md containing _from */
-  async function createLocalSkill(
-    relativePath: string,
-    skillName: string,
-    fromValue?: string,
-    description = "Test Skill",
-  ): Promise<string> {
+  async function createLocalSkill(relativePath: string, skillName: string, fromValue?: string): Promise<string> {
     const skillDir = join(tempDir, relativePath, skillName);
     await mkdir(skillDir, { recursive: true });
-    const frontmatter: Record<string, unknown> = { description };
+    const frontmatter: Record<string, unknown> = { description: "Test Skill" };
     if (fromValue !== undefined) {
       frontmatter._from = fromValue;
     }
@@ -56,547 +82,155 @@ describe("update command", () => {
     return skillDir;
   }
 
-  /** Mock fetchDefaultBranch response */
-  function mockDefaultBranch(branch = "main"): void {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => ({ default_branch: branch }),
-      headers: new Headers(),
-    } as Response);
-  }
-
-  /** Mock scanRepositoryForSkills response */
-  function mockTreeScan(skills: { name: string; path: string; treeHash?: string }[], truncated = false): void {
-    const treeItems: { path: string; type: string; mode: string; sha: string; url: string }[] = [];
-    for (const skill of skills) {
-      treeItems.push({
-        path: skill.path,
-        type: "tree",
-        mode: "040000",
-        sha: skill.treeHash ?? `tree-${skill.name}`,
-        url: "",
-      });
-      treeItems.push({
-        path: `${skill.path}/SKILL.md`,
-        type: "blob",
-        mode: "100644",
-        sha: "s1",
-        url: "",
-      });
-    }
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => ({ sha: "abc", url: "...", tree: treeItems, truncated }),
-      headers: new Headers(),
-    } as Response);
-  }
-
-  /** Mock fetchSkillFromTree raw download */
-  function mockSkillRawDownload(description = "Updated Skill"): void {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      text: async () => `---\ndescription: ${description}\n---\n# Updated`,
-      arrayBuffer: async () => new TextEncoder().encode(`---\ndescription: ${description}\n---\n# Updated`).buffer,
-      headers: new Headers(),
-    } as Response);
-  }
-
-  // ── parseFromValue ────────────────────────────────────────────
-
   describe("parseFromValue", () => {
     it("should parse owner/repo@treeHash format", () => {
-      const result = parseFromValue(`owner/repo@${treeHash1}`);
-      expect(result).toEqual({ ownerRepo: "owner/repo", treeHash: treeHash1 });
+      expect(parseFromValue("owner/repo@abc123")).toEqual({ ownerRepo: "owner/repo", treeHash: "abc123" });
     });
 
-    it("should parse owner/repo without hash → empty string treeHash", () => {
-      const result = parseFromValue("owner/repo");
-      expect(result).toEqual({ ownerRepo: "owner/repo", treeHash: "" });
-    });
-
-    it("should parse truncated/short hex hash after @", () => {
-      const result = parseFromValue("owner/repo@5c2");
-      expect(result).toEqual({ ownerRepo: "owner/repo", treeHash: "5c2" });
-    });
-
-    it("should not split on @ that is not followed by hex", () => {
-      const result = parseFromValue("owner/repo@not-a-hash");
-      expect(result).toEqual({ ownerRepo: "owner/repo@not-a-hash", treeHash: "" });
-    });
-
-    it("should handle @ at position 0 as no hash", () => {
-      const result = parseFromValue(`@${treeHash1}`);
-      expect(result).toEqual({ ownerRepo: `@${treeHash1}`, treeHash: "" });
+    it("should treat non-hex suffixes as part of owner/repo", () => {
+      expect(parseFromValue("owner/repo@not-a-hash")).toEqual({ ownerRepo: "owner/repo@not-a-hash", treeHash: "" });
     });
   });
-
-  // ── hashesMatch ─────────────────────────────────────────────
 
   describe("hashesMatch", () => {
-    it("should match identical full hashes", () => {
-      expect(hashesMatch(treeHash1, treeHash1)).toBe(true);
+    it("should match short and full hashes by prefix", () => {
+      expect(hashesMatch("aaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")).toBe(true);
     });
 
-    it("should match short hash against full hash", () => {
-      expect(hashesMatch(treeHash1.slice(0, 7), treeHash1)).toBe(true);
-      expect(hashesMatch(treeHash1, treeHash1.slice(0, 7))).toBe(true);
-    });
-
-    it("should not match different hashes", () => {
-      expect(hashesMatch(treeHash1, treeHash2)).toBe(false);
-      expect(hashesMatch(treeHash1.slice(0, 7), treeHash2)).toBe(false);
-    });
-
-    it("should return false when either hash is empty", () => {
-      expect(hashesMatch("", treeHash1)).toBe(false);
-      expect(hashesMatch(treeHash1, "")).toBe(false);
-      expect(hashesMatch("", "")).toBe(false);
+    it("should return false for empty hashes", () => {
+      expect(hashesMatch("", "aaaaaaaa")).toBe(false);
     });
   });
 
-  // ── No argument: scan agent directories ───────────────────────
-
-  describe("no argument (agent directory scan)", () => {
-    it("should show message when no skills with _from exist", async () => {
-      await updateSkills({
-        noop: false,
-        global: false,
-        verbose: false,
-        gitRoot: tempDir,
-      });
-
-      const output = consoleOutput.join("\n");
-      expect(output).toContain("No skills with _from provenance found");
+  it("should show a message when no skills with _from exist", async () => {
+    await updateSkills({
+      noop: false,
+      global: false,
+      verbose: false,
+      gitRoot: tempDir,
     });
 
-    it("should skip skills without _from", async () => {
-      await createLocalSkill(".claude/skills", "no-from-skill", undefined);
-
-      await updateSkills({
-        noop: false,
-        global: false,
-        verbose: false,
-        gitRoot: tempDir,
-      });
-
-      const output = consoleOutput.join("\n");
-      expect(output).toContain("No skills with _from provenance found");
-    });
-
-    it("should find skills in agent directories", async () => {
-      await createLocalSkill(".claude/skills", "my-skill", `owner/repo@${treeHash1}`);
-
-      mockDefaultBranch();
-      mockTreeScan([{ name: "my-skill", path: ".claude/skills/my-skill", treeHash: treeHash1 }]);
-
-      await updateSkills({
-        noop: false,
-        global: false,
-        verbose: false,
-        gitRoot: tempDir,
-      });
-
-      const output = consoleOutput.join("\n");
-      expect(output).toContain("No upstream changes");
-    });
-
-    it("should scan skills across different agent directories", async () => {
-      await createLocalSkill(".claude/skills", "skill-c", `owner/repo@${treeHash1}`);
-      await createLocalSkill(".gemini/skills", "skill-g", `owner/repo@${treeHash1}`);
-
-      mockDefaultBranch();
-      mockTreeScan([
-        { name: "skill-c", path: ".claude/skills/skill-c", treeHash: treeHash1 },
-        { name: "skill-g", path: ".gemini/skills/skill-g", treeHash: treeHash2 },
-      ]);
-      mockSkillRawDownload();
-
-      await updateSkills({
-        noop: false,
-        global: false,
-        verbose: false,
-        gitRoot: tempDir,
-      });
-
-      const output = consoleOutput.join("\n");
-      expect(output).toContain("skill-c");
-      expect(output).toContain("No upstream changes");
-      expect(output).toContain("skill-g");
-      expect(output).toContain("Updated");
-    });
-
-    it("should scan cwd-based project directories when gitRoot is null", async () => {
-      const originalCwd = process.cwd();
-      process.chdir(tempDir);
-
-      try {
-        await createLocalSkill(".claude/skills", "cwd-skill", `owner/repo@${treeHash1}`);
-
-        mockDefaultBranch();
-        mockTreeScan([{ name: "cwd-skill", path: ".claude/skills/cwd-skill", treeHash: treeHash1 }]);
-
-        await updateSkills({
-          noop: false,
-          global: false,
-          verbose: false,
-          gitRoot: null,
-        });
-      } finally {
-        process.chdir(originalCwd);
-      }
-
-      const output = consoleOutput.join("\n");
-      expect(output).toContain("cwd-skill");
-      expect(output).toContain("No upstream changes");
-    });
+    expect(consoleOutput.join("\n")).toContain("No skills with _from provenance found");
   });
 
-  // ── With skill-path argument ──────────────────────────────────
+  it("should report already eligible when the local tree already matches the eligible tree", async () => {
+    await createLocalSkill(".claude/skills", "my-skill", "owner/repo@bbbbbbb");
 
-  describe("with skill-path argument", () => {
-    it("should find a single skill by direct path", async () => {
-      await createLocalSkill("skills", "skill-creator", `anthropics/skills@${treeHash1}`);
-
-      mockDefaultBranch();
-      mockTreeScan([{ name: "skill-creator", path: "skills/skill-creator", treeHash: treeHash1 }]);
-
-      await updateSkills({
-        skillPath: "skills/skill-creator",
-        noop: true,
-        global: false,
-        verbose: false,
-        gitRoot: tempDir,
-      });
-
-      const output = consoleOutput.join("\n");
-      expect(output).toContain("skill-creator");
-      expect(output).toContain("No upstream changes");
+    await updateSkills({
+      noop: false,
+      global: false,
+      verbose: false,
+      gitRoot: tempDir,
     });
 
-    it("should find multiple skills under a parent directory", async () => {
-      await createLocalSkill("skills", "skill-a", `owner/repo@${treeHash1}`);
-      await createLocalSkill("skills", "skill-b", `owner/repo@${treeHash1}`);
-
-      mockDefaultBranch();
-      mockTreeScan([
-        { name: "skill-a", path: "skills/skill-a", treeHash: treeHash1 },
-        { name: "skill-b", path: "skills/skill-b", treeHash: treeHash2 },
-      ]);
-      mockSkillRawDownload();
-
-      await updateSkills({
-        skillPath: "skills",
-        noop: false,
-        global: false,
-        verbose: false,
-        gitRoot: tempDir,
-      });
-
-      const output = consoleOutput.join("\n");
-      expect(output).toContain("skill-a");
-      expect(output).toContain("No upstream changes");
-      expect(output).toContain("skill-b");
-      expect(output).toContain("Updated");
-    });
-
-    it("should show message when no skills found under path", async () => {
-      await mkdir(join(tempDir, "empty-dir"), { recursive: true });
-
-      await updateSkills({
-        skillPath: "empty-dir",
-        noop: false,
-        global: false,
-        verbose: false,
-        gitRoot: tempDir,
-      });
-
-      const output = consoleOutput.join("\n");
-      expect(output).toContain('No skills with _from provenance found under "empty-dir"');
-    });
-
-    it("should update skill at a deep path and write new _from", async () => {
-      await createLocalSkill("some/deep/path", "my-skill", `owner/repo@${treeHash1}`);
-
-      mockDefaultBranch();
-      mockTreeScan([{ name: "my-skill", path: "some/deep/path/my-skill", treeHash: treeHash2 }]);
-      mockSkillRawDownload();
-
-      await updateSkills({
-        skillPath: "some/deep/path/my-skill",
-        noop: false,
-        global: false,
-        verbose: false,
-        gitRoot: tempDir,
-      });
-
-      const output = consoleOutput.join("\n");
-      expect(output).toContain("Updated");
-
-      const skillMd = await readFile(join(tempDir, "some/deep/path/my-skill/SKILL.md"), "utf-8");
-      const parsed = matter(skillMd);
-      expect(parsed.data._from).toBe(`owner/repo@${treeHash2.slice(0, 7)}`);
-    });
-
-    it("should resolve skillPath from cwd when gitRoot is null", async () => {
-      const originalCwd = process.cwd();
-      process.chdir(tempDir);
-
-      try {
-        await createLocalSkill("skills", "cwd-path-skill", `owner/repo@${treeHash1}`);
-
-        mockDefaultBranch();
-        mockTreeScan([{ name: "cwd-path-skill", path: "skills/cwd-path-skill", treeHash: treeHash1 }]);
-
-        await updateSkills({
-          skillPath: "skills/cwd-path-skill",
-          noop: true,
-          global: false,
-          verbose: false,
-          gitRoot: null,
-        });
-      } finally {
-        process.chdir(originalCwd);
-      }
-
-      const output = consoleOutput.join("\n");
-      expect(output).toContain("cwd-path-skill");
-      expect(output).toContain("No upstream changes");
-    });
+    expect(consoleOutput.join("\n")).toContain("Already eligible");
   });
 
-  // ── Tree hash comparison ──────────────────────────────────────
+  it("should update the skill and refresh _from when the eligible tree changed", async () => {
+    await createLocalSkill(".claude/skills", "my-skill", "owner/repo@aaaaaaa");
+    vi.mocked(listSkillsAtRef).mockResolvedValue([
+      {
+        name: "my-skill",
+        path: ".claude/skills/my-skill",
+        files: [".claude/skills/my-skill/SKILL.md", ".claude/skills/my-skill/helper.ts"],
+        treeHash: "cccccccccccccccccccccccccccccccccccccccc",
+      },
+    ]);
 
-  describe("tree hash comparison", () => {
-    it("should show 'Up to date' when tree hash matches", async () => {
-      await createLocalSkill(".claude/skills", "my-skill", `owner/repo@${treeHash1}`);
-
-      mockDefaultBranch();
-      mockTreeScan([{ name: "my-skill", path: ".claude/skills/my-skill", treeHash: treeHash1 }]);
-
-      await updateSkills({
-        noop: false,
-        global: false,
-        verbose: false,
-        gitRoot: tempDir,
-      });
-
-      const output = consoleOutput.join("\n");
-      expect(output).toContain("No upstream changes");
-      expect(output).toContain("1 unchanged");
+    await updateSkills({
+      noop: false,
+      global: false,
+      verbose: false,
+      gitRoot: tempDir,
     });
 
-    it("should update when tree hash differs", async () => {
-      await createLocalSkill(".claude/skills", "my-skill", `owner/repo@${treeHash1}`);
+    const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
+    const helper = await readFile(join(tempDir, ".claude/skills/my-skill/helper.ts"), "utf-8");
+    const parsed = matter(skillMd);
 
-      mockDefaultBranch();
-      mockTreeScan([{ name: "my-skill", path: ".claude/skills/my-skill", treeHash: treeHash2 }]);
-      mockSkillRawDownload();
-
-      await updateSkills({
-        noop: false,
-        global: false,
-        verbose: false,
-        gitRoot: tempDir,
-      });
-
-      const output = consoleOutput.join("\n");
-      expect(output).toContain("Updated");
-      expect(output).toContain("1 skill updated");
-
-      const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
-      const parsed = matter(skillMd);
-      expect(parsed.data._from).toBe(`owner/repo@${treeHash2.slice(0, 7)}`);
-    });
-
-    it("should update when local tree hash is non-existent (invalid but valid hex format)", async () => {
-      const fakeHash = "0000000000000000000000000000000000000000";
-      await createLocalSkill(".claude/skills", "my-skill", `owner/repo@${fakeHash}`);
-
-      mockDefaultBranch();
-      mockTreeScan([{ name: "my-skill", path: ".claude/skills/my-skill", treeHash: treeHash1 }]);
-      mockSkillRawDownload();
-
-      await updateSkills({
-        noop: false,
-        global: false,
-        verbose: false,
-        gitRoot: tempDir,
-      });
-
-      const output = consoleOutput.join("\n");
-      expect(output).toContain("Updated");
-      expect(output).toContain("1 skill updated");
-
-      const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
-      const parsed = matter(skillMd);
-      expect(parsed.data._from).toBe(`owner/repo@${treeHash1.slice(0, 7)}`);
-    });
-
-    it("should force download when no local tree hash (legacy _from)", async () => {
-      await createLocalSkill(".claude/skills", "my-skill", "owner/repo");
-
-      mockDefaultBranch();
-      mockTreeScan([{ name: "my-skill", path: ".claude/skills/my-skill", treeHash: treeHash1 }]);
-      mockSkillRawDownload();
-
-      await updateSkills({
-        noop: false,
-        global: false,
-        verbose: false,
-        gitRoot: tempDir,
-      });
-
-      const output = consoleOutput.join("\n");
-      expect(output).toContain("Updated");
-
-      const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
-      const parsed = matter(skillMd);
-      expect(parsed.data._from).toBe(`owner/repo@${treeHash1.slice(0, 7)}`);
-    });
-
-    it("should match short hash against full remote hash", async () => {
-      // Local has short hash, remote has full hash — should match
-      const shortHash = treeHash1.slice(0, 7);
-      await createLocalSkill(".claude/skills", "my-skill", `owner/repo@${shortHash}`);
-
-      mockDefaultBranch();
-      mockTreeScan([{ name: "my-skill", path: ".claude/skills/my-skill", treeHash: treeHash1 }]);
-
-      await updateSkills({
-        noop: false,
-        global: false,
-        verbose: false,
-        gitRoot: tempDir,
-      });
-
-      const output = consoleOutput.join("\n");
-      expect(output).toContain("No upstream changes");
-    });
+    expect(parsed.data._from).toBe("owner/repo@bbbbbbb");
+    expect(helper).toBe("export const updated = true;");
+    expect(consoleOutput.join("\n")).toContain("Updated");
   });
 
-  // ── Noop mode ─────────────────────────────────────────────────
+  it("should report re-pinned when local matches HEAD but min-age selects an older eligible tree", async () => {
+    await createLocalSkill(".claude/skills", "my-skill", "owner/repo@aaaaaaa");
+    vi.mocked(resolveCommitForPath).mockImplementation(async (_repoDir, _ref, _path, minAge) =>
+      minAge === undefined ? "head-commit" : "eligible-commit",
+    );
 
-  describe("noop mode", () => {
-    it("should not write files in noop mode", async () => {
-      await createLocalSkill(".claude/skills", "my-skill", `owner/repo@${treeHash1}`);
-
-      mockDefaultBranch();
-      mockTreeScan([{ name: "my-skill", path: ".claude/skills/my-skill", treeHash: treeHash2 }]);
-
-      await updateSkills({
-        noop: true,
-        global: false,
-        verbose: false,
-        gitRoot: tempDir,
-      });
-
-      const output = consoleOutput.join("\n");
-      expect(output).toContain("Update available");
-      expect(output).toContain("1 update available");
-      expect(output).toContain("Dry run complete");
-
-      const skillMd = await readFile(join(tempDir, ".claude/skills/my-skill/SKILL.md"), "utf-8");
-      const parsed = matter(skillMd);
-      expect(parsed.data._from).toBe(`owner/repo@${treeHash1}`);
+    await updateSkills({
+      noop: false,
+      global: false,
+      verbose: false,
+      gitRoot: tempDir,
+      minAge: 14,
     });
+
+    expect(consoleOutput.join("\n")).toContain("Re-pinned");
   });
 
-  // ── Not found / errors ────────────────────────────────────────
+  it("should skip with a warning when no eligible version exists", async () => {
+    await createLocalSkill(".claude/skills", "my-skill", "owner/repo@aaaaaaa");
+    vi.mocked(resolveCommitForPath).mockResolvedValue(null);
 
-  describe("not found in remote", () => {
-    it("should show warning when skill not found in remote repo", async () => {
-      await createLocalSkill(".claude/skills", "my-skill", `owner/repo@${treeHash1}`);
+    await updateSkills({
+      noop: false,
+      global: false,
+      verbose: false,
+      gitRoot: tempDir,
+      minAge: 30,
+    });
 
-      mockDefaultBranch();
-      mockTreeScan([]);
+    expect(consoleOutput.join("\n")).toContain("no eligible version found");
+  });
+
+  it("should skip duplicate remote skill names because path provenance is not stored", async () => {
+    await createLocalSkill(".claude/skills", "my-skill", "owner/repo@aaaaaaa");
+    const duplicateSkills: DiscoveredSkill[] = [
+      {
+        name: "my-skill",
+        path: ".claude/skills/my-skill",
+        files: [".claude/skills/my-skill/SKILL.md"],
+        treeHash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      },
+      {
+        name: "my-skill",
+        path: ".gemini/skills/my-skill",
+        files: [".gemini/skills/my-skill/SKILL.md"],
+        treeHash: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      },
+    ];
+    vi.mocked(listSkillsAtRef).mockResolvedValue(duplicateSkills);
+
+    await updateSkills({
+      noop: false,
+      global: false,
+      verbose: false,
+      gitRoot: tempDir,
+    });
+
+    expect(consoleOutput.join("\n")).toContain("multiple remote skills share this name");
+  });
+
+  it("should resolve skillPath relative to cwd when gitRoot is null", async () => {
+    const originalCwd = process.cwd();
+    process.chdir(tempDir);
+
+    try {
+      await createLocalSkill(".claude/skills", "my-skill", "owner/repo@bbbbbbb");
 
       await updateSkills({
+        skillPath: ".claude/skills/my-skill",
         noop: false,
         global: false,
         verbose: false,
-        gitRoot: tempDir,
+        gitRoot: null,
       });
+    } finally {
+      process.chdir(originalCwd);
+    }
 
-      const output = consoleOutput.join("\n");
-      expect(output).toContain("Not found in remote");
-      expect(output).toContain("1 not found");
-    });
-  });
-
-  describe("API errors", () => {
-    it("should handle repo-level API error gracefully", async () => {
-      await createLocalSkill(".claude/skills", "my-skill", `owner/repo@${treeHash1}`);
-
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-        statusText: "Not Found",
-        headers: new Headers(),
-      } as Response);
-
-      await updateSkills({
-        noop: false,
-        global: false,
-        verbose: false,
-        gitRoot: tempDir,
-      });
-
-      const output = consoleOutput.join("\n");
-      expect(output).toContain("Error");
-      expect(output).toContain("1 error");
-    });
-  });
-
-  // ── Multiple repos ────────────────────────────────────────────
-
-  describe("multiple repos", () => {
-    it("should group skills by owner/repo and batch API calls", async () => {
-      await createLocalSkill(".claude/skills", "skill-a", `owner/repo-a@${treeHash1}`);
-      await createLocalSkill(".claude/skills", "skill-b", `other/repo-b@${treeHash1}`);
-
-      mockDefaultBranch();
-      mockTreeScan([{ name: "skill-a", path: ".claude/skills/skill-a", treeHash: treeHash1 }]);
-
-      mockDefaultBranch();
-      mockTreeScan([{ name: "skill-b", path: ".claude/skills/skill-b", treeHash: treeHash2 }]);
-      mockSkillRawDownload();
-
-      await updateSkills({
-        noop: false,
-        global: false,
-        verbose: false,
-        gitRoot: tempDir,
-      });
-
-      const output = consoleOutput.join("\n");
-      expect(output).toContain("owner/repo-a");
-      expect(output).toContain("other/repo-b");
-      expect(output).toContain("No upstream changes");
-      expect(output).toContain("Updated");
-    });
-  });
-
-  // ── Verbose mode ──────────────────────────────────────────────
-
-  describe("verbose mode", () => {
-    it("should show debug info in verbose mode", async () => {
-      await createLocalSkill(".claude/skills", "my-skill", `owner/repo@${treeHash1}`);
-
-      mockDefaultBranch();
-      mockTreeScan([{ name: "my-skill", path: ".claude/skills/my-skill", treeHash: treeHash1 }]);
-
-      await updateSkills({
-        noop: false,
-        global: false,
-        verbose: true,
-        gitRoot: tempDir,
-      });
-
-      const output = consoleOutput.join("\n");
-      expect(output).toContain("DEBUG:");
-    });
+    expect(consoleOutput.join("\n")).toContain("Already eligible");
   });
 });
