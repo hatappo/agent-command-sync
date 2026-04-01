@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { ClaudeAgent } from "../../src/agents/claude.js";
+import { ChimeraAgent } from "../../src/agents/chimera.js";
 import { CodexAgent } from "../../src/agents/codex.js";
 import { CopilotAgent } from "../../src/agents/copilot.js";
 import { CursorAgent } from "../../src/agents/cursor.js";
+import { GeminiAgent } from "../../src/agents/gemini.js";
 import { OpenCodeAgent } from "../../src/agents/opencode.js";
 import type { ClaudeSkill, CodexSkill, CopilotSkill, CursorSkill, OpenCodeSkill } from "../../src/types/index.js";
 
@@ -202,6 +204,93 @@ describe("Skill Conversion", () => {
         const finalCodex = codexAgent.skillFromIR(ir2);
 
         expect(finalCodex.openaiConfig?.policy?.allow_implicit_invocation).toBe(false);
+      });
+    });
+
+    describe("Codex-specific openai.yaml fields", () => {
+      const codexAgent = new CodexAgent();
+
+      it("should not leak openai.yaml fields into Claude frontmatter during direct sync", () => {
+        const claudeAgent = new ClaudeAgent();
+        const codexSkill: CodexSkill = {
+          name: "test-skill",
+          content: "Test content",
+          dirPath: "/test",
+          supportFiles: [],
+          frontmatter: { name: "test-skill" },
+          openaiConfig: {
+            interface: {
+              display_name: "OpenAI Display",
+            },
+            dependencies: {
+              tools: [{ type: "command", value: "jq" }],
+            },
+            policy: {
+              allow_implicit_invocation: true,
+            },
+          },
+        };
+
+        const ir = codexAgent.skillToIR(codexSkill, { destinationType: "claude" });
+        const claudeSkill = claudeAgent.skillFromIR(ir);
+
+        expect(claudeSkill.frontmatter.interface).toBeUndefined();
+        expect(claudeSkill.frontmatter.dependencies).toBeUndefined();
+        expect(claudeSkill.frontmatter["disable-model-invocation"]).toBe(false);
+      });
+
+      it("should not leak openai.yaml fields into Gemini frontmatter during direct sync", () => {
+        const geminiAgent = new GeminiAgent();
+        const codexSkill: CodexSkill = {
+          name: "test-skill",
+          content: "Test content",
+          dirPath: "/test",
+          supportFiles: [],
+          frontmatter: { name: "test-skill" },
+          openaiConfig: {
+            interface: {
+              display_name: "OpenAI Display",
+            },
+            dependencies: {
+              tools: [{ type: "command", value: "jq" }],
+            },
+          },
+        };
+
+        const ir = codexAgent.skillToIR(codexSkill, { destinationType: "gemini" });
+        const geminiSkill = geminiAgent.skillFromIR(ir);
+
+        expect(geminiSkill.frontmatter.interface).toBeUndefined();
+        expect(geminiSkill.frontmatter.dependencies).toBeUndefined();
+      });
+
+      it("should preserve openai.yaml fields when exporting to Chimera", () => {
+        const chimeraAgent = new ChimeraAgent();
+        const codexSkill: CodexSkill = {
+          name: "test-skill",
+          content: "Test content",
+          dirPath: "/test",
+          supportFiles: [],
+          frontmatter: { name: "test-skill" },
+          openaiConfig: {
+            interface: {
+              display_name: "OpenAI Display",
+            },
+            dependencies: {
+              tools: [{ type: "command", value: "jq" }],
+            },
+          },
+        };
+
+        const ir = codexAgent.skillToIR(codexSkill, { destinationType: "chimera" });
+        const chimeraSkill = chimeraAgent.skillFromIR(ir);
+
+        expect(chimeraSkill.frontmatter._chimera?.codex?.interface).toEqual({
+          display_name: "OpenAI Display",
+        });
+        expect(chimeraSkill.frontmatter._chimera?.codex?.dependencies).toEqual({
+          tools: [{ type: "command", value: "jq" }],
+        });
       });
     });
   });

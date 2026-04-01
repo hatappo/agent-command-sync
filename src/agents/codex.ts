@@ -278,7 +278,7 @@ export class CodexAgent implements AgentDefinition {
 
   // ── SkillConverter ────────────────────────────────────────────────
 
-  skillToIR(source: CodexSkill, _options?: ConverterOptions): SemanticIR {
+  skillToIR(source: CodexSkill, options?: ConverterOptions): SemanticIR {
     const extras: Record<string, unknown> = {};
     let modelInvocationEnabled: boolean | undefined;
     let from: string | undefined;
@@ -299,14 +299,19 @@ export class CodexAgent implements AgentDefinition {
       extras[key] = value;
     }
 
-    if (source.openaiConfig) {
+    const shouldPreserveCodexConfig =
+      options?.destinationType === undefined ||
+      options.destinationType === "codex" ||
+      options.destinationType === "chimera";
+
+    if (source.openaiConfig?.policy?.allow_implicit_invocation !== undefined) {
+      modelInvocationEnabled = source.openaiConfig.policy.allow_implicit_invocation;
+    }
+
+    if (source.openaiConfig && shouldPreserveCodexConfig) {
       for (const [key, value] of Object.entries(source.openaiConfig)) {
         if (key === "policy") continue;
         extras[key] = value;
-      }
-
-      if (source.openaiConfig.policy?.allow_implicit_invocation !== undefined) {
-        modelInvocationEnabled = source.openaiConfig.policy.allow_implicit_invocation;
       }
     }
 
