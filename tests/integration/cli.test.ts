@@ -1317,8 +1317,41 @@ Updated content`;
   });
 
   describe("Project-level directory support", () => {
+    it("should use cwd project-level directories when not in a git repository", async () => {
+      const claudeContent = `---
+description: CWD command
+---
+
+CWD project content`;
+
+      await writeFile(join(claudeDir, "cwd-project.md"), claudeContent);
+
+      const options: CLIOptions = {
+        source: "claude",
+        destination: "gemini",
+        contentType: "commands",
+        removeUnsupported: false,
+        noOverwrite: false,
+        syncDelete: false,
+        noop: false,
+        verbose: false,
+        global: false,
+      };
+
+      const result = await syncCommands(options);
+      expect(result.success).toBe(true);
+      expect(result.summary.created).toBe(1);
+
+      const targetFile = join(testDir, ".gemini", "commands", "cwd-project.toml");
+      expect(await fileExists(targetFile)).toBe(true);
+      expect(await readFile(targetFile)).toContain("CWD project content");
+    });
+
     it("should use project-level directories when gitRoot is set", async () => {
-      // testDir acts as the git root (testDir already has .claude/.gemini dirs at project root)
+      const nestedDir = join(testDir, "nested", "workspace");
+      await ensureDirectory(nestedDir);
+      process.chdir(nestedDir);
+
       const claudeContent = `---
 description: Project command
 ---
@@ -1352,8 +1385,6 @@ Project level content`;
     });
 
     it("should use user-level directories when global flag is set", async () => {
-      // With global: true, customDirs should be needed for this test to work
-      // since user home dirs are not writable in tests
       const claudeContent = `---
 description: Global command
 ---
@@ -1371,7 +1402,7 @@ Global level content`;
         syncDelete: false,
         noop: false,
         verbose: false,
-        global: false,
+        global: true,
         customDirs: { claude: claudeBaseDir, gemini: geminiBaseDir },
       };
 
@@ -1416,7 +1447,7 @@ Custom dir content`;
       expect(await fileExists(targetFile)).toBe(true);
     });
 
-    it("should fall back to user-level when gitRoot is null", async () => {
+    it("should use cwd project-level directories when gitRoot is null", async () => {
       const claudeContent = `---
 description: Fallback test
 ---
@@ -1442,6 +1473,9 @@ Fallback content`;
       const result = await syncCommands(options);
       expect(result.success).toBe(true);
       expect(result.summary.created).toBe(1);
+
+      const targetFile = join(geminiDir, "fallback.toml");
+      expect(await fileExists(targetFile)).toBe(true);
     });
   });
 });

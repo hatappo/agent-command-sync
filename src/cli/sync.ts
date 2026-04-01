@@ -28,13 +28,21 @@ import {
 
 import type { CLIOptions } from "./options.js";
 
+function getSyncProjectRoot(options: CLIOptions): string | undefined {
+  if (options.global) {
+    return undefined;
+  }
+
+  return options.gitRoot ?? process.cwd();
+}
+
 /**
  * Build a DirResolutionContext for a specific agent from CLIOptions.
  */
 function buildContext(options: CLIOptions, agent: ProductType): DirResolutionContext {
   return {
     customDir: options.customDirs?.[agent],
-    gitRoot: options.gitRoot,
+    gitRoot: getSyncProjectRoot(options),
     global: options.global,
   };
 }
@@ -48,7 +56,8 @@ export async function syncCommands(options: CLIOptions): Promise<ConversionResul
   const stats = { processed: 0, created: 0, modified: 0, deleted: 0, skipped: 0, unchanged: 0 };
 
   try {
-    const modeLabel = options.gitRoot && !options.global ? `project: ${options.gitRoot}` : "global";
+    const projectRoot = getSyncProjectRoot(options);
+    const modeLabel = projectRoot ? `project: ${projectRoot}` : "global";
     console.log(picocolors.cyan(`Starting ${options.source} → ${options.destination} conversion... [${modeLabel}]`));
 
     if (options.noop) {
